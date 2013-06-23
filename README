@@ -7,7 +7,30 @@ INTRODUCTION =
 DIRECTORY STRUCTURE =
 =====================
 
-# src
-  This directory contains all source code.
-# doc
-  This directory contains all documentation for the project.
+## headset
+##########
+
+$$ headset/src
+    This directory contains all source code for the Headset.
+
+$$ headset/test
+    This directory contains all test code for the headset (usually proof of concept or simulation code.)
+
+$$ headset/doc
+    This directory contains specific documentation related to the headset.
+
+## ccu
+#######
+
+$$ ccu/src
+  This directory contains all source code for the Central Control Unit.
+
+$$ ccu/test
+  This directory contains all test code for the CCU (usually proof of concept or simulation code.)
+
+$$ ccu/doc
+  This directory contains specific documentation related to the Central Control Unit.
+
+## doc
+######
+  This directory contains all general documenation for the top level design.
