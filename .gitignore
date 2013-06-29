@@ -1,0 +1,15 @@
+# Skip compiled objects
+*.bin
+*.class
+*.elf
+*.lst
+*.sym
+
+# Skip OS-generated files
+.DS_Store
+Thumbs.db
+*~
+
+# Skip these directories that don't have any source
+bin/
+out/
