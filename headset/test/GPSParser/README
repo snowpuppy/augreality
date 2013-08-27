@@ -1,0 +1,4 @@
+This code is NOT for the STM 32 Discovery or any production models. This code compiles and runs
+on an Arduino clone known as the LeafLabs Maple (http://www.leaflabs.com) using a STM32F103
+series chip (Cortex M3). However, it is straight C and the parser is portable to other models
+of GPS or compiler.
