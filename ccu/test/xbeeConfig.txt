@@ -1,0 +1,12 @@
+send "+++\c"
+expect "OK"
+send "ATSH"
+expect "\r"
+send "ATSL"
+expect "\r"
+send "ATHP07"
+send "ATID0011"
+send "ATPL04"
+send "ATMT01"
+send "ATTO40"
+sleep 1

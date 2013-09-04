@@ -1,0 +1,61 @@
+Commands to setup an XBEE
+
+
+###########
+# MAC Commands
+###########
+#
+#
+# AT Command Format:
+#
+# "AT" + "Two letter Command" + " " + "Parameter" + "\n"
+# The space and parameter are optional.
+
+// Enter command mode.
++++
+// Set the channel mask (affects which channels will be used. 25 must be made available.) (0x1FFFFFF – 0x00FFFFFFFFFFFFFFFF)
+ATCM
+// Change the preamble ide (affects which networks can talk to each other) (0-7)
+// This is checked before network id when receiving a packet.
+ATHP
+// Change Network ID (0-0x7FFF)
+ATID
+// Set Power Level. (Set to 4 for max power)
+ATPL
+// Unicast Mac Retries. (0-0xF)
+ATRR
+// Energy detect could be used to dynamically choose good channels. (Indicate time in milliseconds to scan channels (0-0xFF)
+ATED
+// Broadcast Multi-Transmit indicates the number of times to re-send a broadcast packet = (MT+1). (0-5)
+ATMT
+// Write settings to the xbee.
+ATWR
+
+##########
+# Addressing Commands
+##########
+
+// All addresses are of the form
+0x0013A2XXXXXXXXXX
+
+// Broadcast Address
+0x000000000000FFFF
+
+
+// Source addresses High and Low Sections (32 bits each, readonly)
+ATSH
+ATSL
+// Destination addresses High and Low Sections (32 bits each, read/write)
+ATDH
+ATDL
+// Set Transmit Options. Configured as DigiMesh by default. Could change to Multipoint by setting to 0x40
+ATTO
+
+// Set Coordinator settings.
+ATCE
+// Set max number of network hops. (0-0x20)
+ATNH
+// Network Delay Slots ??
+ATNN
+// Set maximum broadcast hops. Use 0 for max radius. (0-0x20)
+ATBH
