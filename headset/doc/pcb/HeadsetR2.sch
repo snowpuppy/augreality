@@ -6259,11 +6259,13 @@ Headset</text>
 <wire x1="30.48" y1="73.66" x2="7.62" y2="73.66" width="0.1524" layer="94"/>
 <text x="7.62" y="76.2" size="1.778" layer="97">Place near MCU</text>
 <text x="7.62" y="170.18" size="1.778" layer="97">Place near MCU</text>
-<text x="142.24" y="109.22" size="1.778" layer="97" rot="R90">Raspberry PI</text>
+<text x="142.24" y="76.2" size="1.778" layer="97" rot="R90">Raspberry PI</text>
 <text x="142.24" y="129.54" size="1.778" layer="97" rot="R90">IMU</text>
 <text x="142.24" y="144.78" size="1.778" layer="97" rot="R90">Debug</text>
 <text x="142.24" y="96.52" size="1.778" layer="97" rot="R90">GPS</text>
 <text x="30.48" y="81.28" size="1.778" layer="97" rot="R90">Radio</text>
+<text x="236.22" y="142.24" size="1.778" layer="97" rot="R90">9 DOF
+IMU</text>
 </plain>
 <instances>
 <instance part="U1" gate="G$1" x="86.36" y="114.3"/>
@@ -7014,9 +7016,9 @@ Headset</text>
 <label x="149.86" y="162.56" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="PA10/TIM1_CH3/USART1_RX(5T)"/>
-<wire x1="43.18" y1="81.28" x2="33.02" y2="81.28" width="0.1524" layer="91"/>
-<label x="33.02" y="81.28" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="PA3/ADC123_IN3(5T)"/>
+<wire x1="33.02" y1="99.06" x2="43.18" y2="99.06" width="0.1524" layer="91"/>
+<label x="33.02" y="99.06" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="X_RX" class="0">
@@ -7026,9 +7028,9 @@ Headset</text>
 <label x="149.86" y="160.02" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="PA9/TIM1_CH2/USART1_TX(5T)"/>
-<wire x1="43.18" y1="83.82" x2="33.02" y2="83.82" width="0.1524" layer="91"/>
-<label x="33.02" y="83.82" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="PA2/ADC123_IN2(5T)"/>
+<wire x1="33.02" y1="101.6" x2="43.18" y2="101.6" width="0.1524" layer="91"/>
+<label x="33.02" y="101.6" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="PWR_LED" class="0">
@@ -7084,11 +7086,6 @@ Headset</text>
 </net>
 <net name="!CS!" class="0">
 <segment>
-<pinref part="U1" gate="G$1" pin="PB12(5T)"/>
-<wire x1="139.7" y1="127" x2="129.54" y2="127" width="0.1524" layer="91"/>
-<label x="132.08" y="127" size="1.778" layer="95"/>
-</segment>
-<segment>
 <pinref part="JP6" gate="G$1" pin="2"/>
 <wire x1="233.68" y1="119.38" x2="228.6" y2="119.38" width="0.1524" layer="91"/>
 <label x="231.14" y="119.38" size="1.778" layer="95"/>
@@ -7098,13 +7095,13 @@ Headset</text>
 <wire x1="254" y1="40.64" x2="246.38" y2="40.64" width="0.1524" layer="91"/>
 <label x="248.92" y="40.64" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="PA15/JTDI(5T)"/>
+<wire x1="43.18" y1="68.58" x2="33.02" y2="68.58" width="0.1524" layer="91"/>
+<label x="33.02" y="68.58" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="SCK" class="0">
-<segment>
-<pinref part="U1" gate="G$1" pin="PB13/SPI2_SCK(5T)"/>
-<wire x1="139.7" y1="124.46" x2="129.54" y2="124.46" width="0.1524" layer="91"/>
-<label x="132.08" y="124.46" size="1.778" layer="95"/>
-</segment>
 <segment>
 <pinref part="JP6" gate="G$1" pin="5"/>
 <wire x1="233.68" y1="127" x2="228.6" y2="127" width="0.1524" layer="91"/>
@@ -7115,13 +7112,13 @@ Headset</text>
 <wire x1="220.98" y1="40.64" x2="231.14" y2="40.64" width="0.1524" layer="91"/>
 <label x="220.98" y="40.64" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="PC10(5T)"/>
+<wire x1="139.7" y1="88.9" x2="129.54" y2="88.9" width="0.1524" layer="91"/>
+<label x="132.08" y="88.9" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="MISO" class="0">
-<segment>
-<pinref part="U1" gate="G$1" pin="PB14/SPI2_MISO(5T)"/>
-<wire x1="139.7" y1="121.92" x2="129.54" y2="121.92" width="0.1524" layer="91"/>
-<label x="132.08" y="121.92" size="1.778" layer="95"/>
-</segment>
 <segment>
 <pinref part="JP6" gate="G$1" pin="3"/>
 <wire x1="233.68" y1="121.92" x2="228.6" y2="121.92" width="0.1524" layer="91"/>
@@ -7132,13 +7129,13 @@ Headset</text>
 <wire x1="220.98" y1="43.18" x2="231.14" y2="43.18" width="0.1524" layer="91"/>
 <label x="220.98" y="43.18" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="PC11(5T)"/>
+<wire x1="139.7" y1="86.36" x2="129.54" y2="86.36" width="0.1524" layer="91"/>
+<label x="132.08" y="86.36" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="MOSI" class="0">
-<segment>
-<pinref part="U1" gate="G$1" pin="PB15/SPI2_MOSI(5T)"/>
-<wire x1="139.7" y1="119.38" x2="129.54" y2="119.38" width="0.1524" layer="91"/>
-<label x="132.08" y="119.38" size="1.778" layer="95"/>
-</segment>
 <segment>
 <pinref part="JP6" gate="G$1" pin="4"/>
 <wire x1="233.68" y1="124.46" x2="228.6" y2="124.46" width="0.1524" layer="91"/>
@@ -7148,6 +7145,11 @@ Headset</text>
 <pinref part="JP7" gate="G$1" pin="19"/>
 <wire x1="220.98" y1="45.72" x2="231.14" y2="45.72" width="0.1524" layer="91"/>
 <label x="220.98" y="45.72" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="PC12(5T)"/>
+<wire x1="139.7" y1="83.82" x2="129.54" y2="83.82" width="0.1524" layer="91"/>
+<label x="132.08" y="83.82" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="SDA" class="0">
