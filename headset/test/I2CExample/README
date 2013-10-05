@@ -1,0 +1,20 @@
+The files in this directory are a more or less straight pull of the STM example codes and
+standard library, modified to boot this particular board. Much optimization can still be
+performed. Looks to be capable of probably 10+ MFLOPS with careful optimizing.
+
+It boots my STM32F4 discovery using Yagarto (http://sourceforge.net/projects/yagarto)
+on windows arm-none-eabi-gcc 4.7.1:
+
+Configured with: ../gcc-4.7.1/configure --target=arm-none-eabi --prefix=/home/ya
+garto/install --disable-shared --disable-nls --disable-threads --disable-libssp
+--disable-libstdcxx-pch --disable-libmudflap --disable-libgomp -v --enable-langu
+ages=c,c++ --enable-interwork --enable-multilib --with-gcc --with-gnu-ld --with-
+gnu-as --with-dwarf2 --with-newlib --with-headers=../newlib-1.20.0/newlib/libc/i
+nclude --with-mpc=/home/yagarto/addontools --with-mpfr=/home/yagarto/addontools
+--with-gmp=/home/yagarto/addontools
+Thread model: single
+gcc version 4.7.1 (GCC)
+
+You will need to install the ST-Link drivers and utility to get code onto the board. 
+The stlink.mk file will need to be edited locally to point to the right path. Don't use
+Windows 8 if avoidable, there are problems.
