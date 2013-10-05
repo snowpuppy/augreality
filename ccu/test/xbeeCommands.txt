@@ -13,6 +13,8 @@ Commands to setup an XBEE
 
 // Enter command mode.
 +++
+// Exit Command Mode.
+ATCN
 // Set the channel mask (affects which channels will be used. 25 must be made available.) (0x1FFFFFF – 0x00FFFFFFFFFFFFFFFF)
 ATCM
 // Change the preamble ide (affects which networks can talk to each other) (0-7)
