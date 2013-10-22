@@ -1,6 +1,5 @@
-The files in this directory are a more or less straight pull of the STM example codes and
-standard library, modified to boot this particular board. Much optimization can still be
-performed. Looks to be capable of probably 10+ MFLOPS with careful optimizing.
+The I2C driver here was written (by me) for the STM32F1 (LeafLabs Maple) and was ported with a
+couple of lines changed.
 
 It boots my STM32F4 discovery using Yagarto (http://sourceforge.net/projects/yagarto)
 on windows arm-none-eabi-gcc 4.7.1:
@@ -16,5 +15,5 @@ Thread model: single
 gcc version 4.7.1 (GCC)
 
 You will need to install the ST-Link drivers and utility to get code onto the board. 
-The stlink.mk file will need to be edited locally to point to the right path. Don't use
-Windows 8 if avoidable, there are problems.
+The stlink.mk file will need to be copied from "STM32Booter" and edited locally to point to the
+right path.

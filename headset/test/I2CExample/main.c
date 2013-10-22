@@ -163,11 +163,8 @@ void init(void) {
 	USART_InitTypeDef us;
 	USART_ClockInitTypeDef uc;
 	// Tick every 1ms
-	STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_GPIO);
-	STM_EVAL_LEDInit(LED3);
-	STM_EVAL_LEDInit(LED4);
-	STM_EVAL_LEDInit(LED5);
-	STM_EVAL_LEDInit(LED6);
+	buttonInit(BUTTON_MODE_GPIO);
+	ledInit();
 	// USART 3 up
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
@@ -205,19 +202,19 @@ int main(void) {
 	while (1) {
 		imu9Raw(&g, &a, &m);
 		printf("%d %d %d\r\n", (int)m.ix, (int)m.iy, (int)m.iz);
-		STM_EVAL_LEDToggle(LED6);
+		ledToggle(LED6);
 		if (a.ix > 0)
-			STM_EVAL_LEDOff(LED3);
+			ledOff(LED3);
 		else
-			STM_EVAL_LEDOn(LED3);
+			ledOn(LED3);
 		if (a.iy > 0)
-			STM_EVAL_LEDOff(LED4);
+			ledOff(LED4);
 		else
-			STM_EVAL_LEDOn(LED4);
+			ledOn(LED4);
 		if (a.iz > 0)
-			STM_EVAL_LEDOff(LED5);
+			ledOff(LED5);
 		else
-			STM_EVAL_LEDOn(LED5);
+			ledOn(LED5);
 		msleep(50UL);
 	}
 	return 0;

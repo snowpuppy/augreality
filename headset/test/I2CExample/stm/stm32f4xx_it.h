@@ -25,7 +25,6 @@
 *****************************************************************************
 */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
@@ -33,13 +32,12 @@
  extern "C" {
 #endif 
 
-/* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
+/*
+ * Defines interrupt handlers used for handling the Cortex-M3 system interrupts.
+ * Most of these are non maskable and thus must always be defined.
+ */
 
 void NMI_Handler(void);
 void HardFault_Handler(void);
@@ -55,4 +53,4 @@ void SysTick_Handler(void);
 }
 #endif
 
-#endif /* __STM32F4xx_IT_H */
+#endif

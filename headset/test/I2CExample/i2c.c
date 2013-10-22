@@ -100,7 +100,7 @@ static bool _i2cRead(uint8_t addr, uint8_t *data, uint16_t count) {
 		if (state->status & I2C_STATUS_ERR)
 			return false;
 	} while (i2cState.count > 0);
-	while (I2C1->SR2 & I2C_SR2_BUSY);
+	while (I2C1->SR2 & I2C_SR2_BUSY) __WFI();
 	return true;
 }
 
@@ -130,7 +130,7 @@ static bool _i2cWrite(uint8_t addr, uint8_t *data, uint16_t count) {
 		if (status & I2C_STATUS_ERR)
 			return false;
 	} while (i2cState.count > 0);
-	while (I2C1->SR2 & I2C_SR2_BUSY);
+	while (I2C1->SR2 & I2C_SR2_BUSY) __WFI();
 	return true;
 }
 
