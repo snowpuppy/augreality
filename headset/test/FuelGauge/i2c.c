@@ -71,8 +71,6 @@ void i2cInit() {
 	NVIC_EnableIRQ(I2C1_EV_IRQn);
 	NVIC_SetPriority(I2C1_ER_IRQn, 1);
 	NVIC_SetPriority(I2C1_EV_IRQn, 1);
-	__enable_fault_irq();
-	__enable_irq();
 }
 
 // _i2cRead - Reads the specified number of data bytes from the specified address

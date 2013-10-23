@@ -57,7 +57,7 @@
 	</storageModule>
 	<storageModule moduleId="refreshScope"/>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="MapleLCDTest.null.778526830" name="MapleLCDTest"/>
+		<project id="GPSParser.null.778526830" name="GPSParser"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>

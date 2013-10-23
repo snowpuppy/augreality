@@ -1,0 +1,5 @@
+How to use USB:
+
+1) Grab a USB configuration file from the Discovery firmware example and modify as needed.
+2) Define USE_OTG_MODE, USE_USB_OTG_FS, and USE_HOST_MODE if host
+3) Grab the device/host functionality files required (and ONLY those) from the firmware package.
