@@ -12,6 +12,7 @@ class AugRealObj:
     self.root = root
     self.root.minsize(800,600)
     self.root.bind("<Return>",self.handleEnter)
+    self.root.bind("<BackSpace>",self.handleBackspace)
     self.root.bind("1",self.handle1)
     self.root.bind("2",self.handle2)
     self.root.bind("3",self.handle3)
@@ -30,25 +31,51 @@ class AugRealObj:
 
   # Allow the user to select
   # Their own headset.
-  def selectHeadset(self):
+  def setupSplashScre(self):
+    pass
+  def teardownSplashScre(self):
     pass
   # Allow the user to select
   # a simulation to run.
-  def selectSimulation(self):
+  def setupSelectHead(self):
+      self.Label1.grid_forget()
+  def teardownSelectHead(self):
+    pass
+  # Select Simulation
+  def setupSelectSimu(self):
+    pass
+  def teardownSelectSimu(self):
     pass
   # Run a simulation.
-  def runSimulation(self):
+  def setupRunSimu(self):
+    pass
+  def teardownRunSimulat(self):
     pass
   def handleEnter(self,event):
     if (self.state == SPLASHSCRE):
       self.state = SELECTHEAD
-      self.Label1.grid_forget()
+      self.teardownSplashScre()
+      self.setupSelectHead()
     elif (self.state == SELECTHEAD):
       self.state = SELECTSIMU
+      self.teardownSelectHead()
+      self.setupSelectSimu()
     elif (self.state == SELECTSIMU):
       self.state = RUNSIMULAT
+      self.teardownSelectSimu()
+      self.setupRunSimu()
     elif (self.state == RUNSIMULAT):
       pass
+  def handleBackspace(self,event):
+    if (self.state == SPLASHSCRE):
+      pass
+    elif (self.state == SELECTHEAD):
+      self.state = SPLASHSCRE
+      self.Label1.grid()
+    elif (self.state == SELECTSIMU):
+      self.state = SELECTHEAD
+    elif (self.state == RUNSIMULAT):
+      self.state = SELECTSIMU
   def handle1(self,event):
     self.handleNumEvent(1)
   def handle2(self,event):
