@@ -1,0 +1,5 @@
+This example project will send "Hello World" in a loop out of the SPI slave port (SPI3).
+
+You will need to install the ST-Link drivers and utility to get code onto the board. 
+The stlink.mk file will need to be copied from "STM32Booter" and edited locally to point to the
+right path.

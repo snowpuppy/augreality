@@ -1,8 +1,5 @@
 /*
- * i2c.h
- *
- *  Created on: Sep 14, 2013
- *      Author: Stephen
+ * i2c.h - I2C (TWI) implementation for STM32F1/3/4xx chips
  */
 
 #ifndef I2C_H_
@@ -11,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// i2cInit - Initialize I2C peripheral
 void i2cInit();
 // i2cRead - Reads the specified number of data bytes from the specified address
 bool i2cRead(uint8_t addr, uint8_t *data, uint16_t count);
