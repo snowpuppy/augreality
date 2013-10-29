@@ -5,12 +5,15 @@ SELECTHEAD = 2
 SELECTSIMU = 3
 RUNSIMULAT = 4
 
+WRAPLENGTH = 800
+
 from Tkinter import *
+from textInfo import *
 
 class AugRealObj:
   def __init__(self, root):
     self.root = root
-    self.root.minsize(800,600)
+    #self.root.minsize(800,600)
     self.root.bind("<Return>",self.handleEnter)
     self.root.bind("<BackSpace>",self.handleBackspace)
     self.root.bind("1",self.handle1)
@@ -24,33 +27,56 @@ class AugRealObj:
     self.root.bind("9",self.handle9)
     self.root.bind("0",self.handle0)
 
-    self.Label1 = Label(root,text="Welcome to Augmented Reality.\n\n\nPlease Press Enter.")
-
-    self.Label1.grid(row=5,column=4)
+    # Create All objects for each state.
+    # SPLASHSCRE
+    self.WelcomeText = Label(root, wraplength=WRAPLENGTH,text="Welcome to Augmented Reality.\n\n\nPlease Press Enter.")
+    # SELECTHEAD
+    self.HeadsetInfoStr = HeadsetInfoStr
+    self.HeadsetInfo = Label(root, wraplength=WRAPLENGTH, text=self.HeadsetInfoStr)
+    self.HeadsetStrList = []
+    # Initialize Headset status.
+    for i in range(10):
+      self.HeadsetStrList.append(HeadsetStr % (i, -1, "Disconnected"))
+    self.Headsets = Label(root,bg="white", wraplength=WRAPLENGTH,text=" ".join(self.HeadsetStrList))
+    # SELECTSIMU
+    self.SimulationInfoStr = SimulationInfoStr
+    self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
+    self.SimulationList = [ "1 Pac-Man" ]
+    self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH, text=" ".join(self.SimulationList))
+    # RUNSIMULAT
+    self.RunInfoStr = RunInfoStr
+    self.RunInfo = Label(root, wraplength=WRAPLENGTH,text=self.RunInfoStr)
+    #self.HeadSimulationList =
+    # Initialize state.
     self.state = SPLASHSCRE
+    self.setupSplashScre()
 
   # Allow the user to select
   # Their own headset.
   def setupSplashScre(self):
-    pass
+    self.WelcomeText.grid()
   def teardownSplashScre(self):
-    pass
+    self.WelcomeText.grid_forget()
   # Allow the user to select
   # a simulation to run.
   def setupSelectHead(self):
-      self.Label1.grid_forget()
+    self.HeadsetInfo.grid()
+    self.Headsets.grid()
   def teardownSelectHead(self):
-    pass
+    self.HeadsetInfo.grid_forget()
+    self.Headsets.grid_forget()
   # Select Simulation
   def setupSelectSimu(self):
-    pass
+    self.SimulationInfo.grid()
+    self.Simulations.grid()
   def teardownSelectSimu(self):
-    pass
+    self.SimulationInfo.grid_forget()
+    self.Simulations.grid_forget()
   # Run a simulation.
-  def setupRunSimu(self):
-    pass
+  def setupRunSimulation(self):
+    self.RunInfo.grid()
   def teardownRunSimulat(self):
-    pass
+    self.RunInfo.grid_forget()
   def handleEnter(self,event):
     if (self.state == SPLASHSCRE):
       self.state = SELECTHEAD
@@ -63,19 +89,23 @@ class AugRealObj:
     elif (self.state == SELECTSIMU):
       self.state = RUNSIMULAT
       self.teardownSelectSimu()
-      self.setupRunSimu()
+      self.setupRunSimulation()
     elif (self.state == RUNSIMULAT):
       pass
   def handleBackspace(self,event):
     if (self.state == SPLASHSCRE):
       pass
     elif (self.state == SELECTHEAD):
-      self.state = SPLASHSCRE
-      self.Label1.grid()
+      #self.state = SPLASHSCRE
+      pass
     elif (self.state == SELECTSIMU):
+      self.teardownSelectSimu()
+      self.setupSelectHead()
       self.state = SELECTHEAD
     elif (self.state == RUNSIMULAT):
-      self.state = SELECTSIMU
+      self.teardownRunSimulat()
+      self.setupSelectHead()
+      self.state = SELECTHEAD
   def handle1(self,event):
     self.handleNumEvent(1)
   def handle2(self,event):
