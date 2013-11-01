@@ -15,34 +15,6 @@ typedef struct {
 	char buffer[USART_BUFFER_SIZE];
 } RingBuffer_TypeDef;
 
-// ITM ring buffer
-static volatile RingBuffer_TypeDef itm;
-
-// Checks to see if the ring buffer is empty (head = tail)
-static inline uint8_t _isBufferEmpty(volatile RingBuffer_TypeDef* buffer) {
-	return buffer->head == buffer->tail;
-}
-
-// Checks to see if the ring buffer is full (tail + 1 = head)
-static inline uint8_t _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
-	return ((buffer->tail + 1) & _USART_MAX) == buffer->head;
-}
-
-// Removes a byte from the head of the given buffer
-static char _pullByte(volatile RingBuffer_TypeDef* buffer) {
-	uint8_t head = buffer->head; char value;
-	value = buffer->buffer[head];
-	buffer->head = (head + 1) & _USART_MAX;
-	return value;
-}
-
-// Queues a byte onto the tail of the given buffer
-static void _queueByte(volatile RingBuffer_TypeDef* buffer, char value) {
-	uint8_t tail = buffer->tail;
-	buffer->buffer[tail] = value;
-	buffer->tail = (tail + 1) & _USART_MAX;
-}
-
 // Send print statements to the PC
 int fputc(int c, FILE *stream) {
 #ifndef DISABLE_DEBUG
@@ -64,7 +36,7 @@ void itmInit() {
 	DBGMCU->CR = DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_TRACE_IOEN;
 	// From RM0090 p. 1674
 	*((uint32_t *)(ITM_BASE + 0xFB0U)) = 0xC5ACCE55U;
-	*((uint32_t *)0xE0040010) = 81;
+	*((uint32_t *)0xE0040010) = 81U;
 	ITM->TCR = 0x00010005U;
 	ITM->TER = 0x00000001U;
 	ITM->TPR = 0x00000001U;

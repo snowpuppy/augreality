@@ -30,19 +30,13 @@ extern "C" {
 #include "stm32f4xx.h"
 
 typedef enum {
-	LED4 = 0, LED3 = 1, LED5 = 2, LED6 = 3
+	LED1 = 0
 } LED_TypeDef;
-
-typedef enum {
-	BUTTON_MODE_GPIO = 0, BUTTON_MODE_EXTI = 1
-} ButtonMode_TypeDef;
 
 void ledInit();
 void ledOn(LED_TypeDef led);
 void ledOff(LED_TypeDef led);
 void ledToggle(LED_TypeDef led);
-uint32_t buttonGet();
-void buttonInit(ButtonMode_TypeDef Button_Mode);
 
 #ifdef __cplusplus
 }

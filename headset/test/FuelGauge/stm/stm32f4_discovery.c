@@ -22,25 +22,24 @@
 
 #include "stm32f4_discovery.h"
 
-static const uint16_t masks[] = { GPIO_Pin_13, GPIO_Pin_12, GPIO_Pin_14, GPIO_Pin_15 };
+static const uint16_t masks[] = { GPIO_Pin_13 };
 
 /**
- * Initialize the LEDs on the STM32F4Discovery board.
- * NOTE! This function needs to be changed when initializing Debug LEDs on the actual PCB
+ * Initialize the LEDs on the actual PCB
  */
 void ledInit() {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	/* Enable the GPIO_LED Clock */
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
 	/* Configure the GPIO_LED pin */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_14 | GPIO_Pin_13 | GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_13;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOD, &GPIO_InitStructure);
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
 }
 
 /**
@@ -49,7 +48,7 @@ void ledInit() {
  * @param led the LED to turn on, either LED3, LED4, LED5, or LED6
  */
 void ledOn(LED_TypeDef led) {
-	GPIOD->BSRRL = masks[led];
+	GPIOC->BSRRL = masks[led];
 }
 
 /**
@@ -58,7 +57,7 @@ void ledOn(LED_TypeDef led) {
  * @param led the LED to turn off, either LED3, LED4, LED5, or LED6
  */
 void ledOff(LED_TypeDef led) {
-	GPIOD->BSRRH = masks[led];
+	GPIOC->BSRRH = masks[led];
 }
 
 /**
@@ -67,55 +66,5 @@ void ledOff(LED_TypeDef led) {
  * @param led the LED to toggle, either LED3, LED4, LED5, or LED6
  */
 void ledToggle(LED_TypeDef led) {
-	GPIOD->ODR ^= masks[led];
-}
-
-/**
- * Initialize the user button on the STM32F4Discovery board.
- *
- * @param mode the button mode, either BUTTON_MODE_EXTI or BUTTON_MODE_GPIO
- */
-void buttonInit(ButtonMode_TypeDef mode) {
-	GPIO_InitTypeDef GPIO_InitStructure;
-	EXTI_InitTypeDef EXTI_InitStructure;
-	NVIC_InitTypeDef NVIC_InitStructure;
-
-	/* Enable the BUTTON Clock */
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-
-	/* Configure Button pin as input */
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	if (mode == BUTTON_MODE_EXTI) {
-		/* Connect Button EXTI Line to Button GPIO Pin */
-		SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource0);
-
-		/* Configure Button EXTI line */
-		EXTI_InitStructure.EXTI_Line = EXTI_Line0;
-		EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-		EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-		EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-		EXTI_Init(&EXTI_InitStructure);
-
-		/* Enable and set Button EXTI Interrupt to the lowest priority */
-		NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x0F;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x0F;
-		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-
-		NVIC_Init(&NVIC_InitStructure);
-	}
-}
-
-/**
- * Gets the value of the user button if configured as GPIO.
- *
- * @return the button value, 1 for pressed and 0 for released
- */
-uint32_t buttonGet() {
-	return GPIOA->IDR & GPIO_Pin_0;
+	GPIOC->ODR ^= masks[led];
 }
