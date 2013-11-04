@@ -14,7 +14,6 @@ static void init(void) {
 	gpioInit();
 	// Set up the peripherals
 	i2cInit();
-	//spiInit();
 	serialInit();
 	// Enable interrupts for all peripherals
 	__enable_fault_irq();
@@ -89,6 +88,30 @@ static void testXBee(void) {
 	}
 }
 
+/**
+ * XBee RSSI test function, sends the current RSSI value from 0-200 every second
+ */
+static void testXBeeRSSI(void) {
+	unsigned int lastRSSI = 0xFFFFFFFFU, rssi;
+	// Wait for connection (RSSI > 0)
+	while (gpioGetRSSI() == 0U) {
+		fputc('\r', xbee);
+		msleep(100UL);
+	}
+	while (1) {
+		rssi = (unsigned int)gpioGetRSSI();
+		// Toggle LED for status, output character + 1
+		if (rssi != lastRSSI) {
+			fprintf(xbee, "RSSI: %u\r\n", rssi);
+			lastRSSI = rssi;
+		} else
+			// Send something, anything really
+			fputc('\r', xbee);
+		ledToggle();
+		msleep(500UL);
+	}
+}
+
 // SPI data to send
 static const char returnString[] = "Hello World! ";
 #define RETURN_STRING_LEN ((sizeof(returnString) - 1) / sizeof(char))
@@ -120,6 +143,6 @@ int main(void) {
 	// Sys init
 	init();
 	ledOff();
-	testSPI();
+	testXBeeRSSI();
 	return 0;
 }
