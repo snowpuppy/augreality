@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 
 SPLASHSCRE = 1
 SELECTHEAD = 2
