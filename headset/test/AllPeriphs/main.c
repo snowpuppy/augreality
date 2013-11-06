@@ -1,6 +1,7 @@
 /* Includes */
 
 #include "main.h"
+#include "imu.h"
 #include "nmea.h"
 #include "printf.h"
 
@@ -77,6 +78,51 @@ static void testGPS(void) {
 }
 
 /**
+ * IMU test function, dumps accelerometer data over the xbee
+ */
+static void testIMU(void) {
+	ivector g, a, m;
+	imu9Init();
+	while (1) {
+		if (imu9Read(&g, &a, &m)) {
+			// Dump acc
+			fprintf(xbee, "%d %d %d\r\n", (int)a.ix, (int)a.iy, (int)a.iz);
+			// Blink LED
+			ledToggle();
+		} else
+			ledOff();
+		msleep(100UL);
+	}
+}
+
+// SPI data to send
+static const char returnString[] = "Hello World! ";
+#define RETURN_STRING_LEN ((sizeof(returnString) - 1) / sizeof(char))
+static uint32_t returnIndex = 0;
+
+void spiReceivedByte(uint8_t data) {
+	uint32_t gi = returnIndex;
+	ledToggle();
+	// Write the byte
+	spiWriteByte((uint8_t)returnString[gi++]);
+	// Wrap around if lots of bytes received
+	if (gi >= RETURN_STRING_LEN) gi = 0;
+	returnIndex = gi;
+}
+
+/**
+ * SPI test function, sends "Hello World" in a loop to the Raspberry PI on request
+ */
+static void testSPI(void) {
+	returnIndex = 1;
+	// Write 1st byte
+	spiWriteByte(returnString[0]);
+	spiInit();
+	// Wait FOREVER
+	while (1) __WFI();
+}
+
+/**
  * XBee test function, echoes characters with transformation (ASCII value + 1)
  */
 static void testXBee(void) {
@@ -112,37 +158,10 @@ static void testXBeeRSSI(void) {
 	}
 }
 
-// SPI data to send
-static const char returnString[] = "Hello World! ";
-#define RETURN_STRING_LEN ((sizeof(returnString) - 1) / sizeof(char))
-static uint32_t returnIndex = 0;
-
-void spiReceivedByte(uint8_t data) {
-	uint32_t gi = returnIndex;
-	ledToggle();
-	// Write the byte
-	spiWriteByte((uint8_t)returnString[gi++]);
-	// Wrap around if lots of bytes received
-	if (gi >= RETURN_STRING_LEN) gi = 0;
-	returnIndex = gi;
-}
-
-/**
- * SPI test function, sends "Hello World" in a loop to the Raspberry PI on request
- */
-static void testSPI(void) {
-	returnIndex = 1;
-	// Write 1st byte
-	spiWriteByte(returnString[0]);
-	spiInit();
-	// Wait FOREVER
-	while (1) __WFI();
-}
-
 int main(void) {
 	// Sys init
 	init();
 	ledOff();
-	testXBeeRSSI();
+	testIMU();
 	return 0;
 }
