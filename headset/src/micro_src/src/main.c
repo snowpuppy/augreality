@@ -5,6 +5,8 @@
 #include "printf.h"
 #include "usb.h"
 #include "core_cmInstr.h"
+#include "packets.h"
+#include "int_sizes.h"
 
 
 // Spi shared data.
@@ -17,6 +19,13 @@ static char spiBuf[256] = {0};
 static char spiNumBytesRdy = 0;
 static char spiMutex = 0;
 */
+
+// Function declarations
+static void serializeBroadcast(char *buffer, broadCastPacket_t *packet);
+static void sendBroadcast(int16 netAddr, float latitude, float longitude);
+static void getBytes(char *data, int numBytes);
+static void processXbeeData(void);
+void spiReceivedByte(uint8_t data);
 
 /**
  * USB initialization
@@ -38,10 +47,45 @@ static void init(void) {
     i2cInit();
     serialInit();
     usbInit();
+    // write first byte of spi as zero.
+    // then initialize it. This is done
+    // because the gpu will interpret this
+    // as the number of bytes to read.
+    spiWriteByte(0);
     spiInit();
     // Enable interrupts for all peripherals
     __enable_fault_irq();
     __enable_irq();
+}
+
+// Function: main
+// Starting point for all other functions.
+int main(void) {
+    uint8_t data[64];
+    // Sys init
+    init();
+    ledOff();
+    // initialize spi.
+    //spiInit();
+    // main loop.
+    while (1) {
+        // Loop bytes back
+        uint32_t count = VCP_BytesAvailable();
+        if (count > 0) {
+            // Pull up to 64 bytes
+            if (count > 64) count = 64;
+            for (uint32_t i = 0; i < count; i++)
+                data[i] = VCP_GetByte();
+            // Send them back
+            VCP_DataTx(data, count);
+        }
+
+        // Process Wireless information.
+        processXbeeData();
+
+        __WFI();
+    }
+    return 0;
 }
 
 // Function: lock()
@@ -97,9 +141,12 @@ static void getBytes(char *data, int numBytes)
 }
 
 /**
- * XBee test function, echoes characters with transformation (ASCII value + 1)
+ * Function: processXbeeData
+ * This function will retrieve wireless packets from the xbee uart.
+ * It had better not be a blocking call to read the data.
  */
-static void testXBee(void) {
+static void processXbeeData(void)
+{
     char buf[256];
     unsigned char numBytes = 0;
     int i = 0;
@@ -148,7 +195,8 @@ static void testSPI(void) {
     while (1) __WFI();
 }*/
 
-void spiReceivedByte(uint8_t data) {
+void spiReceivedByte(uint8_t data)
+{
     //fputc('a', xbee);
     /*
     char bytesAvailable = 0;
@@ -173,29 +221,53 @@ void spiReceivedByte(uint8_t data) {
     */
 }
 
-int main(void) {
-    uint8_t data[64];
-    // Sys init
-    init();
-    ledOff();
-    // write first byte of spi as zero.
-    spiWriteByte(0);
-    // initialize spi.
-    //spiInit();
-    // main loop.
-    while (1) {
-        // Loop bytes back
-        uint32_t count = VCP_BytesAvailable();
-        testXBee();
-        if (count > 0) {
-            // Pull up to 64 bytes
-            if (count > 64) count = 64;
-            for (uint32_t i = 0; i < count; i++)
-                data[i] = VCP_GetByte();
-            // Send them back
-            VCP_DataTx(data, count);
-        }
-        __WFI();
-    }
-    return 0;
+// Function: serializeBroadcast
+// Purpose: Convert a broadCastPacket to a byte stream
+// for sending over xbee wireless.
+static void serializeBroadcast(char *buffer, broadCastPacket_t *packet)
+{
+	buffer[0] = packet->header[0];
+	buffer[1] = packet->header[1];
+	buffer[2] = packet->header[2];
+	buffer[3] = packet->type;
+	buffer[4] = ((char *)&packet->address)[0];
+	buffer[5] = ((char *)&packet->address)[1];
+	buffer[6] = ((char *)&packet->latitude)[0];
+	buffer[7] = ((char *)&packet->latitude)[1];
+	buffer[8] = ((char *)&packet->latitude)[2];
+	buffer[9] = ((char *)&packet->latitude)[3];
+	buffer[10] = ((char *)&packet->longitude)[0];
+	buffer[11] = ((char *)&packet->longitude)[1];
+	buffer[12] = ((char *)&packet->longitude)[2];
+	buffer[13] = ((char *)&packet->longitude)[3];
+	buffer[14] = ((char *)&packet->crc)[0];
+	buffer[15] = ((char *)&packet->crc)[1];
+}
+
+// Function: sendBroadcast
+// Purpose: send a broadcast packet of the headset indicating
+// that the headset is looking to be configured.
+// Example:
+// sendBroadcast(0x33FF, 12347.5533, 56782.5533);
+static void sendBroadcast(int16 netAddr, float latitude, float longitude)
+{
+	char buffer[256];
+	broadCastPacket_t packet;
+	int i = 0;
+
+	packet.header[0] = 'P';
+	packet.header[1] = 'A';
+	packet.header[2] = 'C';
+	packet.type = 0;
+	packet.address = netAddr;
+	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(int32)(latitude*10000);
+	packet.longitude = longitude; // 0x1155ee99; // (int32)(longitude*10000);
+	packet.crc = calcCrc((char *)&packet, sizeof(packet));
+	serializeBroadcast(buffer, &packet);
+	// Write to the buffer as a series of characters.
+	for (i = 0; i < 16; i++)
+	{
+		fputc(buffer[i], xbee);
+	}
+	return;
 }

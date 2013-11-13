@@ -16,9 +16,10 @@ typedef struct broadcastPacket
   char header[3];
   char type;
   int16 address;
-  float latitude, longitude;
+  float latitude;
+  float longitude;
   int16 crc;
-} broadcastPacket_t;
+} broadCastPacket_t;
 
 // AcceptPacket: This is the packet
 // that the ccu will send to the headset
@@ -68,14 +69,14 @@ typedef struct broadcastPacket
 // structure and performs a crc calculation.
 int16 calcCrc(char *packet, int size)
 {
+  int16 ret = 0;
   // Make sure min size is one byte plus the 16bit crc
   if (packet != NULL && size > 1+sizeof(short))
   {
-    int16 ret = 0;
-
     ret = ( ((short)packet[0]) << 8) + packet[size-sizeof(short)];
     return ret;
   }
+  return 0;
 }
 
 #endif
