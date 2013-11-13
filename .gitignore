@@ -5,6 +5,7 @@
 *.lst
 *.sym
 *.pyc
+*.swp
 a.out
 tags
 

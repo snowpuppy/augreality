@@ -31,6 +31,7 @@ int main(void)
   FILE *filefp = NULL;
   unsigned int fileSize = 0;
   int bytesRead = 0;
+  char message[] = "Hello There stranger. This is a test.\n";
   
   char temp;
   broadcastPacket_t packet;
@@ -66,18 +67,23 @@ int main(void)
   buf[1] = 'A';
   buf[2] = 'C';
   buf[3] = 1; // 1 indicates file transfer packet.
-  *((int *)&buf[4]) = fileSize; // copy size of file.
-  write(fd,buf,8); // send header.
+  buf[4] = strlen(message); // copy size of file.
+  write(fd,buf,5); // send header.
 
+  // now send payload
+  write(fd,message,strlen(message));
 
   // now send payload
 
   //res = write(fd,"abcdh",5);
-  while (!feof(filefp)) {                 /* loop for input */
+  
+  /*
+  while (!feof(filefp)) {
     // Send a file over serial...
     bytesRead = readFileBytes(filefp, buf,255);
     write(fd,buf,bytesRead);
   }
+  */
   tcsetattr(fd,TCSANOW,&oldtio); // restore old port settings.
   return 0;
 }
