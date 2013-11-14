@@ -4,8 +4,6 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include "int_sizes.h"
-
 // broadcastPacket: This is the packet
 // that the headset will send repeatedly
 // on startup. The ccu will listen for these
@@ -15,10 +13,10 @@ typedef struct broadcastPacket
 {
   char header[3];
   char type;
-  int16 address;
+  uint16_t address;
   float latitude;
   float longitude;
-  int16 crc;
+  uint16_t crc;
 } broadCastPacket_t;
 
 // AcceptPacket: This is the packet
@@ -67,9 +65,9 @@ typedef struct broadcastPacket
 // This function takes a list of characters
 // which has probably been cast that way from a
 // structure and performs a crc calculation.
-int16 calcCrc(char *packet, int size)
+uint16_t calcCrc(char *packet, int size)
 {
-  int16 ret = 0;
+  uint16_t ret = 0;
   // Make sure min size is one byte plus the 16bit crc
   if (packet != NULL && size > 1+sizeof(short))
   {
