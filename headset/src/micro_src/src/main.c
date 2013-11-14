@@ -6,6 +6,7 @@
 #include "usb.h"
 #include "core_cmInstr.h"
 #include "packets.h"
+#include "nmea.h"
 
 // States of the headset.
 // The initial state is
@@ -49,6 +50,8 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
 static void processXbeeData(uint8_t *state);
 void spiReceivedByte(uint8_t data);
+static int GPSReadLine(char *buffer, char start, int length);
+static void processGPSData(void);
 
 /**
  * USB initialization
@@ -110,7 +113,7 @@ int main(void)
         }
 
         // Process Wireless information.
-        processXbeeData(&state);
+        //processXbeeData(&state);
         processGPSData();
 
         __WFI();
@@ -185,7 +188,7 @@ static void processXbeeData(uint8_t *state)
     uint32_t i = 0;
     // If packets are available, then just
     // keep processing them.
-    while (serialBufferCount(xbee) > 0)
+    while (serialBufferCount(SERIAL_PORT_XBEE) > 0)
     {
       // If bytes are available, then receive packet.
       // Send packet to spi or trigger appropriate action.
@@ -229,18 +232,20 @@ static void processXbeeData(uint8_t *state)
 }
 
 // Reads a line from the GPS
-static int GPSReadLine(char *buffer, char start, int length) {
-	char c; int i;
-	length--;
-	// Wait for start character
-	do {
-		c = fgetc(gps);
-	} while (c != start);
-	// Pull up to length characters or until we hit new line
-	for (i = 0; i < length && ((c = fgetc(gps)) != '\r' && c != '\n'); i++)
-		*buffer++ = c;
-	*buffer = 0;
-	return i;
+static int GPSReadLine(char *buffer, char start, int length)
+{
+    char c; int i;
+    length--;
+    // Wait for start character
+    do
+    {
+        c = fgetc(gps);
+    } while (c != start);
+    // Pull up to length characters or until we hit new line
+    for (i = 0; i < length && ((c = fgetc(gps)) != '\r' && c != '\n'); i++)
+        *buffer++ = c;
+    *buffer = 0;
+    return i;
 }
 
 /**
@@ -248,41 +253,49 @@ static int GPSReadLine(char *buffer, char start, int length) {
  */
 static void processGPSData(void)
 {
-    uint8_t gpsData[128];
+    char gpsData[128];
     float x = 0, y = 0;
-		GPSReadLine(gpsData, '$', sizeof(gpsData));
-		// Try to parse the GPS
-		if (gpsParse(gpsData))
-    {
-			int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-			// Got it, print it out
-			//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
-			//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
-      // Stuff data into buffer for spi.
+    float latf = 0, lonf = 0;
 
-      // Find origin as first lat/lon coordinate.
-      if (originLat == 0 && originLon == 0)
-      {
-        originLat = lat;
-        originLon = lon;
-      }
-      // Find difference bet. locations.
-      lat = lat - origin;
-      lon = lon - origin;
-      // Find offset in meters.
-      x = lat*DECIMALSPERDEGLAT;
-      y = lon*DECIMALSPERDEGLON;
-      fputc('a', xbee);
-      // Stuff the buffer.
-      *((float *)&headsetData[0]) = x; // x pos
-      *((float *)&headsetData[4]) = y; // y pos
-      *((float *)&headsetData[8]) = 123.45;  // pitch
-      *((float *)&headsetData[12]) = 123.45; // roll
-      *((float *)&headsetData[16]) = 123.45; // yaw
-      headsetData[20] = 23; // rssi
-      headsetData[20] = 43; // FuelGauage
-		}
-		ledToggle();
+    // Stuff the buffer early.
+    *((float *)&headsetData[8]) = 123.45;  // pitch
+    *((float *)&headsetData[12]) = 123.45; // roll
+    *((float *)&headsetData[16]) = 123.45; // yaw
+
+    GPSReadLine(gpsData, '$', sizeof(gpsData));
+    // Try to parse the GPS
+    if (gpsParse(gpsData))
+    {
+        int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+        // Got it, print it out
+        //printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
+        //	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
+        // Stuff data into buffer for spi.
+
+        // Find origin as first lat/lon coordinate.
+        latf = (float)lat / (float)1000000;
+        lonf = (float)lon / (float)1000000;
+        if (originLat == 0 && originLon == 0)
+        {
+            originLat = latf;
+            originLon = lonf;
+        }
+        // Find difference bet. locations.
+        latf = latf - originLat;
+        lonf = lonf - originLon;
+        // Find offset in meters.
+        x = latf*DECIMALSPERDEGLAT;
+        y = lonf*DECIMALSPERDEGLON;
+        // Stuff the buffer.
+        *((float *)&headsetData[0]) = x; // x pos
+        *((float *)&headsetData[4]) = y; // y pos
+        *((float *)&headsetData[8]) = 123.45;  // pitch
+        *((float *)&headsetData[12]) = 123.45; // roll
+        *((float *)&headsetData[16]) = 123.45; // yaw
+        headsetData[20] = 23; // rssi
+        headsetData[20] = 43; // FuelGauage
+    }
+    ledToggle();
 }
 
 void spiReceivedByte(uint8_t data)
@@ -292,8 +305,15 @@ void spiReceivedByte(uint8_t data)
       spiWriteByte(HEADSETDATABYTES);
       spiWriteBytes(headsetData, HEADSETDATABYTES);
       spiWriteByte(0);
+      //fputc(data, xbee);
     }
-    fputc('b', xbee);
+    // reset origin.
+    if (data == 2)
+    {
+        originLat = 0;
+        originLon = 0;
+        //fputc(data,xbee);
+    }
     /*
     uint8_t bytesAvailable = 0;
     uint8_t numBytesRdy = 0;
@@ -358,7 +378,7 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 	packet.address = netAddr;
 	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(uint32_t)(latitude*10000);
 	packet.longitude = longitude; // 0x1155ee99; // (uint32_t)(longitude*10000);
-	packet.crc = calcCrc((uint8_t *)&packet, sizeof(packet));
+	packet.crc = calcCrc((char *)&packet, sizeof(packet));
 	serializeBroadcast(buffer, &packet);
 	// Write to the buffer as a series of characters.
 	for (i = 0; i < 16; i++)
