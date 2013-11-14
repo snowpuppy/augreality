@@ -10,7 +10,7 @@
 
 // Size of buffer, in bytes, for the communication ring buffers
 // Can be at most 256 before overflowing the space in a byte; must be a power of two
-#define COMM_BUFFER_SIZE 0x40
+#define COMM_BUFFER_SIZE 0x80
 // Maximum value that the size can have before filling
 #define _COMM_MAX (COMM_BUFFER_SIZE - 1)
 

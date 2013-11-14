@@ -6,8 +6,27 @@
 #include "usb.h"
 #include "core_cmInstr.h"
 #include "packets.h"
-#include "int_sizes.h"
 
+// States of the headset.
+// The initial state is
+// BROADCASTSTATE
+#define BROADCASTSTATE 0
+#define LOADSTATICDATA 1
+#define RUNSIMULATION  2
+
+// Packet Types for the
+// headset.
+#define ACCEPTPACKET 0
+#define UPDATEOBJPACKET 1
+#define ENDSIMPACKET 2
+#define BACKPACKET 3
+#define STATICDATAPACKET 4
+
+// Define number of bytes for
+// headset updates to gpu.
+#define HEADSETDATABYTES 22
+#define DECIMALSPERDEGLAT 111320
+#define DECIMALSPERDEGLON 78710
 
 // Spi shared data.
 // Data ready indicator.
@@ -15,16 +34,20 @@
 // and synchronization primitive.
 /*
 static int spiDataReady = 0;
-static char spiBuf[256] = {0};
-static char spiNumBytesRdy = 0;
-static char spiMutex = 0;
+static uint8_t spiBuf[256] = {0};
+static uint8_t spiNumBytesRdy = 0;
+static uint8_t spiMutex = 0;
 */
 
+// Global Variables
+static uint8_t headsetData[HEADSETDATABYTES];
+static float originLat = 0, originLon = 0;
+
 // Function declarations
-static void serializeBroadcast(char *buffer, broadCastPacket_t *packet);
-static void sendBroadcast(int16 netAddr, float latitude, float longitude);
-static void getBytes(char *data, int numBytes);
-static void processXbeeData(void);
+static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet);
+static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
+static void getBytes(uint8_t *data, uint32_t numBytes);
+static void processXbeeData(uint8_t *state);
 void spiReceivedByte(uint8_t data);
 
 /**
@@ -38,7 +61,8 @@ static void usbInit(void) {
 /**
  * System initialization
  */
-static void init(void) {
+static void init(void)
+{
     // Tick every 1ms
     SysTick_Config(168000);
     // Set up status LED
@@ -60,18 +84,23 @@ static void init(void) {
 
 // Function: main
 // Starting point for all other functions.
-int main(void) {
+int main(void)
+{
+    // debug buffer.
     uint8_t data[64];
+    // System variables.
+    uint8_t state = BROADCASTSTATE;
     // Sys init
     init();
     ledOff();
-    // initialize spi.
-    //spiInit();
+
     // main loop.
-    while (1) {
-        // Loop bytes back
+    while (1)
+    {
+        // Loop bytes back (for debug)
         uint32_t count = VCP_BytesAvailable();
-        if (count > 0) {
+        if (count > 0)
+        {
             // Pull up to 64 bytes
             if (count > 64) count = 64;
             for (uint32_t i = 0; i < count; i++)
@@ -81,7 +110,8 @@ int main(void) {
         }
 
         // Process Wireless information.
-        processXbeeData();
+        processXbeeData(&state);
+        processGPSData();
 
         __WFI();
     }
@@ -93,9 +123,9 @@ int main(void) {
 // that can be used to access sensative data
 // through the use of a mutex.
 /*
-static void lock(char *mutex)
+static void lock(uint8_t *mutex)
 {
-    char ret = 0;
+    uint8_t ret = 0;
     // Attempt to claim the mutex.
     do
     {
@@ -118,7 +148,7 @@ static void lock(char *mutex)
 // This function allows one to unlock
 // a mutex. Note that this could be done by
 // anybody... (but they shouldn't)
-static void unlock(char *mutex)
+static void unlock(uint8_t *mutex)
 {
     *mutex = 0;
 }
@@ -128,9 +158,9 @@ static void unlock(char *mutex)
  * Reads specified number of bytes into given buffer.
  *
  */
-static void getBytes(char *data, int numBytes)
+static void getBytes(uint8_t *data, uint32_t numBytes)
 {
-    int i = 0;
+    uint32_t i = 0;
     if (numBytes > 0)
     {
         for (i = 0; i < numBytes; i++)
@@ -143,65 +173,131 @@ static void getBytes(char *data, int numBytes)
 /**
  * Function: processXbeeData
  * This function will retrieve wireless packets from the xbee uart.
- * It had better not be a blocking call to read the data.
+ * The XBEE port is checked to see if any data is available for reading.
+ * If data is available for reading, then the packet type will be checked
+ * and appropriate data will be immediately sent over spi. It is assumed
+ * that spi is running much faster than xbee traffic.
  */
-static void processXbeeData(void)
+static void processXbeeData(uint8_t *state)
 {
-    char buf[256];
-    unsigned char numBytes = 0;
-    int i = 0;
-    getBytes(buf,3);
-    if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C')
+    uint8_t buf[256];
+    uint8_t numBytes = 0;
+    uint32_t i = 0;
+    // If packets are available, then just
+    // keep processing them.
+    while (serialBufferCount(xbee) > 0)
     {
+      // If bytes are available, then receive packet.
+      // Send packet to spi or trigger appropriate action.
+      getBytes(buf,3);
+      if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C')
+      {
         //fputc('a', xbee);
-        /*
+        // Get type of packet
         getBytes(buf,1);
-        lock(spiMutex);
-        spiDataReady = 1;
-        unlock(spiMutex);
-        */
-        //while (spiDataReady == 1);
-        getBytes(buf,1);
-        getBytes(buf,1);
-        spiWriteByte(buf[0]);
-        numBytes = (unsigned char)buf[0];
-
-        // get remaining bytes from wireless.
-        getBytes(buf,(int)numBytes);
-        // write all bytes to spi!
-        for (i = 0; i < numBytes; i++)
+        switch (buf[0])
         {
-            spiWriteByte(buf[i]);
-            //fputc(buf[i], xbee);
+          case ACCEPTPACKET:
+          case UPDATEOBJPACKET:
+          case ENDSIMPACKET:
+          case BACKPACKET:
+          case STATICDATAPACKET:
+            // Get number of bytes
+            getBytes(buf,1);
+            spiWriteByte(buf[0]);
+            numBytes = (uint8_t)buf[0];
+
+            // get remaining bytes from wireless.
+            getBytes(buf,(uint32_t)numBytes);
+            // write all bytes to spi!
+            for (i = 0; i < numBytes; i++)
+            {
+              spiWriteByte(buf[i]);
+              //fputc(buf[i], xbee);
+            }
+            spiWriteByte(0);
+            // Toggle LED for status, output character + 1
+            ledToggle();
+            fputc('b', xbee);
+            //fputc(numBytes, xbee);
+            break;
+          default:
+            break;
         }
-        spiWriteByte(0);
-        // Toggle LED for status, output character + 1
-        ledToggle();
-        fputc('b', xbee);
-        //fputc(numBytes, xbee);
+      }
     }
 }
 
+// Reads a line from the GPS
+static int GPSReadLine(char *buffer, char start, int length) {
+	char c; int i;
+	length--;
+	// Wait for start character
+	do {
+		c = fgetc(gps);
+	} while (c != start);
+	// Pull up to length characters or until we hit new line
+	for (i = 0; i < length && ((c = fgetc(gps)) != '\r' && c != '\n'); i++)
+		*buffer++ = c;
+	*buffer = 0;
+	return i;
+}
+
 /**
- * SPI test function, sends "Hello World" in a loop to the Raspberry PI on request
+ * GPS test function, reports new fixes to the serial port as they occur
  */
-/*
-static void testSPI(void) {
-    returnIndex = 1;
-    // Write 1st byte
-    spiWriteByte(returnString[0]);
-    spiInit();
-    // Wait FOREVER
-    while (1) __WFI();
-}*/
+static void processGPSData(void)
+{
+    uint8_t gpsData[128];
+    float x = 0, y = 0;
+		GPSReadLine(gpsData, '$', sizeof(gpsData));
+		// Try to parse the GPS
+		if (gpsParse(gpsData))
+    {
+			int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+			// Got it, print it out
+			//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
+			//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
+      // Stuff data into buffer for spi.
+
+      // Find origin as first lat/lon coordinate.
+      if (originLat == 0 && originLon == 0)
+      {
+        originLat = lat;
+        originLon = lon;
+      }
+      // Find difference bet. locations.
+      lat = lat - origin;
+      lon = lon - origin;
+      // Find offset in meters.
+      x = lat*DECIMALSPERDEGLAT;
+      y = lon*DECIMALSPERDEGLON;
+      fputc('a', xbee);
+      // Stuff the buffer.
+      *((float *)&headsetData[0]) = x; // x pos
+      *((float *)&headsetData[4]) = y; // y pos
+      *((float *)&headsetData[8]) = 123.45;  // pitch
+      *((float *)&headsetData[12]) = 123.45; // roll
+      *((float *)&headsetData[16]) = 123.45; // yaw
+      headsetData[20] = 23; // rssi
+      headsetData[20] = 43; // FuelGauage
+		}
+		ledToggle();
+}
 
 void spiReceivedByte(uint8_t data)
 {
-    //fputc('a', xbee);
+    if (data == 1)
+    {
+      spiWriteByte(HEADSETDATABYTES);
+      spiWriteBytes(headsetData, HEADSETDATABYTES);
+      spiWriteByte(0);
+    }
+    fputc('b', xbee);
     /*
-    char bytesAvailable = 0;
-    char numBytesRdy = 0;
-    int i = 0;
+    uint8_t bytesAvailable = 0;
+    uint8_t numBytesRdy = 0;
+    uint32_t i = 0;
 
     // check to see if bytes are available to read.
     lock(spiMutex);
@@ -224,24 +320,24 @@ void spiReceivedByte(uint8_t data)
 // Function: serializeBroadcast
 // Purpose: Convert a broadCastPacket to a byte stream
 // for sending over xbee wireless.
-static void serializeBroadcast(char *buffer, broadCastPacket_t *packet)
+static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 {
 	buffer[0] = packet->header[0];
 	buffer[1] = packet->header[1];
 	buffer[2] = packet->header[2];
 	buffer[3] = packet->type;
-	buffer[4] = ((char *)&packet->address)[0];
-	buffer[5] = ((char *)&packet->address)[1];
-	buffer[6] = ((char *)&packet->latitude)[0];
-	buffer[7] = ((char *)&packet->latitude)[1];
-	buffer[8] = ((char *)&packet->latitude)[2];
-	buffer[9] = ((char *)&packet->latitude)[3];
-	buffer[10] = ((char *)&packet->longitude)[0];
-	buffer[11] = ((char *)&packet->longitude)[1];
-	buffer[12] = ((char *)&packet->longitude)[2];
-	buffer[13] = ((char *)&packet->longitude)[3];
-	buffer[14] = ((char *)&packet->crc)[0];
-	buffer[15] = ((char *)&packet->crc)[1];
+	buffer[4] = ((uint8_t *)&packet->address)[0];
+	buffer[5] = ((uint8_t *)&packet->address)[1];
+	buffer[6] = ((uint8_t *)&packet->latitude)[0];
+	buffer[7] = ((uint8_t *)&packet->latitude)[1];
+	buffer[8] = ((uint8_t *)&packet->latitude)[2];
+	buffer[9] = ((uint8_t *)&packet->latitude)[3];
+	buffer[10] = ((uint8_t *)&packet->longitude)[0];
+	buffer[11] = ((uint8_t *)&packet->longitude)[1];
+	buffer[12] = ((uint8_t *)&packet->longitude)[2];
+	buffer[13] = ((uint8_t *)&packet->longitude)[3];
+	buffer[14] = ((uint8_t *)&packet->crc)[0];
+	buffer[15] = ((uint8_t *)&packet->crc)[1];
 }
 
 // Function: sendBroadcast
@@ -249,20 +345,20 @@ static void serializeBroadcast(char *buffer, broadCastPacket_t *packet)
 // that the headset is looking to be configured.
 // Example:
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
-static void sendBroadcast(int16 netAddr, float latitude, float longitude)
+static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 {
-	char buffer[256];
+	uint8_t buffer[256];
 	broadCastPacket_t packet;
-	int i = 0;
+	uint32_t i = 0;
 
 	packet.header[0] = 'P';
 	packet.header[1] = 'A';
 	packet.header[2] = 'C';
 	packet.type = 0;
 	packet.address = netAddr;
-	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(int32)(latitude*10000);
-	packet.longitude = longitude; // 0x1155ee99; // (int32)(longitude*10000);
-	packet.crc = calcCrc((char *)&packet, sizeof(packet));
+	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(uint32_t)(latitude*10000);
+	packet.longitude = longitude; // 0x1155ee99; // (uint32_t)(longitude*10000);
+	packet.crc = calcCrc((uint8_t *)&packet, sizeof(packet));
 	serializeBroadcast(buffer, &packet);
 	// Write to the buffer as a series of characters.
 	for (i = 0; i < 16; i++)
