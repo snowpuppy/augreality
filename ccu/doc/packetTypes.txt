@@ -1,0 +1,85 @@
+// Sent from ccu to one headset.
+// This tells the headset it is included and
+// tells it where the geospatial origin is.
+AccpetHeadset
+{
+    uint8_t packetType; // type of packet being sent.
+    uint8_t id;         // id of ccu.
+    float x,y;          // location of origin.
+}
+
+// Sent from ccu to all headsets.
+// Sends a tar file which contains a group of 2d/3d objects
+// and a configuration file which must be read that indicates
+// the initial number and placement of objects as well as their id.
+LoadStaticData
+{
+    uint8_t packetType; // type of packet being sent.
+    uint8_t numBytes;   // number of bytes in packet.
+    uint8_t *bytes;     // payload of packet.
+}
+
+typedef objList
+{
+    uint8_t instId;         // instance id of the object.
+    uint8_t typeShow;       // Type: 2d or 3d object, Show: show or hide.
+                            // 0 (3d object hidden) 2 (3d object shown)
+                            // 1 (2d object hidden) 3 (2d object shown)
+    float   x,y;            // 3d coordinates of object.
+    int     x,y;            // 2d coordinates of object.
+    float   roll,pitch,yaw; // orientation of object.
+}
+
+// Sent from ccu to headset to update the location
+// of one or more objects.
+UpdateObjInstance
+{
+    uint8_t packetType; // type of packet being sent
+    uint8_t numObj;     // number of objects to update
+    objInfo_t *objList; // list of objects to update
+}
+
+// Sent from ccu to one or more headsets
+// This tells a headset to begin simulation.
+StartSimulation
+{
+    uint8_t packetType; // type of packet being sent
+}
+
+// Sent from ccu to one or more headsets
+// This tells a headset to end the simulation.
+EndSimulation
+{
+    uint8_t packetType; // type of packet being sent
+}
+
+// Broadcast from headset to tell the ccu
+// of its presence.
+BroadCastPacket
+{
+    uint8_t packetType; // type of packet being sent
+    uint16_t id;        // ID of player
+    float x,y;          // position of player.
+}
+
+// Sent from headset directly to ccu.
+ConfirmUpdate
+{
+    uint8_t packetType;
+    uint8_t updateNumber;
+}
+
+// Sent from ccu directly to a headset.
+GoBack
+{
+    uint8_t packetType;
+}
+
+// Sent from headset directly to ccu.
+HeartBeat
+{
+    uint8_t packetType;     // type of packet being sent.
+    uint16_t id;            // id of the player
+    float x,y;              // coordinates of player
+    float roll,pitch,yaw;   // orientation of player
+}
