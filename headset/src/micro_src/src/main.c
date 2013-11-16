@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "usb.h"
 #include "core_cmInstr.h"
-#include "packets.h"
+#include "../../../ccu/src/library/packets.h"
 #include "nmea.h"
 
 // States of the headset.
