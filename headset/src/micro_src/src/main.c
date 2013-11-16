@@ -55,14 +55,6 @@ static void processGPSData(void);
 static void processIMUData(void);
 
 /**
- * USB initialization
- */
-static void usbInit(void) {
-    VCP_Init();
-    VCP_SetUSBTxBlocking(0);
-}
-
-/**
  * System initialization
  */
 static void init(void)
@@ -74,7 +66,7 @@ static void init(void)
     // Set up the peripherals
     i2cInit();
     serialInit();
-    usbInit();
+    usbVCPInit();
     // write first byte of spi as zero.
     // then initialize it. This is done
     // because the gpu will interpret this
@@ -104,16 +96,10 @@ int main(void)
     while (1)
     {
         // Loop bytes back (for debug)
-        uint32_t count = VCP_BytesAvailable();
-        if (count > 0)
-        {
-            // Pull up to 64 bytes
-            if (count > 64) count = 64;
-            for (uint32_t i = 0; i < count; i++)
-                data[i] = VCP_GetByte();
-            // Send them back
-            VCP_DataTx(data, count);
-        }
+		uint32_t count = usbVCPRead(data, sizeof(data) / sizeof(uint8_t));
+		if (count > 0)
+			// Send the buffer back to the PC
+			usbVCPWrite(data, count);
 
         // Process Wireless information.
         //processXbeeData(&state);
@@ -192,7 +178,7 @@ static void processXbeeData(uint8_t *state)
     uint32_t i = 0;
     // If packets are available, then just
     // keep processing them.
-    while (serialBufferCount(SERIAL_PORT_XBEE) > 0)
+    while (fcount(xbee) > 0)
     {
       // If bytes are available, then receive packet.
       // Send packet to spi or trigger appropriate action.

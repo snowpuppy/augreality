@@ -19,66 +19,43 @@
  ******************************************************************************
  */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USBD_CDC_VCP_H
-#define __USBD_CDC_VCP_H
+#ifndef USB_H_
+#define USB_H_
 
-/* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
-
-/* Exported typef ------------------------------------------------------------*/
-/* The following structures groups all needed parameters to be configured for the
- ComPort. These parameters can modified on the fly by the host through CDC class
- command class requests. */
-typedef struct {
-	uint32_t bitrate;
-	uint8_t format;
-	uint8_t paritytype;
-	uint8_t datatype;
-} LINE_CODING;
-
-/* Exported constants --------------------------------------------------------*/
-#define DEFAULT_CONFIG                  0
-#define OTHER_CONFIG                    1
-
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
+#include <stdbool.h>
 
 /**
- * @brief  VCP_BytesAvailable
- *         Counts the number of bytes in the USB receive buffer
- * @retval The number of bytes that can be read from USB
+ * RX buffer size, must be a power of two big enough to satisfy:
+ *
+ * APP_RX_DATA_SIZE * 8000 / MAX_BAUD_RATE should be greater than CDC_IN_FRAME_INTERVAL
  */
-uint32_t VCP_BytesAvailable(void);
-/**
- * @brief  VCP_DataTx
- *         CDC received data to be send over USB IN endpoint are managed in
- *         this function.
- * @param  Buf: Buffer of data to be sent
- * @param  Len: Number of data to be sent (in bytes)
- * @retval Result of the operation: USBD_OK if all operations are OK else VCP_FAIL
- */
-uint16_t VCP_DataTx(uint8_t* Buf, uint32_t Len);
-/**
- * @brief  VCP_GetByte
- *         Reads and returns a byte from USB, returning 0 if no data is available
- * @retval The next byte from the USB-serial COM port
- */
-uint8_t VCP_GetByte(void);
-/**
- * @brief  VCP_Init
- *         Initializes and configures a USB VCOM port
- * @retval None
- */
-void VCP_Init(void);
-/**
- * @brief  VCP_SetUSBTxBlocking
- *         Set USB blocking mode for output buffer overrun
- * @param  Mode: 0: non blocking, 1: blocking
- * @retval None
- */
-void VCP_SetUSBTxBlocking(uint8_t Mode);
+#define APP_RX_DATA_SIZE 1024
 
-#endif /* __USBD_CDC_VCP_H */
+/**
+ * Initializes and configures the USB VCOM port. If this is not used, calls to standard I/O
+ * functions on the stdin/stdout streams will produce undefined behavior.
+ */
+void usbVCPInit(void);
+/**
+ * Receives up to size bytes into buffer. This function is direct and much, much faster than
+ * looping on fgetc(), therefore should be used when receiving lots of data over USB VCP.
+ *
+ * @param buffer the buffer to store collected bytes
+ * @param size the maximum number of bytes to store
+ * @return the number of bytes actually stored
+ */
+uint32_t usbVCPRead(uint8_t *buffer, uint32_t size);
+/**
+ * Writes up to size bytes of data from buffer. This function is direct and much, much faster
+ * than looping on fputc(), therefore should be used when sending lots of data over USB VCP.
+ *
+ * @param buffer the buffer to send
+ * @param size the number of bytes to send
+ * @return the number of bytes actually sent
+ */
+uint32_t usbVCPWrite(uint8_t *buffer, uint32_t size);
+
+#endif
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
