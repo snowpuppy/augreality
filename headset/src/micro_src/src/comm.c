@@ -4,6 +4,7 @@
  * Used for Raspberry PI communication and the GPS/XBee/Spare headers.
  */
 
+#include "usb.h"
 #include "main.h"
 #include "comm.h"
 #include "printf.h"
@@ -13,31 +14,32 @@
 #define COMM_BUFFER_SIZE 0x80
 // Maximum value that the size can have before filling
 #define _COMM_MAX (COMM_BUFFER_SIZE - 1)
+#define _USB_MAX (APP_RX_DATA_SIZE - 1)
 
 // Structure containing a ring buffer
 typedef struct {
-	uint8_t head;
-	uint8_t tail;
+	uint16_t head;
+	uint16_t tail;
 	char buffer[COMM_BUFFER_SIZE];
 } RingBuffer_TypeDef;
 
 // SPI buffer
 static RingBuffer_TypeDef spiBuffer;
-static RingBuffer_TypeDef serialBufferRX[3];
+static RingBuffer_TypeDef serialBufferRX[4];
 static RingBuffer_TypeDef serialBufferTX[3];
 
 // Checks to see if the ring buffer is full (tail + 1 = head)
-static inline uint8_t _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
+static inline bool _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
 	return ((buffer->tail + 1) & _COMM_MAX) == buffer->head;
 }
 
 // Checks to see if the ring buffer is empty (head = tail)
-static inline uint8_t _isBufferEmpty(volatile RingBuffer_TypeDef* buffer) {
+static inline bool _isBufferEmpty(volatile RingBuffer_TypeDef* buffer) {
 	return buffer->head == buffer->tail;
 }
 
-static char _pullByte(volatile RingBuffer_TypeDef* buffer) {
 // Removes a byte from the head of the given buffer
+static char _pullByte(volatile RingBuffer_TypeDef* buffer) {
 	uint8_t head = buffer->head; char value;
 	value = buffer->buffer[head];
 	buffer->head = (head + 1) & _COMM_MAX;
@@ -51,6 +53,29 @@ static void _queueByte(volatile RingBuffer_TypeDef* buffer, char value) {
 	buffer->tail = (tail + 1) & _COMM_MAX;
 }
 
+// Data to be sent over USB IN endpoint (ring buffer)
+extern uint8_t usbCdcRxBuffer[APP_RX_DATA_SIZE];
+extern volatile uint32_t usbCdcRxBufferIn;
+extern volatile uint32_t usbCdcRxBufferOut;
+
+/**
+ * Queues a character onto the VCP buffer.
+ * This library is not a true high-performance system; sending lots of data to the USB port
+ * will cause excess bytes to be dropped if the bytes cannot be emptied from the USB ring buffer
+ * (128 bytes) as fast as they are put in. The USB output buffer is somewhat bigger, as defined
+ * in usb.h, but can still be filled at maximum baud rate before the TX hits.
+ *
+ * @param c the character to append
+ */
+static void usbVCPTx(uint8_t c) {
+	uint32_t ptr;
+	// Wait for space
+	while ((((ptr = usbCdcRxBufferIn) - usbCdcRxBufferOut) & _USB_MAX) == _USB_MAX) __WFI();
+	// Queue the byte
+	usbCdcRxBuffer[ptr] = c;
+	usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
+}
+
 /**
  * Determine the number of available characters on the specified port.
  *
@@ -59,7 +84,7 @@ static void _queueByte(volatile RingBuffer_TypeDef* buffer, char value) {
  */
 uint32_t serialBufferCount(uint32_t port) {
 	uint32_t head, tail;
-	if (port > SERIAL_PORT_SPARE) return 0;
+	if (port > SERIAL_PORT_USB) return 0;
 	// Disable interrupts to read
 	__disable_irq();
 	// Pull the head and tail pointers
@@ -147,7 +172,7 @@ void serialInit() {
  */
 uint8_t serialReadByte(uint32_t port) {
 	RingBuffer_TypeDef *buf;
-	if (port > SERIAL_PORT_SPARE) return 0U;
+	if (port > SERIAL_PORT_USB) return 0U;
 	buf = &serialBufferRX[port];
 	// Wait for data
 	while (_isBufferEmpty(buf)) __WFI();
@@ -177,6 +202,10 @@ void serialWriteByte(uint32_t port, uint8_t data) {
 		// Stuff Spare
 		usart = USART1;
 		break;
+	case SERIAL_PORT_USB:
+		// Stuff OS
+		usbVCPTx(data);
+		return;
 	default:
 		return;
 	}
@@ -186,6 +215,12 @@ void serialWriteByte(uint32_t port, uint8_t data) {
 	_queueByte(buf, (char)data);
 	// Enable transmit interrupts and start transmitting if not already doing so
 	usart->CR1 |= USART_CR1_TXEIE;
+}
+
+// Stub to redirect count requests to serialBufferCount
+int fcount(FILE *stream) {
+	// Pointer to integer without cast intentional
+	return (int)serialBufferCount((uint32_t)stream);
 }
 
 // Stub to redirect outputs from printf()
@@ -369,4 +404,57 @@ void __attribute__ ((interrupt("IRQ"))) SPI3_IRQHandler() {
 			// AVOID SIGN EXTENSION
 			SPI3->DR = (uint16_t)(uint8_t)_pullByte(&spiBuffer);
 	}
+}
+
+/**
+ * Receives up to size bytes into buffer. This function is direct and much, much faster than
+ * looping on fgetc(), therefore should be used when receiving lots of data over USB VCP.
+ *
+ * @param buffer the buffer to store collected bytes
+ * @param size the maximum number of bytes to store
+ * @return the number of bytes actually stored
+ */
+uint32_t usbVCPRead(uint8_t *buffer, uint32_t size) {
+	RingBuffer_TypeDef *rb = &serialBufferRX[SERIAL_PORT_USB];
+	uint32_t count = 0;
+	// This is basically a fast loop on buffer empty without the switch-case and indirection
+	while (count < size && !_isBufferEmpty(rb)) {
+		*buffer++ = (uint8_t)_pullByte(rb);
+		count++;
+	}
+	return count;
+}
+
+/**
+ * Writes up to size bytes of data from buffer. This function is direct and much, much faster
+ * than looping on fputc(), therefore should be used when sending lots of data over USB VCP.
+ *
+ * @param buffer the buffer to send
+ * @param size the number of bytes to send
+ * @return the number of bytes actually sent
+ */
+uint32_t usbVCPWrite(uint8_t *buffer, uint32_t size) {
+	uint32_t ptr = usbCdcRxBufferIn, count = 0;
+	// Check for space
+	while (count < size && ((ptr - usbCdcRxBufferOut) & _USB_MAX) != _USB_MAX) {
+		// Queue the byte
+		usbCdcRxBuffer[ptr] = *buffer++;
+		usbCdcRxBufferIn = ptr = (ptr + 1) & _USB_MAX;
+		count++;
+	}
+	return count;
+}
+
+/**
+ * Queue bytes until no more can be queued.
+ *
+ * @param buf the bytes to be queued
+ * @param len how many bytes to queue
+ * @return always true, since there is nothing better to do with the trashed bytes
+ */
+bool usbVCPRx(uint8_t* buf, uint32_t len) {
+	RingBuffer_TypeDef *rb = &serialBufferRX[SERIAL_PORT_USB];
+	while (len-- && !_isBufferFull(rb))
+		_queueByte(rb, (char)*buf++);
+	return true;
 }

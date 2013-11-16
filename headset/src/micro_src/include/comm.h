@@ -14,6 +14,7 @@
 #define SERIAL_PORT_GPS 0x00
 #define SERIAL_PORT_XBEE 0x01
 #define SERIAL_PORT_SPARE 0x02
+#define SERIAL_PORT_USB 0x03
 
 /**
  * Determine the number of available characters on the specified port.
