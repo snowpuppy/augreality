@@ -154,3 +154,68 @@ bool imu9Read(ivector *gyro, ivector *accel, ivector *mag) {
 	return ok;
 }
 
+// Function: fast_sqrt
+// Purpose: Calculate sqrt of a number.
+static float fast_sqrt( float number )
+{
+        long i;
+        float x2, y;
+        const float threehalfs = 1.5F;
+
+        x2 = number * 0.5F;
+        y  = number;
+        i  = * ( long * ) &y;                       // evil floating point bit level hacking
+        i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+        y  = * ( float * ) &i;
+        y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//      y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+        return 1/y;
+}
+
+// Function: a_pitch
+// Purpose: This function returns accelerometer pitch value?
+float a_pitch(ivector a)
+{
+	if ((a.iy == 0) && (a.iz == 0))
+    {
+		return PI/2;
+	}
+	return atan2(-a.ix, fast_sqrt(a.iy*a.iy + a.iz*a.iz));
+}
+
+// Function: m_pr_yaw
+// Purpose: Calculate yaw given IMU data.
+float m_pr_yaw(ivector m, float pitch, float roll)
+{
+	//const float CONV_FACTOR = 1/(855*10000); // (1/855) -> Gauss; (1/10000) -> Tesla
+	float yaw = 0;
+    
+    yaw = (m.iz*sin(roll) - m.iy*cos(roll))/(m.ix*cos(pitch) + m.iy*sin(pitch)*sin(roll) + m.iz*sin(pitch)*cos(roll));
+	if (yaw > 0)
+    {
+		while (yaw > PI)
+        {
+			yaw -= PI;
+		}
+	}
+    else
+    {
+		while (yaw < -PI)
+        {
+			yaw += PI;
+		}
+	}
+	return yaw;
+}
+
+// Function: a_roll
+// Purpose: Calculate roll information.
+float a_roll(ivector a)
+{
+	if (a.iz == 0)
+    {
+		return PI/2;
+	}
+	return atan2(a.iy, a.iz);
+}

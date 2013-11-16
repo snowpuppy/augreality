@@ -29,4 +29,17 @@ void imu9Init();
  */
 bool imu9Read(ivector *gyro, ivector *accel, ivector *mag);
 
+// Function: a_pitch
+// Purpose: This function returns accelerometer pitch value?
+float a_pitch(ivector a);
+// Function: m_pr_yaw
+// Purpose: Calculate yaw given IMU data.
+float m_pr_yaw(ivector m, float pitch, float roll);
+// Function: a_roll
+// Purpose: Calculate roll information.
+float a_roll(ivector a);
+// Function: a_roll
+// Purpose: Calculate roll information.
+float m_pr_yaw(ivector m, float pitch, float roll);
+
 #endif

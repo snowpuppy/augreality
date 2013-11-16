@@ -52,6 +52,7 @@ static void processXbeeData(uint8_t *state);
 void spiReceivedByte(uint8_t data);
 static int GPSReadLine(char *buffer, char start, int length);
 static void processGPSData(void);
+static void processIMUData(void);
 
 /**
  * USB initialization
@@ -80,6 +81,8 @@ static void init(void)
     // as the number of bytes to read.
     spiWriteByte(0);
     spiInit();
+    // Initialize the IMU
+    imu9Init();
     // Enable interrupts for all peripherals
     __enable_fault_irq();
     __enable_irq();
@@ -115,6 +118,7 @@ int main(void)
         // Process Wireless information.
         //processXbeeData(&state);
         processGPSData();
+        processIMUData();
 
         __WFI();
     }
@@ -253,14 +257,12 @@ static int GPSReadLine(char *buffer, char start, int length)
  */
 static void processGPSData(void)
 {
-    char gpsData[128];
-    float x = 0, y = 0;
-    float latf = 0, lonf = 0;
+    char gpsData[128]; float x = 0, y = 0; float latf = 0, lonf = 0;
 
     // Stuff the buffer early.
-    *((float *)&headsetData[8]) = 123.45;  // pitch
-    *((float *)&headsetData[12]) = 123.45; // roll
-    *((float *)&headsetData[16]) = 123.45; // yaw
+    //*((float *)&headsetData[8]) = 123.45;  // pitch
+    //*((float *)&headsetData[12]) = 123.45; // roll
+    //*((float *)&headsetData[16]) = 123.45; // yaw
 
     GPSReadLine(gpsData, '$', sizeof(gpsData));
     // Try to parse the GPS
@@ -289,15 +291,36 @@ static void processGPSData(void)
         // Stuff the buffer.
         *((float *)&headsetData[0]) = x; // x pos
         *((float *)&headsetData[4]) = y; // y pos
-        *((float *)&headsetData[8]) = 123.45;  // pitch
-        *((float *)&headsetData[12]) = 123.45; // roll
-        *((float *)&headsetData[16]) = 123.45; // yaw
+        //*((float *)&headsetData[8]) = 123.45;  // pitch
+        //*((float *)&headsetData[12]) = 123.45; // roll
+        //*((float *)&headsetData[16]) = 123.45; // yaw
         headsetData[20] = 23; // rssi
         headsetData[20] = 43; // FuelGauage
     }
     ledToggle();
 }
 
+// Function: processIMUData
+// Purpose: Stuffs current IMU values in buffer
+// so that they can be sent to the GPU and over
+// wireless to the CCU.
+static void processIMUData(void)
+{
+    ivector g, a, m;
+    imu9Read(&g, &a, &m);
+    //printf("Pitch:%f\tYaw:%f\tRoll:%f\r\n", a_pitch(a)*180./PI, m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI, a_roll(a)*180./PI);
+    *((float *)&headsetData[8]) = a_pitch(a)*180./PI;  // pitch
+    *((float *)&headsetData[12]) = a_roll(a)*180./PI; // roll
+    *((float *)&headsetData[16]) = m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI; // yaw
+    return;
+}
+
+// Function: spiReceivedByte
+// Purpose: This function is called
+// whenever a byte is received over spi.
+// It is currently used to discover what
+// kind of data is being requested by the gpu. The
+// gpu can request xbee data or imu/gps/rssi/fuel data.
 void spiReceivedByte(uint8_t data)
 {
     if (data == 1)
@@ -310,31 +333,11 @@ void spiReceivedByte(uint8_t data)
     // reset origin.
     if (data == 2)
     {
-        originLat = 0;
-        originLon = 0;
-        //fputc(data,xbee);
+      originLat = 0;
+      originLon = 0;
+      //fputc(data,xbee);
     }
-    /*
-    uint8_t bytesAvailable = 0;
-    uint8_t numBytesRdy = 0;
-    uint32_t i = 0;
-
-    // check to see if bytes are available to read.
-    lock(spiMutex);
-    bytesAvailable = spiDataReady;
-    numBytesRdy = spiNumBytesRdy;
-    unlock(spiMutex);
-    spiWriteByte(numBytesRdy);
-    if (numBytesRdy > 0)
-    {
-        lock(spiMutex);
-        for (i = 0; i < numBytesRdy; i++)
-        {
-            spiWriteByte(i);
-        }
-        unlock(spiMutex);
-    }
-    */
+    //fputc('a',xbee);
 }
 
 // Function: serializeBroadcast
