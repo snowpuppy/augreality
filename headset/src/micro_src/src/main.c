@@ -29,6 +29,9 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
+// IMU constants
+#define HIST_SIZE 5
+
 // Spi shared data.
 // Data ready indicator.
 // Buffer, length of data,
@@ -309,7 +312,6 @@ static void processIMUData(void)
         float p = 0;
         float y = 0;
         float r = 0;
-        const int HIST_SIZE = 5;
         const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
        	int hist_idx = 0;
 		float filter_coeffs[HIST_SIZE] = {.10, .15, .20, .25, .30};
@@ -323,7 +325,7 @@ static void processIMUData(void)
 		}
 		// accumulate pyr samples
 		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
-			imu9Raw(&g, &a, &m);
+			imu9Read(&g, &a, &m);
 			p_hist[hist_idx] = a_pitch(a);
 			r_hist[hist_idx] = a_roll(a);
 			y_hist[hist_idx] = m_pr_yaw(m, p_hist[hist_idx], r_hist[hist_idx]);
