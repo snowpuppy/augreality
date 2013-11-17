@@ -470,9 +470,6 @@ g_pfnVectors:
                            
    .weak      CAN2_SCE_IRQHandler                  
    .thumb_set CAN2_SCE_IRQHandler,Default_Handler
-                           
-   .weak      OTG_FS_IRQHandler      
-   .thumb_set OTG_FS_IRQHandler,Default_Handler
                      
    .weak      DMA2_Stream5_IRQHandler               
    .thumb_set DMA2_Stream5_IRQHandler,Default_Handler
