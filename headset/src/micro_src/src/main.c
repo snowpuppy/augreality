@@ -299,17 +299,49 @@ static void processGPSData(void)
 static void processIMUData(void)
 {
     ivector g, a, m;
+    const int UPDATE_PERIOD_MS = 16;
     static unsigned long imuTimer = 0;
     unsigned long currentTime = 0;
     currentTime = millis();
-    if (currentTime > imuTimer + 16)
+    if (currentTime > imuTimer + UPDATE_PERIOD_MS)
     {
         imuTimer = currentTime;
-        imu9Read(&g, &a, &m);
-        //printf("Pitch:%f\tYaw:%f\tRoll:%f\r\n", a_pitch(a)*180./PI, m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI, a_roll(a)*180./PI);
-        *((float *)&headsetData[8]) = a_pitch(a)*180./PI;  // pitch
-        *((float *)&headsetData[12]) = a_roll(a)*180./PI; // roll
-        *((float *)&headsetData[16]) = m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI; // yaw
+        float p = 0;
+        float y = 0;
+        float r = 0;
+        const int HIST_SIZE = 5;
+        const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
+       	int hist_idx = 0;
+		float filter_coeffs[HIST_SIZE] = {.10, .15, .20, .25, .30};
+		float p_hist[HIST_SIZE];
+		float y_hist[HIST_SIZE];
+		float r_hist[HIST_SIZE];
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			p_hist[hist_idx] = 0;
+			y_hist[hist_idx] = 0;
+			r_hist[hist_idx] = 0;
+		}
+		// accumulate pyr samples
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			imu9Raw(&g, &a, &m);
+			p_hist[hist_idx] = a_pitch(a);
+			r_hist[hist_idx] = a_roll(a);
+			y_hist[hist_idx] = m_pr_yaw(m, p_hist[hist_idx], r_hist[hist_idx]);
+			msleep(WAIT_MS);
+		}
+		// filter pyr values
+		p = 0;
+		y = 0;
+		r = 0;
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			p += p_hist[hist_idx] * filter_coeffs[hist_idx];
+			y += y_hist[hist_idx] * filter_coeffs[hist_idx];
+			r += r_hist[hist_idx] * filter_coeffs[hist_idx];
+		}
+		// convert to degrees
+        *((float *)&headsetData[8]) = p*180./PI;  // pitch
+        *((float *)&headsetData[12]) = r*180./PI; // roll
+        *((float *)&headsetData[16]) = y*180./PI; // yaw
         headsetData[20] = (char)gpioGetRSSI(); // rssi
     }
     return;
