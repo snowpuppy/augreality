@@ -30,6 +30,8 @@
 #include <ngl/Obj.h>
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
+#include <string>
+#include <sstream>
 
 extern pthread_mutex_t mut;
 
@@ -39,6 +41,8 @@ typedef struct player_t {
 	float pitch;
 	float yaw;
 	float roll;
+	uint8_t rssi;
+	uint8_t battery;
 } Player;
 
 /// @brief this class create our window by inheriting the features of the EGL Window
@@ -46,6 +50,7 @@ class MyGLWindow : public ngl::EGLWindow
 {
 	public :
 		static float floatbuffer[5];
+		static uint8_t charbuffer[2];
 		static float *buffer();
 		
 		/// @brief ctor
@@ -63,7 +68,7 @@ class MyGLWindow : public ngl::EGLWindow
 		/// @brief one time OpenGL initialisation
 		virtual void initializeGL();
 	private :
-	
+	ngl::Text *text;
 	void readSensorPacket(unsigned char *buf);
 	Player readSpiData();
 	void loadMatricesToShader(

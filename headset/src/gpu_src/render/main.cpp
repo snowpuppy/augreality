@@ -35,12 +35,13 @@ bcm_host_deinit();
 void readSensorPacket(unsigned char *buf) {
 	pthread_mutex_lock(&mut);
 	memcpy(MyGLWindow::buffer(), buf, SENSOR_SIZE-2);
+	memcpy(MyGLWindow::charbuffer, buf, 2);
 	pthread_mutex_unlock(&mut);
 }
 
 void *spiThread(void *arg) {
 	// Buffer for all data
-	unsigned char buf[20] = {0};
+	unsigned char buf[SENSOR_SIZE] = {0};
 
 	while(1) {
 		//lock mutex

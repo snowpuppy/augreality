@@ -27,6 +27,8 @@
 #include <iostream>
 
 float MyGLWindow::floatbuffer[5] = { 0.0f };
+uint8_t MyGLWindow::charbuffer[2] = { 0 };
+
 
 MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
 {
@@ -120,6 +122,12 @@ void MyGLWindow::initializeGL()
 	// now we need to create this as a VAO so we can draw it
 	m_mesh->createVAO();
 	t_mesh->createVAO();
+	
+	//setup text using roboto font 
+	text = new Text("fonts/Roboto-Regular.ttf", 20);
+	//set color to white
+	text->setColour(1.0, 1.0, 1.0);
+	text->setScreenSize(m_width, m_height);
 }
 
 
@@ -134,12 +142,19 @@ void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx)
 
 Player MyGLWindow::readSpiData() {
 	Player result;
+	//lock mutex
 	pthread_mutex_lock(&mut);
+	
+	//read buffer
 	result.gps_x = buffer()[0];
 	result.gps_y = buffer()[1];
-	result.pitch = buffer()[2];
-	result.yaw = buffer()[3];
-	result.roll = buffer()[4];
+	result.roll = buffer()[2];
+	result.pitch = -buffer()[3];
+	result.yaw = -buffer()[4];
+	result.rssi = charbuffer[0];
+	result.battery = charbuffer[1];
+	
+	//unlock mutex
 	pthread_mutex_unlock(&mut);
 
 	return result;
@@ -156,7 +171,7 @@ void MyGLWindow::paintGL()
 	ngl::Vec4 To(p.gps_x+1,p.gps_y,0);
 	ngl::Vec4 Up(0,0,1);
 	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
-	m_cam->setShape(45,(float)1920.0/1080.0,0.05,350,ngl::PERSPECTIVE);
+	m_cam->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
 	m_cam->pitch(-p.yaw);
 	m_cam->roll(p.pitch);
 	m_cam->yaw(-p.roll);
@@ -189,13 +204,46 @@ void MyGLWindow::paintGL()
 	t_mesh->draw();
 	m_transformStack.popTransform();
 	
+	/*
+	ngl::Transformation trans;
+	ngl::Mat4 final;
+	ngl::Mat4 translate;
+	ngl::Mat4 rotX;
+	ngl::Mat4 rotY;
+	ngl::Mat4 rotZ;
+	for(int i=0; i<256; i++) {
+		object = objects[i];
+		//check if this object should be drawn
+		if(object.isVisible()) {
+				//move and rotate object appropriately
+				translate.translate(object.getX(), object.getY(), 0.0f);
+				rotX.rotateX(object.getRoll());
+				rotY.rotateY(object.getPitch());
+				rotZ.rotateZ(object.getYaw());
+				final = translate*rotX*rotY*rotZ;
+				trans.setMatrix(final);
+				m_transformStack.setGlobal(trans);
+				m_transformStack.pushTransform();
+				loadMatricesToShader(m_transformStack);
+	
+				//draw the object
+				object.getMesh()->draw();
+				m_transformStack.popTransform();
+		}
+	}
+	*/
+	
+	//draw text
+	std::ostringstream oss;
+	oss << "Battery: " << p.battery << "% RSSI: " << p.rssi;
+	const std::string status = oss.str();
+	text->renderText(50, 50, status);
+	
+	//wait for next frame
 	glFlush();
 	glFinish();
 	swapBuffers();
 }
-
-
-
 
 void MyGLWindow::processEvents()
 {
