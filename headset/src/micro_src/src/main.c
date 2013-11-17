@@ -108,7 +108,7 @@ int main(void)
         //processXbeeData(&state);
         processGPSData();
         processIMUData();
-        processFuelGuage();
+        //processFuelGuage();
 
         __WFI();
     }
