@@ -6,7 +6,7 @@
 # Makefile for STM32F4 series via STM32F4 Discovery board
 DEVICE=STM32F4
 # Libraries to include in the link (use -L and -l) e.g. -lm, -lmyLib
-LIBRARIES=-lm -L$(ROOT) -lSTMCore -lSTMMath -lSTMUSB
+LIBRARIES=-lm -L$(ROOT) -lSTMUSB -lSTMCore -lSTMMath
 # Prefix for ARM tools (must be on the path)
 MCUPREFIX=arm-none-eabi-
 # Flags for the assembler
@@ -14,7 +14,7 @@ MCUAFLAGS=
 # Use Cortex-M4 with FPU and Thumb instruction set
 MCUCFLAGS=-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
 # Flags for the linker
-MCULFLAGS=-nostartfiles -Wl,-T -Xlinker stm32_flash.ld -static -Wl,-u,Reset_Handler -Wl,--defsym=malloc_getpagesize_P=0x1000
+MCULFLAGS=-nostartfiles -Wl,-T -Xlinker stm32_flash.ld -static -Wl,-u,Reset_Handler
 # Prepares for compiling
 MCUPREPARE=$(OBJCOPY) $(OUT) -O binary $(BINDIR)/output.bin
 # Advanced sizing flags

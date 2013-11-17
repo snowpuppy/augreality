@@ -12,6 +12,13 @@ void msleep(unsigned long howLong) {
 	while (sysTime < then) __WFI();
 }
 
+// Function: millis
+// Purpose: return time in milliseconds.
+unsigned long millis(void)
+{
+    return sysTime;
+}
+
 // NMI exception handler
 void NMI_Handler(void) {
 }

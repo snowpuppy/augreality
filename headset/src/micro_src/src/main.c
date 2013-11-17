@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "usb.h"
 #include "core_cmInstr.h"
-#include "packets.h"
+#include "../../../ccu/src/library/packets.h"
 #include "nmea.h"
 
 // States of the headset.
@@ -53,6 +53,7 @@ void spiReceivedByte(uint8_t data);
 static int GPSReadLine(char *buffer, char start, int length);
 static void processGPSData(void);
 static void processIMUData(void);
+static void processFuelGuage(void);
 
 /**
  * System initialization
@@ -66,7 +67,7 @@ static void init(void)
     // Set up the peripherals
     i2cInit();
     serialInit();
-    usbVCPInit();
+    //usbVCPInit();
     // write first byte of spi as zero.
     // then initialize it. This is done
     // because the gpu will interpret this
@@ -96,15 +97,18 @@ int main(void)
     while (1)
     {
         // Loop bytes back (for debug)
+        /*
 		uint32_t count = usbVCPRead(data, sizeof(data) / sizeof(uint8_t));
 		if (count > 0)
 			// Send the buffer back to the PC
 			usbVCPWrite(data, count);
+            */
 
         // Process Wireless information.
         //processXbeeData(&state);
         processGPSData();
         processIMUData();
+        processFuelGuage();
 
         __WFI();
     }
@@ -280,8 +284,8 @@ static void processGPSData(void)
         //*((float *)&headsetData[8]) = 123.45;  // pitch
         //*((float *)&headsetData[12]) = 123.45; // roll
         //*((float *)&headsetData[16]) = 123.45; // yaw
-        headsetData[20] = 23; // rssi
-        headsetData[20] = 43; // FuelGauage
+        //headsetData[20] = 23; // rssi
+        //headsetData[21] = 43; // FuelGauage
     }
     ledToggle();
 }
@@ -289,16 +293,58 @@ static void processGPSData(void)
 // Function: processIMUData
 // Purpose: Stuffs current IMU values in buffer
 // so that they can be sent to the GPU and over
-// wireless to the CCU.
+// wireless to the CCU. This occurs every 16
+// milliseconds.
+// Rssi is also set to be sent through spi.
 static void processIMUData(void)
 {
     ivector g, a, m;
-    imu9Read(&g, &a, &m);
-    //printf("Pitch:%f\tYaw:%f\tRoll:%f\r\n", a_pitch(a)*180./PI, m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI, a_roll(a)*180./PI);
-    *((float *)&headsetData[8]) = a_pitch(a)*180./PI;  // pitch
-    *((float *)&headsetData[12]) = a_roll(a)*180./PI; // roll
-    *((float *)&headsetData[16]) = m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI; // yaw
+    static unsigned long imuTimer = 0;
+    unsigned long currentTime = 0;
+    currentTime = millis();
+    if (currentTime > imuTimer + 16)
+    {
+        imuTimer = currentTime;
+        imu9Read(&g, &a, &m);
+        //printf("Pitch:%f\tYaw:%f\tRoll:%f\r\n", a_pitch(a)*180./PI, m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI, a_roll(a)*180./PI);
+        *((float *)&headsetData[8]) = a_pitch(a)*180./PI;  // pitch
+        *((float *)&headsetData[12]) = a_roll(a)*180./PI; // roll
+        *((float *)&headsetData[16]) = m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI; // yaw
+        headsetData[20] = (char)gpioGetRSSI(); // rssi
+    }
     return;
+}
+
+// Function: processFuelGuage
+// This function waits 1 second then sends for the
+// battery percentage from the fuel guage over I2C.
+// This value is put into the buffer that the 
+// spiReceivedByte() function sends over spi.
+static void processFuelGuage(void)
+{
+    uint8_t data[4];
+    unsigned int soc, v;
+    static unsigned long fuelTimer = 0;
+    unsigned long currentTime = 0;
+    currentTime = millis();
+    // Check timer value for every second, then
+    // request data for battery charge.
+    if (currentTime > fuelTimer + 1000)
+    {
+        fuelTimer = currentTime;
+        // Address of MAX17043 is 0x36, SOC registers and Voltage registers start at 0x02
+        if (i2cReadRegister(0x36, 0x02, data, 4))
+        {
+            v = ((unsigned int)data[0] << 4) | ((unsigned int)data[1] >> 4);
+            // 2.5 mV/LSB
+            v = (v * 5) >> 2;
+            soc = (unsigned int)data[2];
+            // Report SOC
+            //printf("Volt:%dmV SOC:%d%%\r\n", (int)v, (int)soc);
+            // Queue the fuel guage for sending over spi.
+            headsetData[21] = (char)soc; // FuelGauage
+        }
+    }
 }
 
 // Function: spiReceivedByte

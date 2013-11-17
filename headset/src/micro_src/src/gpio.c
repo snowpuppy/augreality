@@ -20,7 +20,7 @@ static struct {
  * Gets the detected PWM input on the RSSI pin, corresponding to the received signal strength
  * indicator for the XBee wireless unit.
  *
- * @return the measured PWM edge width in microseconds from 1 to 200, or 0 if no valid edges
+ * @return the measured PWM edge width in microseconds from 1 to 75, or 0 if no valid edges
  * are captured
  */
 uint32_t gpioGetRSSI() {
