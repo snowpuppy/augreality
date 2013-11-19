@@ -70,18 +70,18 @@ static void init(void)
     // Set up the peripherals
     i2cInit();
     serialInit();
-    //usbVCPInit();
+    usbVCPInit();
     // write first byte of spi as zero.
     // then initialize it. This is done
     // because the gpu will interpret this
     // as the number of bytes to read.
     spiWriteByte(0);
     spiInit();
-    // Initialize the IMU
-    imu9Init();
     // Enable interrupts for all peripherals
     __enable_fault_irq();
     __enable_irq();
+    // Initialize the IMU
+    imu9Init();
 }
 
 // Function: main
@@ -94,7 +94,6 @@ int main(void)
     uint8_t state = BROADCASTSTATE;
     // Sys init
     init();
-    ledOff();
 
     // main loop.
     while (1)
@@ -109,6 +108,7 @@ int main(void)
 
         // Process Wireless information.
         //processXbeeData(&state);
+	ledToggle();
         processGPSData();
         processIMUData();
         processFuelGuage();
@@ -252,45 +252,37 @@ static void processGPSData(void)
 {
     char gpsData[128]; float x = 0, y = 0; float latf = 0, lonf = 0;
 
-    // Stuff the buffer early.
-    //*((float *)&headsetData[8]) = 123.45;  // pitch
-    //*((float *)&headsetData[12]) = 123.45; // roll
-    //*((float *)&headsetData[16]) = 123.45; // yaw
-
-    GPSReadLine(gpsData, '$', sizeof(gpsData));
-    // Try to parse the GPS
-    if (gpsParse(gpsData))
+    if (fcount(gps) > 0)
     {
-        int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-        // Got it, print it out
-        //printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
-        //	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
-        // Stuff data into buffer for spi.
-
-        // Find origin as first lat/lon coordinate.
-        latf = (float)lat / (float)1000000;
-        lonf = (float)lon / (float)1000000;
-        if (originLat == 0 && originLon == 0)
+        GPSReadLine(gpsData, '$', sizeof(gpsData));
+        // Try to parse the GPS
+        if (gpsParse(gpsData))
         {
-            originLat = latf;
-            originLon = lonf;
+            int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+            // Got it, print it out
+            //printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
+            //	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
+            // Stuff data into buffer for spi.
+
+            // Find origin as first lat/lon coordinate.
+            latf = (float)lat / (float)1000000;
+            lonf = (float)lon / (float)1000000;
+            if (originLat == 0 && originLon == 0)
+            {
+                originLat = latf;
+                originLon = lonf;
+            }
+            // Find difference bet. locations.
+            latf = latf - originLat;
+            lonf = lonf - originLon;
+            // Find offset in meters.
+            x = latf*DECIMALSPERDEGLAT;
+            y = lonf*DECIMALSPERDEGLON;
+            // Stuff the buffer.
+            *((float *)&headsetData[0]) = x; // x pos
+            *((float *)&headsetData[4]) = y; // y pos
         }
-        // Find difference bet. locations.
-        latf = latf - originLat;
-        lonf = lonf - originLon;
-        // Find offset in meters.
-        x = latf*DECIMALSPERDEGLAT;
-        y = lonf*DECIMALSPERDEGLON;
-        // Stuff the buffer.
-        *((float *)&headsetData[0]) = x; // x pos
-        *((float *)&headsetData[4]) = y; // y pos
-        //*((float *)&headsetData[8]) = 123.45;  // pitch
-        //*((float *)&headsetData[12]) = 123.45; // roll
-        //*((float *)&headsetData[16]) = 123.45; // yaw
-        //headsetData[20] = 23; // rssi
-        //headsetData[21] = 43; // FuelGauage
     }
-    ledToggle();
 }
 
 // Function: processIMUData
@@ -373,8 +365,6 @@ static void processFuelGuage(void)
             // 2.5 mV/LSB
             v = (v * 5) >> 2;
             soc = (unsigned int)data[2];
-            // Report SOC
-            //printf("Volt:%dmV SOC:%d%%\r\n", (int)v, (int)soc);
             // Queue the fuel guage for sending over spi.
             headsetData[21] = (char)soc; // FuelGauage
         }
@@ -394,7 +384,7 @@ void spiReceivedByte(uint8_t data)
       spiWriteByte(HEADSETDATABYTES);
       spiWriteBytes(headsetData, HEADSETDATABYTES);
       spiWriteByte(0);
-      //fputc(data, xbee);
+      //fputc(data,xbee);
     }
     // reset origin.
     if (data == 2)
@@ -411,6 +401,7 @@ void spiReceivedByte(uint8_t data)
 // for sending over xbee wireless.
 static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 {
+    /*
 	buffer[0] = packet->header[0];
 	buffer[1] = packet->header[1];
 	buffer[2] = packet->header[2];
@@ -427,6 +418,7 @@ static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 	buffer[13] = ((uint8_t *)&packet->longitude)[3];
 	buffer[14] = ((uint8_t *)&packet->crc)[0];
 	buffer[15] = ((uint8_t *)&packet->crc)[1];
+    */
 }
 
 // Function: sendBroadcast
@@ -436,6 +428,7 @@ static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 {
+    /*
 	uint8_t buffer[256];
 	broadCastPacket_t packet;
 	uint32_t i = 0;
@@ -454,5 +447,6 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 	{
 		fputc(buffer[i], xbee);
 	}
+    */
 	return;
 }
