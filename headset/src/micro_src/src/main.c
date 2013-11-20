@@ -43,6 +43,13 @@ static uint8_t spiNumBytesRdy = 0;
 static uint8_t spiMutex = 0;
 */
 
+// GPS state machine for stream reading
+static struct {
+	char line[128];
+	uint16_t len;
+	uint16_t state;
+} gpsState;
+
 // Global Variables
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
@@ -53,7 +60,7 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
 static void processXbeeData(uint8_t *state);
 void spiReceivedByte(uint8_t data);
-static int GPSReadLine(char *buffer, char start, int length);
+static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
@@ -86,36 +93,23 @@ static void init(void)
 
 // Function: main
 // Starting point for all other functions.
-int main(void)
-{
-    // debug buffer.
-    uint8_t data[64];
-    // System variables.
-    uint8_t state = BROADCASTSTATE;
-    // Sys init
-    init();
+int main(void) {
+	// Sys init
+	init();
+	msleep(2000L);
+	// main loop.
+	while (1)
+	{
+		// Process Wireless information.
+		//processXbeeData(&state);
+		ledToggle();
+		processGPSData();
+		processIMUData();
+		processFuelGuage();
 
-    // main loop.
-    while (1)
-    {
-        // Loop bytes back (for debug)
-        /*
-		uint32_t count = usbVCPRead(data, sizeof(data) / sizeof(uint8_t));
-		if (count > 0)
-			// Send the buffer back to the PC
-			usbVCPWrite(data, count);
-            */
-
-        // Process Wireless information.
-        //processXbeeData(&state);
-	ledToggle();
-        processGPSData();
-        processIMUData();
-        processFuelGuage();
-
-        __WFI();
-    }
-    return 0;
+		__WFI();
+	}
+	return 0;
 }
 
 // Function: lock()
@@ -229,60 +223,63 @@ static void processXbeeData(uint8_t *state)
 }
 
 // Reads a line from the GPS
-static int GPSReadLine(char *buffer, char start, int length)
-{
-    char c; int i;
-    length--;
-    // Wait for start character
-    do
-    {
-        c = fgetc(gps);
-    } while (c != start);
-    // Pull up to length characters or until we hit new line
-    for (i = 0; i < length && ((c = fgetc(gps)) != '\r' && c != '\n'); i++)
-        *buffer++ = c;
-    *buffer = 0;
-    return i;
+static uint32_t gpsReadLine(char start, uint16_t length) {
+	char c;
+	while (fcount(gps) > 0) {
+		c = fgetc(gps);
+		if (gpsState.state == 0) {
+			// Wait for start
+			if (c == start) {
+				gpsState.state = 1;
+				gpsState.len = 0;
+			}
+		} else {
+			// Increment length
+			uint16_t len = gpsState.len;
+			if (len >= (length - 1) || c == '\r' || c == '\n') {
+				// END OF LINE!
+				gpsState.line[len] = 0;
+				gpsState.state = 0;
+				return 1;
+			} else
+				gpsState.line[len] = c;
+			gpsState.len = len + 1;
+		}
+	}
+	return 0;
 }
 
 /**
  * GPS test function, reports new fixes to the serial port as they occur
  */
-static void processGPSData(void)
-{
-    char gpsData[128]; float x = 0, y = 0; float latf = 0, lonf = 0;
+static void processGPSData(void) {
+	float x = 0, y = 0; float latf = 0, lonf = 0;
 
-    if (fcount(gps) > 0)
-    {
-        GPSReadLine(gpsData, '$', sizeof(gpsData));
-        // Try to parse the GPS
-        if (gpsParse(gpsData))
-        {
-            int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-            // Got it, print it out
-            //printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
-            //	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
-            // Stuff data into buffer for spi.
+	// Try to parse the GPS
+	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
+		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+		// Got it, print it out
+		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
+		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
+		// Stuff data into buffer for spi.
 
-            // Find origin as first lat/lon coordinate.
-            latf = (float)lat / (float)1000000;
-            lonf = (float)lon / (float)1000000;
-            if (originLat == 0 && originLon == 0)
-            {
-                originLat = latf;
-                originLon = lonf;
-            }
-            // Find difference bet. locations.
-            latf = latf - originLat;
-            lonf = lonf - originLon;
-            // Find offset in meters.
-            x = latf*DECIMALSPERDEGLAT;
-            y = lonf*DECIMALSPERDEGLON;
-            // Stuff the buffer.
-            *((float *)&headsetData[0]) = x; // x pos
-            *((float *)&headsetData[4]) = y; // y pos
-        }
-    }
+		// Find origin as first lat/lon coordinate.
+		latf = (float)lat / (float)1000000;
+		lonf = (float)lon / (float)1000000;
+		if (originLat == 0 && originLon == 0) {
+			originLat = latf;
+			originLon = lonf;
+		}
+		// Find difference bet. locations.
+		latf = latf - originLat;
+		lonf = lonf - originLon;
+		// Find offset in meters.
+		x = latf*DECIMALSPERDEGLAT;
+		y = lonf*DECIMALSPERDEGLON;
+		// Stuff the buffer.
+		*((float *)&headsetData[0]) = x; // x pos
+		*((float *)&headsetData[4]) = y; // y pos
+	}
 }
 
 // Function: processIMUData
