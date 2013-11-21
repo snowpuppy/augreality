@@ -191,7 +191,7 @@ float m_pr_yaw(ivector m, float pitch, float roll)
 	//const float CONV_FACTOR = 1/(855*10000); // (1/855) -> Gauss; (1/10000) -> Tesla
 	float yaw = 0;
     
-    yaw = (m.iz*sin(roll) - m.iy*cos(roll))/(m.ix*cos(pitch) + m.iy*sin(pitch)*sin(roll) + m.iz*sin(pitch)*cos(roll));
+    yaw = atan2((m.iz*sin(roll) - m.iy*cos(roll)), (m.ix*cos(pitch) + m.iy*sin(pitch)*sin(roll) + m.iz*sin(pitch)*cos(roll)));
 	if (yaw > 0)
     {
 		while (yaw > PI)

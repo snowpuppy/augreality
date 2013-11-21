@@ -40,7 +40,7 @@ static inline bool _isBufferEmpty(volatile RingBuffer_TypeDef* buffer) {
 
 // Removes a byte from the head of the given buffer
 static char _pullByte(volatile RingBuffer_TypeDef* buffer) {
-	uint8_t head = buffer->head; char value;
+	uint16_t head = buffer->head; char value;
 	value = buffer->buffer[head];
 	buffer->head = (head + 1) & _COMM_MAX;
 	return value;
@@ -48,7 +48,7 @@ static char _pullByte(volatile RingBuffer_TypeDef* buffer) {
 
 // Queues a byte onto the tail of the given buffer
 static void _queueByte(volatile RingBuffer_TypeDef* buffer, char value) {
-	uint8_t tail = buffer->tail;
+	uint16_t tail = buffer->tail;
 	buffer->buffer[tail] = value;
 	buffer->tail = (tail + 1) & _COMM_MAX;
 }
@@ -261,15 +261,17 @@ void spiInit() {
 	// Configure SPI pins appropriately
 	gpio.GPIO_OType = GPIO_OType_PP;
 	gpio.GPIO_Mode = GPIO_Mode_AF;
-	gpio.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13;
+	gpio.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12;
 	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	gpio.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOC, &gpio);
+	gpio.GPIO_Pin = GPIO_Pin_13;
+	GPIO_Init(GPIOA, &gpio);
 	// Allow SPI3 to take over the pins
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource10, GPIO_AF_SPI3);
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource11, GPIO_AF_SPI3);
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_SPI3);
-	GPIO_PinAFConfig(GPIOC, GPIO_PinSource13, GPIO_AF_SPI3);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource13, GPIO_AF_SPI3);
 	// Does not matter, this is slave mode
 	spi.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
 	// CPHA 0 CPOL 0 (Mode 0)
@@ -285,7 +287,7 @@ void spiInit() {
 	spi.SPI_NSS = SPI_NSS_Hard;
 	SPI_Init(SPI3, &spi);
 	// SPI interrupt config
-	SPI3->CR2 |= SPI_CR2_TXEIE | SPI_CR2_RXNEIE;
+	SPI3->CR2 |= SPI_CR2_RXNEIE;
 	SPI_Cmd(SPI3, ENABLE);
 	// Turn on SPI interrupts
 	NVIC_SetPriority(SPI3_IRQn, 2);

@@ -29,6 +29,9 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
+// IMU constants
+#define HIST_SIZE 5
+
 // Spi shared data.
 // Data ready indicator.
 // Buffer, length of data,
@@ -40,6 +43,13 @@ static uint8_t spiNumBytesRdy = 0;
 static uint8_t spiMutex = 0;
 */
 
+// GPS state machine for stream reading
+static struct {
+	char line[128];
+	uint16_t len;
+	uint16_t state;
+} gpsState;
+
 // Global Variables
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
@@ -50,7 +60,7 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
 static void processXbeeData(uint8_t *state);
 void spiReceivedByte(uint8_t data);
-static int GPSReadLine(char *buffer, char start, int length);
+static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
@@ -67,52 +77,39 @@ static void init(void)
     // Set up the peripherals
     i2cInit();
     serialInit();
-    //usbVCPInit();
+    usbVCPInit();
     // write first byte of spi as zero.
     // then initialize it. This is done
     // because the gpu will interpret this
     // as the number of bytes to read.
     spiWriteByte(0);
     spiInit();
-    // Initialize the IMU
-    imu9Init();
     // Enable interrupts for all peripherals
     __enable_fault_irq();
     __enable_irq();
+    // Initialize the IMU
+    imu9Init();
 }
 
 // Function: main
 // Starting point for all other functions.
-int main(void)
-{
-    // debug buffer.
-    uint8_t data[64];
-    // System variables.
-    uint8_t state = BROADCASTSTATE;
-    // Sys init
-    init();
-    ledOff();
+int main(void) {
+	// Sys init
+	init();
+	msleep(2000L);
+	// main loop.
+	while (1)
+	{
+		// Process Wireless information.
+		//processXbeeData(&state);
+		ledToggle();
+		processGPSData();
+		processIMUData();
+		processFuelGuage();
 
-    // main loop.
-    while (1)
-    {
-        // Loop bytes back (for debug)
-        /*
-		uint32_t count = usbVCPRead(data, sizeof(data) / sizeof(uint8_t));
-		if (count > 0)
-			// Send the buffer back to the PC
-			usbVCPWrite(data, count);
-            */
-
-        // Process Wireless information.
-        //processXbeeData(&state);
-        processGPSData();
-        processIMUData();
-        processFuelGuage();
-
-        __WFI();
-    }
-    return 0;
+		__WFI();
+	}
+	return 0;
 }
 
 // Function: lock()
@@ -226,68 +223,63 @@ static void processXbeeData(uint8_t *state)
 }
 
 // Reads a line from the GPS
-static int GPSReadLine(char *buffer, char start, int length)
-{
-    char c; int i;
-    length--;
-    // Wait for start character
-    do
-    {
-        c = fgetc(gps);
-    } while (c != start);
-    // Pull up to length characters or until we hit new line
-    for (i = 0; i < length && ((c = fgetc(gps)) != '\r' && c != '\n'); i++)
-        *buffer++ = c;
-    *buffer = 0;
-    return i;
+static uint32_t gpsReadLine(char start, uint16_t length) {
+	char c;
+	while (fcount(gps) > 0) {
+		c = fgetc(gps);
+		if (gpsState.state == 0) {
+			// Wait for start
+			if (c == start) {
+				gpsState.state = 1;
+				gpsState.len = 0;
+			}
+		} else {
+			// Increment length
+			uint16_t len = gpsState.len;
+			if (len >= (length - 1) || c == '\r' || c == '\n') {
+				// END OF LINE!
+				gpsState.line[len] = 0;
+				gpsState.state = 0;
+				return 1;
+			} else
+				gpsState.line[len] = c;
+			gpsState.len = len + 1;
+		}
+	}
+	return 0;
 }
 
 /**
  * GPS test function, reports new fixes to the serial port as they occur
  */
-static void processGPSData(void)
-{
-    char gpsData[128]; float x = 0, y = 0; float latf = 0, lonf = 0;
+static void processGPSData(void) {
+	float x = 0, y = 0; float latf = 0, lonf = 0;
 
-    // Stuff the buffer early.
-    //*((float *)&headsetData[8]) = 123.45;  // pitch
-    //*((float *)&headsetData[12]) = 123.45; // roll
-    //*((float *)&headsetData[16]) = 123.45; // yaw
+	// Try to parse the GPS
+	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
+		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+		// Got it, print it out
+		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
+		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
+		// Stuff data into buffer for spi.
 
-    GPSReadLine(gpsData, '$', sizeof(gpsData));
-    // Try to parse the GPS
-    if (gpsParse(gpsData))
-    {
-        int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-        // Got it, print it out
-        //printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
-        //	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
-        // Stuff data into buffer for spi.
-
-        // Find origin as first lat/lon coordinate.
-        latf = (float)lat / (float)1000000;
-        lonf = (float)lon / (float)1000000;
-        if (originLat == 0 && originLon == 0)
-        {
-            originLat = latf;
-            originLon = lonf;
-        }
-        // Find difference bet. locations.
-        latf = latf - originLat;
-        lonf = lonf - originLon;
-        // Find offset in meters.
-        x = latf*DECIMALSPERDEGLAT;
-        y = lonf*DECIMALSPERDEGLON;
-        // Stuff the buffer.
-        *((float *)&headsetData[0]) = x; // x pos
-        *((float *)&headsetData[4]) = y; // y pos
-        //*((float *)&headsetData[8]) = 123.45;  // pitch
-        //*((float *)&headsetData[12]) = 123.45; // roll
-        //*((float *)&headsetData[16]) = 123.45; // yaw
-        //headsetData[20] = 23; // rssi
-        //headsetData[21] = 43; // FuelGauage
-    }
-    ledToggle();
+		// Find origin as first lat/lon coordinate.
+		latf = (float)lat / (float)1000000;
+		lonf = (float)lon / (float)1000000;
+		if (originLat == 0 && originLon == 0) {
+			originLat = latf;
+			originLon = lonf;
+		}
+		// Find difference bet. locations.
+		latf = latf - originLat;
+		lonf = lonf - originLon;
+		// Find offset in meters.
+		x = latf*DECIMALSPERDEGLAT;
+		y = lonf*DECIMALSPERDEGLON;
+		// Stuff the buffer.
+		*((float *)&headsetData[0]) = x; // x pos
+		*((float *)&headsetData[4]) = y; // y pos
+	}
 }
 
 // Function: processIMUData
@@ -299,17 +291,48 @@ static void processGPSData(void)
 static void processIMUData(void)
 {
     ivector g, a, m;
+    const int UPDATE_PERIOD_MS = 16;
     static unsigned long imuTimer = 0;
     unsigned long currentTime = 0;
     currentTime = millis();
-    if (currentTime > imuTimer + 16)
+    if (currentTime > imuTimer + UPDATE_PERIOD_MS)
     {
         imuTimer = currentTime;
-        imu9Read(&g, &a, &m);
-        //printf("Pitch:%f\tYaw:%f\tRoll:%f\r\n", a_pitch(a)*180./PI, m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI, a_roll(a)*180./PI);
-        *((float *)&headsetData[8]) = a_pitch(a)*180./PI;  // pitch
-        *((float *)&headsetData[12]) = a_roll(a)*180./PI; // roll
-        *((float *)&headsetData[16]) = m_pr_yaw(m, a_pitch(a), a_roll(a))*180./PI; // yaw
+        float p = 0;
+        float y = 0;
+        float r = 0;
+        const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
+       	int hist_idx = 0;
+		float filter_coeffs[HIST_SIZE] = {.10, .15, .20, .25, .30};
+		float p_hist[HIST_SIZE];
+		float y_hist[HIST_SIZE];
+		float r_hist[HIST_SIZE];
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			p_hist[hist_idx] = 0;
+			y_hist[hist_idx] = 0;
+			r_hist[hist_idx] = 0;
+		}
+		// accumulate pyr samples
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			imu9Read(&g, &a, &m);
+			p_hist[hist_idx] = a_pitch(a);
+			r_hist[hist_idx] = a_roll(a);
+			y_hist[hist_idx] = m_pr_yaw(m, p_hist[hist_idx], r_hist[hist_idx]);
+			msleep(WAIT_MS);
+		}
+		// filter pyr values
+		p = 0;
+		y = 0;
+		r = 0;
+		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
+			p += p_hist[hist_idx] * filter_coeffs[hist_idx];
+			y += y_hist[hist_idx] * filter_coeffs[hist_idx];
+			r += r_hist[hist_idx] * filter_coeffs[hist_idx];
+		}
+		// convert to degrees
+        *((float *)&headsetData[8]) = p*180./PI;  // pitch
+        *((float *)&headsetData[12]) = r*180./PI; // roll
+        *((float *)&headsetData[16]) = y*180./PI; // yaw
         headsetData[20] = (char)gpioGetRSSI(); // rssi
     }
     return;
@@ -339,8 +362,6 @@ static void processFuelGuage(void)
             // 2.5 mV/LSB
             v = (v * 5) >> 2;
             soc = (unsigned int)data[2];
-            // Report SOC
-            //printf("Volt:%dmV SOC:%d%%\r\n", (int)v, (int)soc);
             // Queue the fuel guage for sending over spi.
             headsetData[21] = (char)soc; // FuelGauage
         }
@@ -360,7 +381,7 @@ void spiReceivedByte(uint8_t data)
       spiWriteByte(HEADSETDATABYTES);
       spiWriteBytes(headsetData, HEADSETDATABYTES);
       spiWriteByte(0);
-      //fputc(data, xbee);
+      //fputc(data,xbee);
     }
     // reset origin.
     if (data == 2)
@@ -377,6 +398,7 @@ void spiReceivedByte(uint8_t data)
 // for sending over xbee wireless.
 static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 {
+    /*
 	buffer[0] = packet->header[0];
 	buffer[1] = packet->header[1];
 	buffer[2] = packet->header[2];
@@ -393,6 +415,7 @@ static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 	buffer[13] = ((uint8_t *)&packet->longitude)[3];
 	buffer[14] = ((uint8_t *)&packet->crc)[0];
 	buffer[15] = ((uint8_t *)&packet->crc)[1];
+    */
 }
 
 // Function: sendBroadcast
@@ -402,6 +425,7 @@ static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 {
+    /*
 	uint8_t buffer[256];
 	broadCastPacket_t packet;
 	uint32_t i = 0;
@@ -420,5 +444,6 @@ static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
 	{
 		fputc(buffer[i], xbee);
 	}
+    */
 	return;
 }
