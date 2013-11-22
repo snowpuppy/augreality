@@ -76,4 +76,10 @@ void spiWriteBytes(uint8_t *data, uint32_t count);
  */
 extern void spiReceivedByte(uint8_t data);
 
+/**
+* @brief Empties the spi buffer of characters by setting the
+*       head equal to the tail and writing the first bit to zero.
+*/
+void emptySpiBuffer(void)
+
 #endif

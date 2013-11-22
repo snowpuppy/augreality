@@ -29,6 +29,10 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
+// SPI COMMANDS (from gpu to headset)
+#define GETHEADSETDATA 1
+#define FLUSHSPIBUFFER 2
+
 // IMU constants
 #define HIST_SIZE 5
 
@@ -379,7 +383,7 @@ static void processFuelGuage(void)
 // gpu can request xbee data or imu/gps/rssi/fuel data.
 void spiReceivedByte(uint8_t data)
 {
-    if (data == 1)
+    if (data == GETHEADSETDATA)
     {
       spiWriteByte(HEADSETDATABYTES);
       spiWriteBytes(headsetData, HEADSETDATABYTES);
@@ -387,11 +391,11 @@ void spiReceivedByte(uint8_t data)
       //fputc(data,xbee);
     }
     // reset origin.
-    if (data == 2)
+    if (data == FLUSHSPIBUFFER)
     {
-      originLat = 0;
-      originLon = 0;
-      //fputc(data,xbee);
+        // Empty the buffer and push a zero.
+        emptySpiBuffer();
+        spiWriteByte(0);
     }
     //fputc('a',xbee);
 }

@@ -77,6 +77,19 @@ static void usbVCPTx(uint8_t c) {
 }
 
 /**
+* @brief Empties the spi buffer of characters by setting the
+*       head equal to the tail and writing the first bit to zero.
+*/
+void emptySpiBuffer(void)
+{
+	// Disable interrupts to write
+	__disable_irq();
+    // Empty the buffer.
+    spiBuffer.head = spiBuffer.tail;
+	__enable_irq();
+}
+
+/**
  * Determine the number of available characters on the specified port.
  *
  * @param port the port to count
