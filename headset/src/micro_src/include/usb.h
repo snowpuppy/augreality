@@ -33,6 +33,12 @@
 #define APP_RX_DATA_SIZE 1024
 
 /**
+ * Returns whether VCP is connected to a computer.
+ *
+ * @return true if VCP is connected (not necessarily being read!), or false otherwise
+ */
+bool usbVCPConnected(void);
+/**
  * Initializes and configures the USB VCOM port. If this is not used, calls to standard I/O
  * functions on the stdin/stdout streams will produce undefined behavior.
  */
