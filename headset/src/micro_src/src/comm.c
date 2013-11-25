@@ -68,12 +68,13 @@ extern volatile uint32_t usbCdcRxBufferOut;
  * @param c the character to append
  */
 static void usbVCPTx(uint8_t c) {
-	uint32_t ptr;
+	uint32_t ptr = usbCdcRxBufferIn;
 	// Wait for space
-	while ((((ptr = usbCdcRxBufferIn) - usbCdcRxBufferOut) & _USB_MAX) == _USB_MAX) __WFI();
-	// Queue the byte
-	usbCdcRxBuffer[ptr] = c;
-	usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
+	if (usbVCPConnected() && ((ptr - usbCdcRxBufferOut) & _USB_MAX) != _USB_MAX) {
+		// Queue the byte
+		usbCdcRxBuffer[ptr] = c;
+		usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
+	}
 }
 
 /**
