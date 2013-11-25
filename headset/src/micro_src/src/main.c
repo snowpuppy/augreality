@@ -29,10 +29,6 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
-// SPI COMMANDS (from gpu to headset)
-#define GETHEADSETDATA 1
-#define FLUSHSPIBUFFER 2
-
 // IMU constants
 #define HIST_SIZE 5
 
@@ -58,6 +54,14 @@ static struct {
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
+// IMU processing variables
+#define IMU_HISTORY 4
+static uint32_t histIndex = 0;
+static float gyroAccum = 0.0f;
+static float pitchHist[IMU_HISTORY];
+static float rollHist[IMU_HISTORY];
+static float yawHist[4 * IMU_HISTORY];
+
 // Function declarations
 static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet);
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
@@ -72,18 +76,9 @@ static void processFuelGuage(void);
 /**
  * System initialization
  */
-static void init(void)
-{
-  // Tick every 1ms
-  SysTick_Config(168000);
-	// Sleep for five seconds to give peripherals
-	// time to initialize. Surprising, but true.
-	// If we don't sleep, the IMU will give bad
-	// data and the micro will have to be reset.
-	// This five seconds has no impact on user
-	// experience because the raspberry pi takes
-	// much longer just to boot.
-	msleep(5000L);
+static void init(void) {
+	// Tick every 1ms
+	SysTick_Config(168000);
 	// Set up status LED
 	gpioInit();
 	// Set up the peripherals
@@ -99,8 +94,19 @@ static void init(void)
 	// Enable interrupts for all peripherals
 	__enable_fault_irq();
 	__enable_irq();
-	// Initialize the IMU
-	imu9Init();
+}
+
+/**
+ * IMU filtering initialization
+ */
+static void imu9FilterInit(void) {
+	vector g, a, m;
+	float pitch, roll;
+	// Take initial reading, set up gyro accumulator
+	imu9Read(&g, &a, &m);
+	pitch = a_pitch(&a);
+	roll = a_roll(&a);
+	gyroAccum = m_pr_yaw(&m, roll, pitch);
 }
 
 // Function: main
@@ -108,12 +114,18 @@ static void init(void)
 int main(void) {
 	// Sys init
 	init();
-	msleep(2000L);
+	msleep(1500L);
+	// Initialize the IMU
+	imu9Init();
+	msleep(500L);
+	imu9Calibrate();
+	// Initialize IMU filtering
+	imu9FilterInit();
 	// main loop.
 	while (1) {
+		ledToggle();
 		// Process Wireless information.
 		//processXbeeData(&state);
-		ledToggle();
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
@@ -123,11 +135,11 @@ int main(void) {
 	return 0;
 }
 
+#if 0
 // Function: lock()
 // This function creates a locking mechanism
 // that can be used to access sensative data
 // through the use of a mutex.
-/*
 static void lock(uint8_t *mutex)
 {
     uint8_t ret = 0;
@@ -147,7 +159,6 @@ static void lock(uint8_t *mutex)
         ret = __strex(1, mutex);
     } while (ret == 1);
 }
-*/
 
 // Function unlock()
 // This function allows one to unlock
@@ -157,6 +168,7 @@ static void unlock(uint8_t *mutex)
 {
     *mutex = 0;
 }
+#endif
 
 /* Function: getBytes()
  *
@@ -261,7 +273,6 @@ static void processGPSData(void) {
 	// Try to parse the GPS
 	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
 		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-        int numSatellites = (int)gpsGetSatellites();
 		// Got it, print it out
 		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
 		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
@@ -270,7 +281,7 @@ static void processGPSData(void) {
 		// Find origin as first lat/lon coordinate.
 		latf = (float)lat / (float)1000000;
 		lonf = (float)lon / (float)1000000;
-		if (originLat == 0 && originLon == 0 && numSatellites > 2) {
+		if (originLat == 0 && originLon == 0 && gpsGetSatellites() > 3) {
 			originLat = latf;
 			originLon = lonf;
 		}
@@ -286,6 +297,36 @@ static void processGPSData(void) {
 	}
 }
 
+// Function: imuYawUpdate
+// Purpose: Perform long-term moving average filtering on the
+static float imuYawUpdate(float yaw) {
+	uint32_t plusMinusPi = 0; float total = 0.0f;
+	yawHist[histIndex] = yaw;
+	// Ring buffer
+	for (uint32_t i = 0; i < 4 * IMU_HISTORY; i++) {
+		float value = yawHist[i];
+		if (plusMinusPi == 0) {
+			// Use this to correctly handle wraps around the singularity
+			if (value > 0.7f) plusMinusPi = 1;
+			else if (value < -0.7f) plusMinusPi = 2;
+		} else {
+			// Correctly handle wraps around +/- PI
+			if (value < -0.7f && plusMinusPi == 1)
+				value += (float)(2.0 * PI);
+			if (value > 0.7f && plusMinusPi == 2)
+				value -= (float)(2.0 * PI);
+		}
+		total += value;
+	}
+	// Return averaged value
+	total = total * (1.0f / 16.0f);
+	if (total < (float)-PI)
+		total += (float)(2.0 * PI);
+	else if (total > (float)PI)
+		total -= (float)(2.0 * PI);
+	return total;
+}
+
 // Function: processIMUData
 // Purpose: Stuffs current IMU values in buffer
 // so that they can be sent to the GPU and over
@@ -293,48 +334,51 @@ static void processGPSData(void) {
 // milliseconds.
 // Rssi is also set to be sent through spi.
 static void processIMUData(void) {
-	ivector g, a, m;
-	const int UPDATE_PERIOD_MS = 16;
+	// Processing variables
+	vector g, a, m;
+	float roll, pitch, yaw, gyroYaw, yawRate;
+	// Timing related variables
+	const uint32_t UPDATE_PERIOD_MS = 16;
 	static unsigned long imuTimer = 0;
-	unsigned long currentTime = 0;
-	currentTime = millis();
+	unsigned long currentTime = millis();
 	if (currentTime > imuTimer + UPDATE_PERIOD_MS) {
+		// Index history array
+		uint32_t hist = histIndex % IMU_HISTORY;
 		imuTimer = currentTime;
-		float p = 0;
-		float y = 0;
-		float r = 0;
-		const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
-		int hist_idx = 0;
-		float filter_coeffs[HIST_SIZE] = { .10, .15, .20, .25, .30 };
-		float p_hist[HIST_SIZE];
-		float y_hist[HIST_SIZE];
-		float r_hist[HIST_SIZE];
-		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
-			p_hist[hist_idx] = 0;
-			y_hist[hist_idx] = 0;
-			r_hist[hist_idx] = 0;
+		imu9Read(&g, &a, &m);
+		// Calculate variables
+		pitch = a_pitch(&a);
+		roll = a_roll(&a);
+		yaw = m_pr_yaw(&m, pitch, roll);
+		// Get gyro rate angle in rad/s by multiplying by DT
+		yawRate = g_pr_yaw(&g, pitch, roll) * (3.054326e-4f * (float)UPDATE_PERIOD_MS * 0.001f);
+		// RNL and accumulate
+		if (yawRate > -0.005f && yawRate < 0.005f) yawRate = 0.f;
+		gyroYaw = gyroAccum + yawRate;
+		// Adjust gyro yaw into range (-pi, pi)
+		if (gyroYaw < (float)-PI)
+			gyroYaw += (float)(2.0 * PI);
+		else if (gyroYaw > (float)PI)
+			gyroYaw -= (float)(2.0 * PI);
+		// Compute actual yaw by rolling the gyro yaw accumulated total towards compass
+		gyroYaw = gyroYaw - ((gyroYaw - yaw) * 0.008f);
+		gyroAccum = gyroYaw;
+		// Store in history
+		pitchHist[hist] = pitch;
+		rollHist[hist] = roll;
+		yaw = imuYawUpdate(yaw);
+		histIndex = (histIndex + 1) % (4 * IMU_HISTORY);
+		// Calculate the average of the pitch, roll (4 samples)
+		pitch = 0.0f;
+		roll = 0.0f;
+		for (uint32_t i = 0; i < IMU_HISTORY; i++) {
+			pitch += pitchHist[i];
+			roll += rollHist[i];
 		}
-		// accumulate pyr samples
-		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
-			imu9Read(&g, &a, &m);
-			p_hist[hist_idx] = a_pitch(a);
-			r_hist[hist_idx] = a_roll(a);
-			y_hist[hist_idx] = m_pr_yaw(m, p_hist[hist_idx], r_hist[hist_idx]);
-			msleep(WAIT_MS);
-		}
-		// filter pyr values
-		p = 0;
-		y = 0;
-		r = 0;
-		for (hist_idx = 0; hist_idx < HIST_SIZE; ++hist_idx) {
-			p += p_hist[hist_idx] * filter_coeffs[hist_idx];
-			y += y_hist[hist_idx] * filter_coeffs[hist_idx];
-			r += r_hist[hist_idx] * filter_coeffs[hist_idx];
-		}
-		// convert to degrees
-		*((float *) &headsetData[8]) = p * 180. / PI;  // pitch
-		*((float *) &headsetData[12]) = r * 180. / PI; // roll
-		*((float *) &headsetData[16]) = y * 180. / PI; // yaw
+		// Convert to degrees
+		*((float *) &headsetData[8]) = pitch * (45.f / (float)PI); // pitch
+		*((float *) &headsetData[12]) = roll * (45.f / (float)PI); // roll
+		*((float *) &headsetData[16]) = yaw * (180.f / (float)PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 	}
 }
@@ -372,30 +416,6 @@ static void processFuelGuage(void) {
 // It is currently used to discover what
 // kind of data is being requested by the gpu. The
 // gpu can request xbee data or imu/gps/rssi/fuel data.
-<<<<<<< HEAD
-void spiReceivedByte(uint8_t data)
-{
-    if (data == GETHEADSETDATA)
-    {
-      spiWriteByte(HEADSETDATABYTES);
-      spiWriteBytes(headsetData, HEADSETDATABYTES);
-      spiWriteByte(0);
-      //fputc(data,xbee);
-    }
-    // reset origin.
-    if (data == FLUSHSPIBUFFER)
-    {
-        // Reset origin for GPS. This may need to
-        // be changed to a seperate command.
-        // (I would like to eliminate it by sampling
-        //  the GPS signal till it become stable.)
-        originLat = 0, originLon = 0;
-        // Empty the buffer and push a zero.
-        emptySpiBuffer();
-        spiWriteByte(0);
-        //fputc('a',xbee);
-    }
-=======
 void spiReceivedByte(uint8_t data) {
 	if (data == 1) {
 		spiWriteByte(HEADSETDATABYTES);
@@ -410,7 +430,6 @@ void spiReceivedByte(uint8_t data) {
 		//fputc(data,xbee);
 	}
 	//fputc('a',xbee);
->>>>>>> origin/master
 }
 
 // Function: serializeBroadcast
