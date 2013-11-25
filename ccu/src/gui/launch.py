@@ -5,7 +5,7 @@ SELECTHEAD = 2
 SELECTSIMU = 3
 RUNSIMULAT = 4
 
-WRAPLENGTH = 800
+WRAPLENGTH = 480
 
 from Tkinter import *
 from textInfo import *
@@ -14,18 +14,18 @@ class AugRealObj:
   def __init__(self, root):
     self.root = root
     #self.root.minsize(800,600)
-    self.root.bind("<Return>",self.handleEnter)
+    self.root.bind("<KP_Enter>",self.handleEnter)
     self.root.bind("<BackSpace>",self.handleBackspace)
-    self.root.bind("1",self.handle1)
-    self.root.bind("2",self.handle2)
-    self.root.bind("3",self.handle3)
-    self.root.bind("4",self.handle4)
-    self.root.bind("5",self.handle5)
-    self.root.bind("6",self.handle6)
-    self.root.bind("7",self.handle7)
-    self.root.bind("8",self.handle8)
-    self.root.bind("9",self.handle9)
-    self.root.bind("0",self.handle0)
+    self.root.bind("<KP_1>",self.handle1)
+    self.root.bind("<KP_2>",self.handle2)
+    self.root.bind("<KP_3>",self.handle3)
+    self.root.bind("<KP_4>",self.handle4)
+    self.root.bind("<KP_5>",self.handle5)
+    self.root.bind("<KP_6>",self.handle6)
+    self.root.bind("<KP_7>",self.handle7)
+    self.root.bind("<KP_8>",self.handle8)
+    self.root.bind("<KP_9>",self.handle9)
+    self.root.bind("<KP_0>",self.handle0)
 
     # Create All objects for each state.
     # SPLASHSCRE
@@ -142,4 +142,6 @@ root = Tk()
 root.title("Augmented Reality Simulator - Central Control Unit.")
 augReal = AugRealObj(root)
 
+# force the focus on me!
+root.focus_force()
 root.mainloop()
