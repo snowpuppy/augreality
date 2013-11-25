@@ -25,8 +25,8 @@ typedef struct {
 
 // SPI buffer
 static RingBuffer_TypeDef spiBuffer;
-static RingBuffer_TypeDef serialBufferRX[4];
-static RingBuffer_TypeDef serialBufferTX[3];
+static RingBuffer_TypeDef serialBufferRX[4] = {{0}};
+static RingBuffer_TypeDef serialBufferTX[3] = {{0}};
 
 // Checks to see if the ring buffer is full (tail + 1 = head)
 static inline bool _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
@@ -68,12 +68,26 @@ extern volatile uint32_t usbCdcRxBufferOut;
  * @param c the character to append
  */
 static void usbVCPTx(uint8_t c) {
-	uint32_t ptr;
+	uint32_t ptr = usbCdcRxBufferIn;
 	// Wait for space
-	while ((((ptr = usbCdcRxBufferIn) - usbCdcRxBufferOut) & _USB_MAX) == _USB_MAX) __WFI();
-	// Queue the byte
-	usbCdcRxBuffer[ptr] = c;
-	usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
+	if (usbVCPConnected() && ((ptr - usbCdcRxBufferOut) & _USB_MAX) != _USB_MAX) {
+		// Queue the byte
+		usbCdcRxBuffer[ptr] = c;
+		usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
+	}
+}
+
+/**
+* @brief Empties the spi buffer of characters by setting the
+*       head equal to the tail and writing the first bit to zero.
+*/
+void emptySpiBuffer(void)
+{
+	// Disable interrupts to write
+	//__disable_irq();
+    // Empty the buffer.
+    spiBuffer.head = spiBuffer.tail;
+	//__enable_irq();
 }
 
 /**
@@ -254,6 +268,9 @@ void serialWriteBytes(uint32_t port, uint8_t *data, uint32_t count) {
  * Initializes the SPI peripheral as slave mode.
  */
 void spiInit() {
+	// Initialize spi buffer
+	spiBuffer.head = 0;
+	spiBuffer.tail = 0;
 	SPI_InitTypeDef spi;
 	GPIO_InitTypeDef gpio;
 	// Turn on SPI clock

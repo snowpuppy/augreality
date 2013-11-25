@@ -1,80 +1,161 @@
 // File: packet.h
 // Contains the definition of the
-// packets exchanged wirelessly.
+// packets exchanged wirelessly. The
+// header and crc data will be added later.
 #ifndef PACKET_H
 #define PACKET_H
 
-// broadcastPacket: This is the packet
+
+/**
+* @brief broadCastInfo used to keep track of
+*		 broadCast packet info from headsets.
+*/
+typedef struct broadCastInfo
+{
+  uint16_t address; // network address of xbee
+  float latitude;   // latitude of headset
+  float longitude;  // longitude of headset
+} broadCastInfo_t;
+
+/**
+* @brief heartBeatInfo used to keep track of
+*		 information retrieved from a heart beat
+*		 packet.
+*/
+typedef struct heartBeatInfo
+{
+	uint16_t id;            // id of the player (same as xbee address)
+	float x,y;              // coordinates of player
+	float roll,pitch,yaw;   // orientation of player
+} heartBeatInfo_t;
+
+// This is a supplementarty structure,
+// not a packet. This packages the info
+// for a headset's position.
+typedef struct headsetPos
+{
+    float x,y;              // coordinates of player
+    float roll,pitch,yaw;   // orientation of player
+} headsetPos_t;
+
+// Information for an object.
+typedef struct objInfo
+{
+    uint8_t instId;         // instance id of the object.
+    uint8_t typeShow;       // Type: 2d or 3d object, Show: show or hide.
+                            // 0 (3d object hidden) 2 (3d object shown)
+                            // 1 (2d object hidden) 3 (2d object shown)
+    float   x3,y3;            // 3d coordinates of object.
+    int     x2,y2;            // 2d coordinates of object.
+    float   roll,pitch,yaw; // orientation of object.
+} objInfo_t;
+
+// PACKETS
+enum packetType
+{
+	BROADCASTPACKET = 1,
+	ACCEPTHEADSET,
+	LOADSTATICDATA,
+	UPDATEOBJINSTANCE,
+	STARTSIMULATION,
+	ENDSIMULATION,
+	HEARTBEAT,
+	CONFIRMUPDATE,
+	GOBACK
+};
+
+// broadCastPacket: This is the packet
 // that the headset will send repeatedly
 // on startup. The ccu will listen for these
 // packets to know how many headsets are
 // available.
-typedef struct broadcastPacket
+typedef struct broadCastPacket
 {
-  char header[3];
-  char type;
-  uint16_t address;
-  float latitude;
-  float longitude;
-  uint16_t crc;
+  char type;        // type of packet to be sent
+  uint16_t address; // network address of xbee
+  float latitude;   // latitude of headset
+  float longitude;  // longitude of headset
 } broadCastPacket_t;
 
-// AcceptPacket: This is the packet
-// that the ccu will send to the headset
-// when the ccu is ready to accept the
-// headset.
+// AcceptHeadset:
+// Sent from ccu to one headset.
+// This tells the headset it is included and
+// tells it where the geospatial origin is.
+typedef struct accpetHeadset
+{
+    uint8_t packetType; // type of packet being sent.
+    uint16_t id;        // id of ccu.
+    float x,y;          // location of origin.
+} accpetHeadset_t;
 
-// RejectPacket: This is the packet
-// that the ccu will send to the headset
-// to indicate that it is no longer in
-// the simulation and that it should
-// exit the simulation.
+// LoadStaticData:
+// Sent from ccu to all headsets.
+// Sends a tar file which contains a group of 2d/3d objects
+// and a configuration file which must be read that indicates
+// the initial number and placement of objects as well as their id.
+typedef struct loadStaticData
+{
+    uint8_t packetType; // type of packet being sent.
+    uint8_t numBytes;   // number of bytes in packet.
+    uint8_t *bytes;     // payload of packet.
+} loadStaticData_t;
 
-// LoadPacket: This is the packet used
-// to send images/obj data from the ccu to
-// the headset.
+// UpdateObjInstance:
+// Sent from ccu to headset to update the location
+// of one or more objects.
+typedef struct updateObjInstance
+{
+    uint8_t packetType;   // type of packet being sent
+    uint8_t numObj;       // number of objects to update
+    uint8_t updateNumber; // id of update packet (used for confirmation)
+    objInfo_t *objList;   // list of objects to update
+} updateObjInstance_t;
 
-// updateImagePacket: This is the packet
-// sent from the ccu to the headset to
-// indicate that an image instance needs to
-// be updated.
+// StartSimulation:
+// Sent from ccu to one or more headsets
+// This tells a headset to begin simulation.
+typedef struct startSimulation
+{
+    uint8_t packetType; // type of packet being sent
+} startSimulation_t;
 
-// startSimulation: This is the packet
-// sent from the ccu to headset to indicate
-// that the simulation should start.
+// EndSimulation:
+// Sent from ccu to one or more headsets
+// This tells a headset to end the simulation.
+typedef struct endSimulation
+{
+    uint8_t packetType; // type of packet being sent
+} endSimulation_t;
 
-// endSimulation: This is the packet
-// sent from the ccu to the headset to
-// indicate that the simulation should
-// be ended for this headset.
-
-// heartbeatPacket: This is the packet
+// HeartBeat: This is the packet
 // that the headset will send to the ccu
 // during a simulation to inform the ccu
 // about it's gps location and orientation.
+typedef struct heartBeat
+{
+    uint8_t packetType;     // type of packet being sent.
+    uint16_t id;            // id of the player (same as xbee address)
+    float x,y;              // coordinates of player
+    float roll,pitch,yaw;   // orientation of player
+} heartBeat_t;
 
 // confirmPacket: This is the packet
 // that the headset will send to indicate
 // that it received an update from the ccu.
-
-
-
-// Shared functions.
-
-// Function: calcCrc
-// This function takes a list of characters
-// which has probably been cast that way from a
-// structure and performs a crc calculation.
-uint16_t calcCrc(char *packet, int size)
+// Sent from headset directly to ccu.
+typedef struct confirmUpdate
 {
-  uint16_t ret = 0;
-  // Make sure min size is one byte plus the 16bit crc
-  if (packet != NULL && size > 1+sizeof(short))
-  {
-    ret = ( ((short)packet[0]) << 8) + packet[size-sizeof(short)];
-    return ret;
-  }
-  return 0;
-}
+    uint8_t packetType;
+    uint8_t updateNumber;
+} confirmUpdate_t;
+
+// Sent from ccu directly to a headset.
+typedef struct goBack
+{
+    uint8_t packetType;
+} goBack_t;
+
+// Functions
+int16_t calcCrc(char *packet, int size);
 
 #endif

@@ -15,12 +15,14 @@ extern "C" {
 // FILE is an integer referring to a stream; we use (invalid) pointers for compability
 typedef int FILE;
 // Standard input and output streams use the PC debug terminal
-#define stdout ((FILE *)SERIAL_PORT_SPARE)
-#define stdin ((FILE *)SERIAL_PORT_SPARE)
+#define stdout ((FILE *)SERIAL_PORT_USB)
+#define stdin ((FILE *)SERIAL_PORT_USB)
 // XBee
 #define xbee ((FILE *)SERIAL_PORT_XBEE)
 // GPS
 #define gps ((FILE *)SERIAL_PORT_GPS)
+// Spare
+#define spare ((FILE *)SERIAL_PORT_SPARE)
 
 // fcount - Return number of characters available to read on the specified stream
 int fcount(FILE *stream);

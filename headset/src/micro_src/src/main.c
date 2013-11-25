@@ -29,6 +29,10 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
+// SPI COMMANDS (from gpu to headset)
+#define GETHEADSETDATA 1
+#define FLUSHSPIBUFFER 2
+
 // IMU constants
 #define HIST_SIZE 5
 
@@ -70,25 +74,33 @@ static void processFuelGuage(void);
  */
 static void init(void)
 {
-    // Tick every 1ms
-    SysTick_Config(168000);
-    // Set up status LED
-    gpioInit();
-    // Set up the peripherals
-    i2cInit();
-    serialInit();
-    usbVCPInit();
-    // write first byte of spi as zero.
-    // then initialize it. This is done
-    // because the gpu will interpret this
-    // as the number of bytes to read.
-    spiWriteByte(0);
-    spiInit();
-    // Enable interrupts for all peripherals
-    __enable_fault_irq();
-    __enable_irq();
-    // Initialize the IMU
-    imu9Init();
+  // Tick every 1ms
+  SysTick_Config(168000);
+	// Sleep for five seconds to give peripherals
+	// time to initialize. Surprising, but true.
+	// If we don't sleep, the IMU will give bad
+	// data and the micro will have to be reset.
+	// This five seconds has no impact on user
+	// experience because the raspberry pi takes
+	// much longer just to boot.
+	msleep(5000L);
+	// Set up status LED
+	gpioInit();
+	// Set up the peripherals
+	i2cInit();
+	serialInit();
+	usbVCPInit();
+	// write first byte of spi as zero.
+	// then initialize it. This is done
+	// because the gpu will interpret this
+	// as the number of bytes to read.
+	spiWriteByte(0);
+	spiInit();
+	// Enable interrupts for all peripherals
+	__enable_fault_irq();
+	__enable_irq();
+	// Initialize the IMU
+	imu9Init();
 }
 
 // Function: main
@@ -98,8 +110,7 @@ int main(void) {
 	init();
 	msleep(2000L);
 	// main loop.
-	while (1)
-	{
+	while (1) {
 		// Process Wireless information.
 		//processXbeeData(&state);
 		ledToggle();
@@ -152,16 +163,13 @@ static void unlock(uint8_t *mutex)
  * Reads specified number of bytes into given buffer.
  *
  */
-static void getBytes(uint8_t *data, uint32_t numBytes)
-{
-    uint32_t i = 0;
-    if (numBytes > 0)
-    {
-        for (i = 0; i < numBytes; i++)
-        {
-            data[i] = fgetc(xbee);
-        }
-    }
+static void getBytes(uint8_t *data, uint32_t numBytes) {
+	uint32_t i = 0;
+	if (numBytes > 0) {
+		for (i = 0; i < numBytes; i++) {
+			data[i] = fgetc(xbee);
+		}
+	}
 }
 
 /**
@@ -172,54 +180,49 @@ static void getBytes(uint8_t *data, uint32_t numBytes)
  * and appropriate data will be immediately sent over spi. It is assumed
  * that spi is running much faster than xbee traffic.
  */
-static void processXbeeData(uint8_t *state)
-{
-    uint8_t buf[256];
-    uint8_t numBytes = 0;
-    uint32_t i = 0;
-    // If packets are available, then just
-    // keep processing them.
-    while (fcount(xbee) > 0)
-    {
-      // If bytes are available, then receive packet.
-      // Send packet to spi or trigger appropriate action.
-      getBytes(buf,3);
-      if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C')
-      {
-        //fputc('a', xbee);
-        // Get type of packet
-        getBytes(buf,1);
-        switch (buf[0])
-        {
-          case ACCEPTPACKET:
-          case UPDATEOBJPACKET:
-          case ENDSIMPACKET:
-          case BACKPACKET:
-          case STATICDATAPACKET:
-            // Get number of bytes
-            getBytes(buf,1);
-            spiWriteByte(buf[0]);
-            numBytes = (uint8_t)buf[0];
+static void processXbeeData(uint8_t *state) {
+	uint8_t buf[256];
+	uint8_t numBytes = 0;
+	uint32_t i = 0;
+	// If packets are available, then just
+	// keep processing them.
+	while (fcount(xbee) > 0) {
+		// If bytes are available, then receive packet.
+		// Send packet to spi or trigger appropriate action.
+		getBytes(buf, 3);
+		if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C') {
+			//fputc('a', xbee);
+			// Get type of packet
+			getBytes(buf, 1);
+			switch (buf[0]) {
+			case ACCEPTPACKET:
+			case UPDATEOBJPACKET:
+			case ENDSIMPACKET:
+			case BACKPACKET:
+			case STATICDATAPACKET:
+				// Get number of bytes
+				getBytes(buf, 1);
+				spiWriteByte(buf[0]);
+				numBytes = (uint8_t) buf[0];
 
-            // get remaining bytes from wireless.
-            getBytes(buf,(uint32_t)numBytes);
-            // write all bytes to spi!
-            for (i = 0; i < numBytes; i++)
-            {
-              spiWriteByte(buf[i]);
-              //fputc(buf[i], xbee);
-            }
-            spiWriteByte(0);
-            // Toggle LED for status, output character + 1
-            ledToggle();
-            fputc('b', xbee);
-            //fputc(numBytes, xbee);
-            break;
-          default:
-            break;
-        }
-      }
-    }
+				// get remaining bytes from wireless.
+				getBytes(buf, (uint32_t) numBytes);
+				// write all bytes to spi!
+				for (i = 0; i < numBytes; i++) {
+					spiWriteByte(buf[i]);
+					//fputc(buf[i], xbee);
+				}
+				spiWriteByte(0);
+				// Toggle LED for status, output character + 1
+				ledToggle();
+				fputc('b', xbee);
+				//fputc(numBytes, xbee);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 // Reads a line from the GPS
@@ -258,6 +261,7 @@ static void processGPSData(void) {
 	// Try to parse the GPS
 	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
 		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+        int numSatellites = (int)gpsGetSatellites();
 		// Got it, print it out
 		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
 		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
@@ -266,7 +270,7 @@ static void processGPSData(void) {
 		// Find origin as first lat/lon coordinate.
 		latf = (float)lat / (float)1000000;
 		lonf = (float)lon / (float)1000000;
-		if (originLat == 0 && originLon == 0) {
+		if (originLat == 0 && originLon == 0 && numSatellites > 2) {
 			originLat = latf;
 			originLon = lonf;
 		}
@@ -288,22 +292,20 @@ static void processGPSData(void) {
 // wireless to the CCU. This occurs every 16
 // milliseconds.
 // Rssi is also set to be sent through spi.
-static void processIMUData(void)
-{
-    ivector g, a, m;
-    const int UPDATE_PERIOD_MS = 16;
-    static unsigned long imuTimer = 0;
-    unsigned long currentTime = 0;
-    currentTime = millis();
-    if (currentTime > imuTimer + UPDATE_PERIOD_MS)
-    {
-        imuTimer = currentTime;
-        float p = 0;
-        float y = 0;
-        float r = 0;
-        const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
-       	int hist_idx = 0;
-		float filter_coeffs[HIST_SIZE] = {.10, .15, .20, .25, .30};
+static void processIMUData(void) {
+	ivector g, a, m;
+	const int UPDATE_PERIOD_MS = 16;
+	static unsigned long imuTimer = 0;
+	unsigned long currentTime = 0;
+	currentTime = millis();
+	if (currentTime > imuTimer + UPDATE_PERIOD_MS) {
+		imuTimer = currentTime;
+		float p = 0;
+		float y = 0;
+		float r = 0;
+		const int WAIT_MS = UPDATE_PERIOD_MS / HIST_SIZE;
+		int hist_idx = 0;
+		float filter_coeffs[HIST_SIZE] = { .10, .15, .20, .25, .30 };
 		float p_hist[HIST_SIZE];
 		float y_hist[HIST_SIZE];
 		float r_hist[HIST_SIZE];
@@ -330,12 +332,11 @@ static void processIMUData(void)
 			r += r_hist[hist_idx] * filter_coeffs[hist_idx];
 		}
 		// convert to degrees
-        *((float *)&headsetData[8]) = p*180./PI;  // pitch
-        *((float *)&headsetData[12]) = r*180./PI; // roll
-        *((float *)&headsetData[16]) = y*180./PI; // yaw
-        headsetData[20] = (char)gpioGetRSSI(); // rssi
-    }
-    return;
+		*((float *) &headsetData[8]) = p * 180. / PI;  // pitch
+		*((float *) &headsetData[12]) = r * 180. / PI; // roll
+		*((float *) &headsetData[16]) = y * 180. / PI; // yaw
+		headsetData[20] = (char) gpioGetRSSI(); // rssi
+	}
 }
 
 // Function: processFuelGuage
@@ -343,29 +344,26 @@ static void processIMUData(void)
 // battery percentage from the fuel guage over I2C.
 // This value is put into the buffer that the 
 // spiReceivedByte() function sends over spi.
-static void processFuelGuage(void)
-{
-    uint8_t data[4];
-    unsigned int soc, v;
-    static unsigned long fuelTimer = 0;
-    unsigned long currentTime = 0;
-    currentTime = millis();
-    // Check timer value for every second, then
-    // request data for battery charge.
-    if (currentTime > fuelTimer + 1000)
-    {
-        fuelTimer = currentTime;
-        // Address of MAX17043 is 0x36, SOC registers and Voltage registers start at 0x02
-        if (i2cReadRegister(0x36, 0x02, data, 4))
-        {
-            v = ((unsigned int)data[0] << 4) | ((unsigned int)data[1] >> 4);
-            // 2.5 mV/LSB
-            v = (v * 5) >> 2;
-            soc = (unsigned int)data[2];
-            // Queue the fuel guage for sending over spi.
-            headsetData[21] = (char)soc; // FuelGauage
-        }
-    }
+static void processFuelGuage(void) {
+	uint8_t data[4];
+	unsigned int soc, v;
+	static unsigned long fuelTimer = 0;
+	unsigned long currentTime = 0;
+	currentTime = millis();
+	// Check timer value for every second, then
+	// request data for battery charge.
+	if (currentTime > fuelTimer + 1000) {
+		fuelTimer = currentTime;
+		// Address of MAX17043 is 0x36, SOC registers and Voltage registers start at 0x02
+		if (i2cReadRegister(0x36, 0x02, data, 4)) {
+			v = ((unsigned int) data[0] << 4) | ((unsigned int) data[1] >> 4);
+			// 2.5 mV/LSB
+			v = (v * 5) >> 2;
+			soc = (unsigned int) data[2];
+			// Queue the fuel guage for sending over spi.
+			headsetData[21] = (char) soc; // FuelGauage
+		}
+	}
 }
 
 // Function: spiReceivedByte
@@ -374,9 +372,10 @@ static void processFuelGuage(void)
 // It is currently used to discover what
 // kind of data is being requested by the gpu. The
 // gpu can request xbee data or imu/gps/rssi/fuel data.
+<<<<<<< HEAD
 void spiReceivedByte(uint8_t data)
 {
-    if (data == 1)
+    if (data == GETHEADSETDATA)
     {
       spiWriteByte(HEADSETDATABYTES);
       spiWriteBytes(headsetData, HEADSETDATABYTES);
@@ -384,13 +383,34 @@ void spiReceivedByte(uint8_t data)
       //fputc(data,xbee);
     }
     // reset origin.
-    if (data == 2)
+    if (data == FLUSHSPIBUFFER)
     {
-      originLat = 0;
-      originLon = 0;
-      //fputc(data,xbee);
+        // Reset origin for GPS. This may need to
+        // be changed to a seperate command.
+        // (I would like to eliminate it by sampling
+        //  the GPS signal till it become stable.)
+        originLat = 0, originLon = 0;
+        // Empty the buffer and push a zero.
+        emptySpiBuffer();
+        spiWriteByte(0);
+        //fputc('a',xbee);
     }
-    //fputc('a',xbee);
+=======
+void spiReceivedByte(uint8_t data) {
+	if (data == 1) {
+		spiWriteByte(HEADSETDATABYTES);
+		spiWriteBytes(headsetData, HEADSETDATABYTES);
+		spiWriteByte(0);
+		//fputc(data,xbee);
+	}
+	// reset origin.
+	if (data == 2) {
+		originLat = 0;
+		originLon = 0;
+		//fputc(data,xbee);
+	}
+	//fputc('a',xbee);
+>>>>>>> origin/master
 }
 
 // Function: serializeBroadcast
