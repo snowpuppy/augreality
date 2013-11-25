@@ -1,5 +1,9 @@
+// Constants
 #define MAXNUMHEADSETS 10
-
+#define HEADERSIZE 3
+#define CRCSIZE 2
+#define BAUDRATE B57600
+#define XBEEPORT "/dev/ttyUSB0"
 
 // Local Function prototypes.
 
@@ -8,6 +12,7 @@ uint16_t g_numBroadCasting = 0;
 broadCastInfo_t g_broadCasting[MAXNUMHEADSETS];
 uint16_t g_numHeartBeating = 0;
 heartBeatInfo_t g_heartBeating[MAXNUMHEADSETS];
+int32_t g_port;
 
 
 // Function: calcCrc
@@ -99,14 +104,37 @@ int16_t endSimulationID(uint16_t destId)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
+  uint8_t buf[sizeof(loadStaticData_t) + HEADERSIZE + CRCSIZE];
+  uint8_t fileBuf[256];
+  uint16_t bytesRead = 0;
+  FILE *fp = NULL;
+
+  fp = fopen(filename,"rb");
+  if (fp == NULL)
+  {
+    fprintf(stderr, "Could not open file: %s", filename);
+    return -1;
+  }
+  // Find size of file.
+  fseek(fp,0,SEEK_END);
+  p.numBytes = ftell(fp);
+  rewind(fp);
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
-	p.numBytes = ;
-	// Contents of file. (just stream it byte by byte.)
-	p.bytes = ;
+	//p.numBytes = ;
 	// Pack the packet to a byte stream.
+  loadStaticDataToBytes(&p,buf);
 	// Add header info and crc.
+  addHeader(buf);
 	// Write the packet to the serial port.
+  write(g_port, buf, sizeof(loadStaticData_t) + HEADERSIZE);
+  // Write the file to the serial port
+  while ( !feof(fp))
+  {
+    bytesRead = fread(fp,fileBuf,256);
+    write(g_port, fileBuf, bytesRead);
+  }
+  return 0;
 }
 // updateObjs(objInfo *objList)
 int16_t updateObjs(objInfo *objList, uint8_t numObjects)
@@ -215,4 +243,53 @@ int16_t findHeartBeating(uint32_t id)
 		}
 	}
 	return -1;
+}
+
+uint8_t loadStaticDataToBytes(loadStaticData_t *p, uint8_t *buf)
+{
+  uint8_t i = HEADERSIZE;
+  buf[i] = p->packetType;
+  i += sizeof(p->packetType);
+  *((uint32_t *)&buf[i]) = p->numBytes;
+  i += sizeof(p->numBytes);
+  return i;
+}
+
+void addHeader(uint8_t *buf)
+{
+  buf[0] = 'P';
+  buf[1] = 'A';
+  buf[2] = 'C';
+}
+
+int openComPort();
+{
+	int fd, res;
+	struct termios tio;
+
+	// Open serial port for reading/writing
+	fd = open(XBEEPORT, O_RDWR|O_NOCTTY); 
+	if (fd < 0)
+	{
+		perror(XBEEPORT);
+		exit(1);
+	}
+
+	// Clear and then configure serial port
+	bzero(&tio, sizeof(tio));
+	tio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+	tio.c_iflag = IGNPAR;
+	tio.c_oflag = 0;
+	// Set input mode (non-canonical, no echo,...)
+	tio.c_lflag = 0;
+	tio.c_cc[VTIME]    = 0;
+	// Set number of characters to block until received
+	tio.c_cc[VMIN]     = 1;
+
+	// Flush the serial port
+	tcflush(fd, TCIFLUSH);
+	// Configure the serial port
+	tcsetattr(fd,TCSANOW,&tio);
+
+	return fd;
 }

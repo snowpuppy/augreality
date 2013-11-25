@@ -96,8 +96,7 @@ typedef struct accpetHeadset
 typedef struct loadStaticData
 {
     uint8_t packetType; // type of packet being sent.
-    uint8_t numBytes;   // number of bytes in packet.
-    uint8_t *bytes;     // payload of packet.
+    uint32_t numBytes;   // number of bytes in packet.
 } loadStaticData_t;
 
 // UpdateObjInstance:
