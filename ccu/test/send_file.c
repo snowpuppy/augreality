@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../src/library/int_sizes.h"
+#include <stdint.h>
 #include "../src/library/packets.h"
 
 // Constants
@@ -34,7 +34,7 @@ int main(void)
   char message[] = "Hello There stranger. This is a test.\n";
   
   char temp;
-  broadcastPacket_t packet;
+  broadCastPacket_t packet;
 
   fd = open(XBEEPORT, O_RDWR | O_NOCTTY ); 
   if (fd <0) {perror(XBEEPORT); exit(-1); }

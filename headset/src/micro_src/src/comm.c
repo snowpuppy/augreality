@@ -25,8 +25,8 @@ typedef struct {
 
 // SPI buffer
 static RingBuffer_TypeDef spiBuffer;
-static RingBuffer_TypeDef serialBufferRX[4];
-static RingBuffer_TypeDef serialBufferTX[3];
+static RingBuffer_TypeDef serialBufferRX[4] = {{0}};
+static RingBuffer_TypeDef serialBufferTX[3] = {{0}};
 
 // Checks to see if the ring buffer is full (tail + 1 = head)
 static inline bool _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
@@ -83,10 +83,10 @@ static void usbVCPTx(uint8_t c) {
 void emptySpiBuffer(void)
 {
 	// Disable interrupts to write
-	__disable_irq();
+	//__disable_irq();
     // Empty the buffer.
     spiBuffer.head = spiBuffer.tail;
-	__enable_irq();
+	//__enable_irq();
 }
 
 /**
@@ -267,6 +267,9 @@ void serialWriteBytes(uint32_t port, uint8_t *data, uint32_t count) {
  * Initializes the SPI peripheral as slave mode.
  */
 void spiInit() {
+	// Initialize spi buffer
+	spiBuffer.head = 0;
+	spiBuffer.tail = 0;
 	SPI_InitTypeDef spi;
 	GPIO_InitTypeDef gpio;
 	// Turn on SPI clock

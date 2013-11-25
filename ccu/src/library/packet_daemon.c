@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "int_sizes.h"
+#include <stdint.h>
 #include "packets.h"
 
 // Constants
@@ -19,79 +19,88 @@ int readBytes(int fd, char *data, int numBytes);
 // Main Function.
 int main(void)
 {
-  int fd,c, res;
-  struct termios oldtio,newtio;
-  char buf[255];
-  
-  char temp;
-  broadcastPacket_t packet;
+	int fd = 0;
+	char buf[255];
+	char crc = 0;
 
-  fd = open(XBEEPORT, O_RDWR | O_NOCTTY ); 
-  if (fd <0) {perror(XBEEPORT); exit(-1); }
+	char temp;
+	broadCastPacket_t packet;
+	fd = openComPort();
+	//res = write(fd,"abcdh",5);
+	while (1)
+	{
+		readBytes(fd,buf,3);
+		if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C')
+		{
+			printf("Recieving packet...\n");
+		}
+		else
+		{
+			//printf("Received dead stuff...\n");
+			continue;
+		}
+		readBytes(fd,buf,1);
+		if (buf[0] == (char)0)
+		{
+			printf("Received a broadcastPacket....\n");
+		}
+		else
+		{
+			printf("Received a packet of type %d....\n",(int)(buf[0]));
+			continue;
+		}
+		readBytes(fd,buf,2);
+		packet.address = *((short *)buf);
+		printf("Wireless ID: %X\n", packet.address);
+		readBytes(fd,buf,4);
+		//printf("lattitude: [0] = %X, [1] = %X, [2] = %X, [3] = %X\n", buf[0], buf[1], buf[2], buf[3]);
+		packet.latitude = *((float *)buf);
+		//printf("Lattitude: %X\n", packet.latitude);
+		//printf("Lattitude: %d\n", packet.latitude);
+		printf("Lattitude: sizeoffloat = %d, %f\n", sizeof(float), packet.latitude);//(float)packet.latitude/10000.0);
+		readBytes(fd,buf,4);
+		//printf("longitude: [0] = %X, [1] = %X, [2] = %X, [3] = %X\n", buf[0], buf[1], buf[2], buf[3]);
+		packet.longitude = *((float *)buf);
+		//printf("Longitude: %X\n", packet.longitude);
+		//printf("Longitude: %d\n", packet.longitude);
+		printf("Longitude: %f\n", packet.longitude);//(float)packet.longitude/10000.0);
+		readBytes(fd,buf,2);
+		crc = *((short *)buf);
+		printf("Crc: %X\n", crc);
+	}
+	return 0;
+}
 
-  tcgetattr(fd,&oldtio); /* save current port settings */
+int openComPort();
+{
+	int fd, res;
+	struct termios tio;
 
-  bzero(&newtio, sizeof(newtio));
-  newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
-  newtio.c_iflag = IGNPAR;
-  newtio.c_oflag = 0;
+	// Open serial port for reading/writing
+	fd = open(XBEEPORT, O_RDWR|O_NOCTTY); 
+	if (fd < 0)
+	{
+		perror(XBEEPORT);
+		exit(1);
+	}
 
-  /* set input mode (non-canonical, no echo,...) */
-  newtio.c_lflag = 0;
+	// Clear and then configure serial port
+	bzero(&tio, sizeof(tio));
+	tio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+	tio.c_iflag = IGNPAR;
+	tio.c_oflag = 0;
+	// Set input mode (non-canonical, no echo,...)
+	tio.c_lflag = 0;
+	tio.c_cc[VTIME]    = 0;
+	// Set number of characters to block until received
+	tio.c_cc[VMIN]     = 1;
 
-  newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-  newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
+	// Flush the serial port
+	tcflush(fd, TCIFLUSH);
+	// Configure the serial port
+	tcsetattr(fd,TCSANOW,&tio);
 
-  tcflush(fd, TCIFLUSH);
-  tcsetattr(fd,TCSANOW,&newtio);
-
-
-  //res = write(fd,"abcdh",5);
-  while (1) {                 /* loop for input */
-    //res = read(fd,buf,255);   /* returns after 1 chars have been input */
-    //buf[res]=0;               /* so we can printf... */
-    //printf("%s\n", buf, res);
-    readBytes(fd,buf,3);
-    if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C')
-    {
-      printf("Recieving packet...\n");
-    }
-    else
-    {
-      //printf("Received dead stuff...\n");
-      continue;
-    }
-    readBytes(fd,buf,1);
-    if (buf[0] == (char)0)
-    {
-      printf("Received a broadcastPacket....\n");
-    }
-    else
-    {
-      printf("Received a packet of type %d....\n",(int)(buf[0]));
-      continue;
-    }
-    readBytes(fd,buf,2);
-    packet.address = *((short *)buf);
-    printf("Wireless ID: %X\n", packet.address);
-    readBytes(fd,buf,4);
-    //printf("lattitude: [0] = %X, [1] = %X, [2] = %X, [3] = %X\n", buf[0], buf[1], buf[2], buf[3]);
-    packet.latitude = *((float *)buf);
-    printf("Lattitude: %X\n", packet.latitude);
-    //printf("Lattitude: %d\n", packet.latitude);
-    printf("Lattitude: sizeoffloat = %d, %f\n", sizeof(float), packet.latitude);//(float)packet.latitude/10000.0);
-    readBytes(fd,buf,4);
-    //printf("longitude: [0] = %X, [1] = %X, [2] = %X, [3] = %X\n", buf[0], buf[1], buf[2], buf[3]);
-    packet.longitude = *((float *)buf);
-    printf("Longitude: %X\n", packet.longitude);
-    //printf("Longitude: %d\n", packet.longitude);
-    printf("Longitude: %f\n", packet.longitude);//(float)packet.longitude/10000.0);
-    readBytes(fd,buf,2);
-    packet.crc = *((short *)buf);
-    printf("Crc: %X\n", packet.crc);
-  }
-  tcsetattr(fd,TCSANOW,&oldtio); // restore old port settings.
-  return 0;
+	return fd;
 }
 
 // Function to read in a fixed number

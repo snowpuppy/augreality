@@ -76,6 +76,14 @@ static void init(void)
 {
     // Tick every 1ms
     SysTick_Config(168000);
+	// Sleep for five seconds to give peripherals
+	// time to initialize. Surprising, but true.
+	// If we don't sleep, the IMU will give bad
+	// data and the micro will have to be reset.
+	// This five seconds has no impact on user
+	// experience because the raspberry pi takes
+	// much longer just to boot.
+	msleep(5000L);
     // Set up status LED
     gpioInit();
     // Set up the peripherals
@@ -262,6 +270,7 @@ static void processGPSData(void) {
 	// Try to parse the GPS
 	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
 		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
+        int numSatellites = (int)gpsGetSatellites();
 		// Got it, print it out
 		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
 		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
@@ -270,7 +279,7 @@ static void processGPSData(void) {
 		// Find origin as first lat/lon coordinate.
 		latf = (float)lat / (float)1000000;
 		lonf = (float)lon / (float)1000000;
-		if (originLat == 0 && originLon == 0) {
+		if (originLat == 0 && originLon == 0 && numSatellites > 2) {
 			originLat = latf;
 			originLon = lonf;
 		}
@@ -390,11 +399,16 @@ void spiReceivedByte(uint8_t data)
     // reset origin.
     if (data == FLUSHSPIBUFFER)
     {
+        // Reset origin for GPS. This may need to
+        // be changed to a seperate command.
+        // (I would like to eliminate it by sampling
+        //  the GPS signal till it become stable.)
+        originLat = 0, originLon = 0;
         // Empty the buffer and push a zero.
         emptySpiBuffer();
         spiWriteByte(0);
+        //fputc('a',xbee);
     }
-    //fputc('a',xbee);
 }
 
 // Function: serializeBroadcast
