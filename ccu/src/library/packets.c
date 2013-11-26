@@ -1,3 +1,14 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdint.h>
+#include "packets.h"
+
 // Constants
 #define MAXNUMHEADSETS 10
 #define HEADERSIZE 3
@@ -42,9 +53,10 @@ int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id)
 	index = findBroadCasting(id);
 	if (index > 0)
 	{
-		pos->latitude = g_broadCasting[index].latitude;
-		pos->longitude = g_broadCasting[index].longitude;
+		pos->x = g_broadCasting[index].latitude;
+		pos->y = g_broadCasting[index].longitude;
 	}
+  return 0;
 }
 
 // Function: getNumBroadCasting()
@@ -64,7 +76,7 @@ int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size)
 	int16_t i = 0;
 	for (i = 0; i < size && i < g_numBroadCasting; i++)
 	{
-		ids[i] = g_broadCasting[index].address;
+		ids[i] = g_broadCasting[i].address;
 	}
 	return i;
 }
@@ -81,6 +93,7 @@ int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originL
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // startSimulation()
 int16_t startSimulation()
@@ -90,6 +103,7 @@ int16_t startSimulation()
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // endSimulationID(id)
 int16_t endSimulationID(uint16_t destId)
@@ -131,13 +145,13 @@ int16_t sendFile(char *filename)
   // Write the file to the serial port
   while ( !feof(fp))
   {
-    bytesRead = fread(fp,fileBuf,256);
+    bytesRead = fread(fileBuf,1,256,fp);
     write(g_port, fileBuf, bytesRead);
   }
   return 0;
 }
 // updateObjs(objInfo *objList)
-int16_t updateObjs(objInfo *objList, uint8_t numObjects)
+int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 {
 	// Static update number increments for each
 	// packet sent.
@@ -151,13 +165,14 @@ int16_t updateObjs(objInfo *objList, uint8_t numObjects)
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // getAlive(id)
 uint16_t getAlive(uint16_t id)
 {
 	int16_t ret = 0;
 	ret = findHeartBeating(id);
-	return (ret > 0 ? 1 : 0)
+	return (ret > 0 ? 1 : 0);
 }
 // getNumAlive()
 uint16_t getNumAlive()
@@ -206,6 +221,7 @@ int16_t goBack(uint16_t id)
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 
 
@@ -260,16 +276,17 @@ void addHeader(uint8_t *buf)
   buf[0] = 'P';
   buf[1] = 'A';
   buf[2] = 'C';
+  return;
 }
 
-int openComPort();
+int openComPort()
 {
-	int fd, res;
+	int res;
 	struct termios tio;
 
 	// Open serial port for reading/writing
-	fd = open(XBEEPORT, O_RDWR|O_NOCTTY); 
-	if (fd < 0)
+	g_port = open(XBEEPORT, O_RDWR|O_NOCTTY); 
+	if (g_port < 0)
 	{
 		perror(XBEEPORT);
 		exit(1);
@@ -287,9 +304,9 @@ int openComPort();
 	tio.c_cc[VMIN]     = 1;
 
 	// Flush the serial port
-	tcflush(fd, TCIFLUSH);
+	tcflush(g_port, TCIFLUSH);
 	// Configure the serial port
-	tcsetattr(fd,TCSANOW,&tio);
+	tcsetattr(g_port,TCSANOW,&tio);
 
-	return fd;
+	return g_port;
 }

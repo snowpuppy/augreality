@@ -15,13 +15,12 @@ int readBytes(int fd, char *data, int numBytes);
 // Main Function.
 int main(void)
 {
-	int fd = 0;
-	char buf[255];
-	char crc = 0;
-
-	char temp;
+  int fd = 0;
 	broadCastPacket_t packet;
+
 	fd = openComPort();
+  sendFile("../sim/sampleFile.tar");
+/*
 	//res = write(fd,"abcdh",5);
 	while (1)
 	{
@@ -64,6 +63,7 @@ int main(void)
 		crc = *((short *)buf);
 		printf("Crc: %X\n", crc);
 	}
+  */
 	return 0;
 }
 
