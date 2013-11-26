@@ -17,6 +17,10 @@
 #define SERIAL_PORT_USB 0x03
 
 /**
+ * Clears the serial buffers.
+ */
+void serialBufferClear(void);
+/**
  * Determine the number of available characters on the specified port.
  *
  * @param port the port to count

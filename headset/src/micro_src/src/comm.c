@@ -81,13 +81,25 @@ static void usbVCPTx(uint8_t c) {
 * @brief Empties the spi buffer of characters by setting the
 *       head equal to the tail and writing the first bit to zero.
 */
-void emptySpiBuffer(void)
-{
+void emptySpiBuffer(void) {
 	// Disable interrupts to write
 	//__disable_irq();
-    // Empty the buffer.
-    spiBuffer.head = spiBuffer.tail;
+	// Empty the buffer.
+	spiBuffer.head = spiBuffer.tail;
 	//__enable_irq();
+}
+
+/**
+ * Clears the serial buffers.
+ */
+void serialBufferClear(void) {
+	// Prime the buffers to empty
+	for (uint32_t i = 0; i < 3; i++) {
+		serialBufferTX[i].head = 0;
+		serialBufferTX[i].tail = 0;
+		serialBufferRX[i].head = 0;
+		serialBufferRX[i].tail = 0;
+	}
 }
 
 /**
@@ -115,13 +127,7 @@ uint32_t serialBufferCount(uint32_t port) {
 void serialInit() {
 	USART_InitTypeDef uart;
 	GPIO_InitTypeDef gpio;
-	// Prime the buffers to empty
-	for (uint32_t i = 0; i < 3; i++) {
-		serialBufferTX[i].head = 0;
-		serialBufferTX[i].tail = 0;
-		serialBufferRX[i].head = 0;
-		serialBufferRX[i].tail = 0;
-	}
+	serialBufferClear();
 	// Enable all peripheral clocks required
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART6, ENABLE);
