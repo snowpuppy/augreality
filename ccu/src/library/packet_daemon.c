@@ -9,23 +9,18 @@
 #include <stdint.h>
 #include "packets.h"
 
-// Constants
-#define BAUDRATE B57600
-#define XBEEPORT "/dev/ttyUSB0"
-
 // Other functions.
 int readBytes(int fd, char *data, int numBytes);
 
 // Main Function.
 int main(void)
 {
-	int fd = 0;
-	char buf[255];
-	char crc = 0;
-
-	char temp;
+  int fd = 0;
 	broadCastPacket_t packet;
+
 	fd = openComPort();
+  sendFile("../sim/sampleFile.tar");
+/*
 	//res = write(fd,"abcdh",5);
 	while (1)
 	{
@@ -68,39 +63,8 @@ int main(void)
 		crc = *((short *)buf);
 		printf("Crc: %X\n", crc);
 	}
+  */
 	return 0;
-}
-
-int openComPort();
-{
-	int fd, res;
-	struct termios tio;
-
-	// Open serial port for reading/writing
-	fd = open(XBEEPORT, O_RDWR|O_NOCTTY); 
-	if (fd < 0)
-	{
-		perror(XBEEPORT);
-		exit(1);
-	}
-
-	// Clear and then configure serial port
-	bzero(&tio, sizeof(tio));
-	tio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
-	tio.c_iflag = IGNPAR;
-	tio.c_oflag = 0;
-	// Set input mode (non-canonical, no echo,...)
-	tio.c_lflag = 0;
-	tio.c_cc[VTIME]    = 0;
-	// Set number of characters to block until received
-	tio.c_cc[VMIN]     = 1;
-
-	// Flush the serial port
-	tcflush(fd, TCIFLUSH);
-	// Configure the serial port
-	tcsetattr(fd,TCSANOW,&tio);
-
-	return fd;
 }
 
 // Function to read in a fixed number

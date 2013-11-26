@@ -1,5 +1,20 @@
-#define MAXNUMHEADSETS 10
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdint.h>
+#include "packets.h"
 
+// Constants
+#define MAXNUMHEADSETS 10
+#define HEADERSIZE 3
+#define CRCSIZE 2
+#define BAUDRATE B57600
+#define XBEEPORT "/dev/ttyUSB0"
 
 // Local Function prototypes.
 
@@ -8,6 +23,7 @@ uint16_t g_numBroadCasting = 0;
 broadCastInfo_t g_broadCasting[MAXNUMHEADSETS];
 uint16_t g_numHeartBeating = 0;
 heartBeatInfo_t g_heartBeating[MAXNUMHEADSETS];
+int32_t g_port;
 
 
 // Function: calcCrc
@@ -37,9 +53,10 @@ int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id)
 	index = findBroadCasting(id);
 	if (index > 0)
 	{
-		pos->latitude = g_broadCasting[index].latitude;
-		pos->longitude = g_broadCasting[index].longitude;
+		pos->x = g_broadCasting[index].latitude;
+		pos->y = g_broadCasting[index].longitude;
 	}
+  return 0;
 }
 
 // Function: getNumBroadCasting()
@@ -59,7 +76,7 @@ int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size)
 	int16_t i = 0;
 	for (i = 0; i < size && i < g_numBroadCasting; i++)
 	{
-		ids[i] = g_broadCasting[index].address;
+		ids[i] = g_broadCasting[i].address;
 	}
 	return i;
 }
@@ -76,6 +93,7 @@ int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originL
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // startSimulation()
 int16_t startSimulation()
@@ -85,6 +103,7 @@ int16_t startSimulation()
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // endSimulationID(id)
 int16_t endSimulationID(uint16_t destId)
@@ -99,17 +118,40 @@ int16_t endSimulationID(uint16_t destId)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
+  uint8_t buf[sizeof(loadStaticData_t) + HEADERSIZE + CRCSIZE];
+  uint8_t fileBuf[256];
+  uint16_t bytesRead = 0;
+  FILE *fp = NULL;
+
+  fp = fopen(filename,"rb");
+  if (fp == NULL)
+  {
+    fprintf(stderr, "Could not open file: %s", filename);
+    return -1;
+  }
+  // Find size of file.
+  fseek(fp,0,SEEK_END);
+  p.numBytes = ftell(fp);
+  rewind(fp);
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
-	p.numBytes = ;
-	// Contents of file. (just stream it byte by byte.)
-	p.bytes = ;
+	//p.numBytes = ;
 	// Pack the packet to a byte stream.
+  loadStaticDataToBytes(&p,buf);
 	// Add header info and crc.
+  addHeader(buf);
 	// Write the packet to the serial port.
+  write(g_port, buf, sizeof(loadStaticData_t) + HEADERSIZE);
+  // Write the file to the serial port
+  while ( !feof(fp))
+  {
+    bytesRead = fread(fileBuf,1,256,fp);
+    write(g_port, fileBuf, bytesRead);
+  }
+  return 0;
 }
 // updateObjs(objInfo *objList)
-int16_t updateObjs(objInfo *objList, uint8_t numObjects)
+int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 {
 	// Static update number increments for each
 	// packet sent.
@@ -123,13 +165,14 @@ int16_t updateObjs(objInfo *objList, uint8_t numObjects)
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 // getAlive(id)
 uint16_t getAlive(uint16_t id)
 {
 	int16_t ret = 0;
 	ret = findHeartBeating(id);
-	return (ret > 0 ? 1 : 0)
+	return (ret > 0 ? 1 : 0);
 }
 // getNumAlive()
 uint16_t getNumAlive()
@@ -178,6 +221,7 @@ int16_t goBack(uint16_t id)
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+  return 0;
 }
 
 
@@ -215,4 +259,54 @@ int16_t findHeartBeating(uint32_t id)
 		}
 	}
 	return -1;
+}
+
+uint8_t loadStaticDataToBytes(loadStaticData_t *p, uint8_t *buf)
+{
+  uint8_t i = HEADERSIZE;
+  buf[i] = p->packetType;
+  i += sizeof(p->packetType);
+  *((uint32_t *)&buf[i]) = p->numBytes;
+  i += sizeof(p->numBytes);
+  return i;
+}
+
+void addHeader(uint8_t *buf)
+{
+  buf[0] = 'P';
+  buf[1] = 'A';
+  buf[2] = 'C';
+  return;
+}
+
+int openComPort()
+{
+	int res;
+	struct termios tio;
+
+	// Open serial port for reading/writing
+	g_port = open(XBEEPORT, O_RDWR|O_NOCTTY); 
+	if (g_port < 0)
+	{
+		perror(XBEEPORT);
+		exit(1);
+	}
+
+	// Clear and then configure serial port
+	bzero(&tio, sizeof(tio));
+	tio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+	tio.c_iflag = IGNPAR;
+	tio.c_oflag = 0;
+	// Set input mode (non-canonical, no echo,...)
+	tio.c_lflag = 0;
+	tio.c_cc[VTIME]    = 0;
+	// Set number of characters to block until received
+	tio.c_cc[VMIN]     = 1;
+
+	// Flush the serial port
+	tcflush(g_port, TCIFLUSH);
+	// Configure the serial port
+	tcsetattr(g_port,TCSANOW,&tio);
+
+	return g_port;
 }

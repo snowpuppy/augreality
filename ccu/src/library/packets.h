@@ -96,8 +96,7 @@ typedef struct accpetHeadset
 typedef struct loadStaticData
 {
     uint8_t packetType; // type of packet being sent.
-    uint8_t numBytes;   // number of bytes in packet.
-    uint8_t *bytes;     // payload of packet.
+    uint32_t numBytes;   // number of bytes in packet.
 } loadStaticData_t;
 
 // UpdateObjInstance:
@@ -156,6 +155,24 @@ typedef struct goBack
 } goBack_t;
 
 // Functions
-int16_t calcCrc(char *packet, int size);
+int openComPort();
+void addHeader(uint8_t *buf);
+uint8_t loadStaticDataToBytes(loadStaticData_t *p, uint8_t *buf);
+int16_t findHeartBeating(uint32_t id);
+int16_t findBroadCasting(uint16_t id);
+int16_t goBack(uint16_t id);
+int16_t getPos(headsetPos_t *pos, uint16_t id);
+int16_t getPos(headsetPos_t *pos, uint16_t id);
+uint16_t getNumAlive();
+uint16_t getAlive(uint16_t id);
+int16_t updateObjs(objInfo_t *objList, uint8_t numObjects);
+int16_t sendFile(char *filename);
+int16_t endSimulationID(uint16_t destId);
+int16_t startSimulation();
+int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originLon );
+int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size);
+uint16_t getNumBroadCasting();
+int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id);
+uint16_t calcCrc(char *packet, int size);
 
 #endif
