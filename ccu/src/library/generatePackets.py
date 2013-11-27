@@ -1,9 +1,13 @@
 #!/usr/bin/python
 
+import sys
 from packetStrings import *
 
-fdh = open("packets.h","w")
-fdc = open("packets.c","w")
+if (len(sys.argv) != 3):
+	raise Exception("Usage: %s [path/to/h/] [path/to/c/]\n" % (sys.argv[0]))
+
+fdh = open(sys.argv[1] + "packets.h","w")
+fdc = open(sys.argv[2] + "packets.c","w")
 
 fdh.write("#ifndef APACKETS_H"
 				 "\n#define APACKETS_H"

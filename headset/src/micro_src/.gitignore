@@ -1,1 +1,3 @@
 bin
+src/packets.c
+include/packets.h

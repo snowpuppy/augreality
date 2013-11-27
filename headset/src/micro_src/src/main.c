@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "usb.h"
 #include "core_cmInstr.h"
-#include "../../../ccu/src/library/packets.h"
+#include "packets.h"
 #include "nmea.h"
 
 // States of the headset.
@@ -25,6 +25,10 @@
 #define NUMXBEEDATABYTES 256
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
+
+// SPI COMMANDS (from gpu to headset)
+#define GETHEADSETDATA 1
+#define FLUSHSPIBUFFER 2
 
 // IMU constants
 #define HIST_SIZE 5
@@ -48,7 +52,7 @@ static struct {
 } gpsState;
 
 // Global Variables
-static uint8_t xbeeData[HEADSETDATABYTES];
+static uint8_t xbeeData[COMM_BUFFER_SIZE];
 static uint8_t numXbeeDataBytes = 0;
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
@@ -71,6 +75,7 @@ static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
+static void parseStaticDataPacket(uint32_t *state);
 
 /**
  * System initialization
@@ -192,14 +197,13 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
  * that spi is running much faster than xbee traffic.
  */
 static void processXbeeData(uint8_t *state) {
-	uint8_t buf[256];
-	uint32_t numBytes = 0, bytesToRead = 0;
-	uint8_t bytesRead = 0;
-	uint32_t i = 0;
-	static xbeeState = XBEEDISCOVERYSTATE;
-	// If packets are available, then just
-	// keep processing them.
-	while (fcount(xbee) > 4) {
+	// use a small buffer to detect the type
+	// of packet.
+	uint8_t buf[16];
+	static uint32_t xbeeState = XBEEDISCOVERYSTATE;
+	// If packets are available
+	// then start processing them.
+	if (fcount(xbee) > 4 && xbeeState == XBEEDISCOVERYSTATE) {
 		// If bytes are available, then receive packet.
 		// Send packet to spi or trigger appropriate action.
 		getBytes(buf, 3);
@@ -209,52 +213,90 @@ static void processXbeeData(uint8_t *state) {
 			getBytes(buf, 1);
 			switch (buf[0]) {
 			case ACCEPTHEADSET:
+				xbeeState = ACCEPTHEADSET;
 				break;
 			case UPDATEOBJINSTANCE:
+				xbeeState = UPDATEOBJINSTANCE;
 				break;
 			case ENDSIMULATION:
+				xbeeState = ENDSIMULATION;
 				break;
 			case STARTSIMULATION:
+				xbeeState = STARTSIMULATION;
 				break;
 			case GOBACK:
+				xbeeState = GOBACK;
 				break;
 			case LOADSTATICDATA:
-				xbeeState = XBEEPARSINGSTATE;
-				parseStaticDataPacket();
-				// Get number of bytes
-				getBytes(buf, 4);
-				xbeeData[0] = buf[0];
-				xbeeData[1] = buf[1];
-				xbeeData[2] = buf[2];
-				xbeeData[3] = buf[3];
-				numBytes = *((uint32_t *)buf);
-
-				while(numBytes > 0)
-				{
-					// get remaining bytes from wireless.
-					getBytes(buf, (uint32_t) numBytes);
-					// write all bytes to spi!
-					for (i = 0; i < numBytes; i++)
-					{
-						spiWriteByte(buf[i]);
-						//fputc(buf[i], xbee);
-					}
-					// spiWriteByte(0);
-					// Toggle LED for status, output character + 1
-					ledToggle();
-					fputc('b', xbee);
-					//fputc(numBytes, xbee);
-				}
+				xbeeState = LOADSTATICDATA;
 				break;
 			default:
 				break;
 			}
 		}
 	}
+	// Process packets depending on the
+	// packet we're expecting.
+	switch (xbeeState) {
+		case ACCEPTHEADSET:
+			break;
+		case UPDATEOBJINSTANCE:
+			break;
+		case ENDSIMULATION:
+			break;
+		case STARTSIMULATION:
+			break;
+		case GOBACK:
+			break;
+		case LOADSTATICDATA:
+			parseStaticDataPacket(&xbeeState);
+			break;
+		default:
+			break;
+	}
 }
 
-static parseStaticDataPacket(void);
-{
+static void parseStaticDataPacket(uint32_t *state) {
+	static uint32_t numBytesLeft = 0;
+	// indicate number of bytes that should be read:
+	// either 64 or numBytesLeft
+	uint32_t bytesToRead = 0;
+	uint32_t i = 0;
+	static uint8_t foundNumBytes = 0;
+
+	// Extract the number of bytes for the
+	// file in advance.
+	if (!foundNumBytes && fcount(xbee) > 4) {
+		// Get number of bytes to read
+		xbeeData[0] = (uint8_t)LOADSTATICDATA;
+		getBytes(xbeeData+1, 4);
+		numBytesLeft = *((uint32_t *)xbeeData);
+		i = 5;
+		foundNumBytes = 1;
+	}
+
+	// calculate number of bytes to read
+	bytesToRead = numBytesLeft < (COMM_BUFFER_SIZE/2) ? numBytesLeft : (COMM_BUFFER_SIZE/2);
+
+	if (fcount(xbee) > bytesToRead ) {
+		// get remaining bytes from wireless.
+		getBytes(&xbeeData[i], (uint32_t)bytesToRead);
+		numBytesLeft -= bytesToRead;
+		// Protect updating the number of bytes to read.
+		__disable_irq();
+		numXbeeDataBytes = bytesToRead + i;
+		__enable_irq();
+
+		// If we're done, reset to get next packet.
+		if (numBytesLeft == 0) {
+			*state = XBEEDISCOVERYSTATE; 
+			foundNumBytes = 0;
+			numBytesLeft = 0;
+		}
+		// Toggle LED for status, output character + 1
+		//ledToggle();
+		//fputc('b', xbee);
+	}
 }
 
 // Reads a line from the GPS
@@ -429,26 +471,29 @@ static void processFuelGuage(void) {
 // kind of data is being requested by the gpu. The
 // gpu can request xbee data or imu/gps/rssi/fuel data.
 void spiReceivedByte(uint8_t data) {
-	if (data == 1) {
-		spiWriteByte(HEADSETDATABYTES);
-		spiWriteBytes(headsetData, HEADSETDATABYTES);
-		spiWriteByte(0);
-		//fputc(data,xbee);
-	}
-	// reset origin.
-	if (data == 2) {
-		originLat = 0;
-		originLon = 0;
-		//fputc(data,xbee);
-	}
-	//fputc('a',xbee);
+    if (data == GETHEADSETDATA) {
+      spiWriteByte(HEADSETDATABYTES);
+      spiWriteBytes(headsetData, HEADSETDATABYTES);
+      spiWriteByte(0);
+      //fputc(data,xbee);
+    }
+    // reset origin.
+    if (data == FLUSHSPIBUFFER) {
+        // Reset origin for GPS. This may need to
+        // be changed to a seperate command.
+        // (I would like to eliminate it by sampling
+        //  the GPS signal till it become stable.)
+        originLat = 0, originLon = 0;
+        // Empty the buffer and push a zero.
+        emptySpiBuffer();
+        spiWriteByte(0);
+        //fputc('a',xbee);
+    }
 }
-
 // Function: serializeBroadcast
 // Purpose: Convert a broadCastPacket to a byte stream
 // for sending over xbee wireless.
-static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
-{
+static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet) {
     /*
 	buffer[0] = packet->header[0];
 	buffer[1] = packet->header[1];
@@ -474,8 +519,7 @@ static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet)
 // that the headset is looking to be configured.
 // Example:
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
-static void sendBroadcast(uint16_t netAddr, float latitude, float longitude)
-{
+static void sendBroadcast(uint16_t netAddr, float latitude, float longitude) {
     /*
 	uint8_t buffer[256];
 	broadCastPacket_t packet;
