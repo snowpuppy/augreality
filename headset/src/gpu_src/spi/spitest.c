@@ -18,9 +18,6 @@ int main(void) {
 	unsigned char data = CLEARSPIBUFFER;
   int fd = 0;
 	uint32_t filesize = 0;
-	unsigned int i = 0;
-  unsigned char dataSize = 0;
-  unsigned int numBytesToRead = 0;
   FILE *filefp = NULL;
 
 	//SPI setup
