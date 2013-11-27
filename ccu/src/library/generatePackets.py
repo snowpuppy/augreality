@@ -7,6 +7,7 @@ fdc = open("packets.c","w")
 
 fdh.write("#ifndef APACKETS_H"
 				 "\n#define APACKETS_H"
+				 "\n#include <stdint.h>"
 				 "\n\n//THIS FILE HAS BEEN AUTO"
 				 "\n//GENERATED. DO NOT EDIT. FIND"
 				 "\n//generatePackets.py INSTEAD"

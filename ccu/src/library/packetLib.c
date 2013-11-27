@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "packets.h"
+#include "packetLib.h"
 
 // Constants
 #define MAXNUMHEADSETS 10
