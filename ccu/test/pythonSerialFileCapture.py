@@ -11,7 +11,7 @@ print ser.portstr       # check which port was really used
 i = 0
 newfile = open("output.txt","wb")
 count = 0
-while count < 11:
+while count < 8:
 	output = ser.read(1)
 	count = count + 1
 while 1:
