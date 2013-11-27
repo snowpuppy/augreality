@@ -28,6 +28,10 @@ typedef struct {
 } RingBuffer_TypeDef;
 
 /**
+ * Clears the serial buffers.
+ */
+void serialBufferClear(void);
+/**
  * Determine the number of available characters on the specified port.
  *
  * @param port the port to count
