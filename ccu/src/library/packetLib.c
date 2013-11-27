@@ -100,7 +100,7 @@ int16_t endSimulationID(uint16_t destId)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
-  uint8_t buf[sizeof(loadStaticData_t) + HEADERSIZE + CRCSIZE];
+  uint8_t buf[LOADSTATICDATASIZE + HEADERSIZE + CRCSIZE];
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0;
   FILE *fp = NULL;
@@ -123,7 +123,7 @@ int16_t sendFile(char *filename)
 	// Add header info and crc.
   addHeader(buf);
 	// Write the packet to the serial port.
-  write(g_port, buf, sizeof(loadStaticData_t) + HEADERSIZE);
+  write(g_port, buf, LOADSTATICDATASIZE + HEADERSIZE);
   // Write the file to the serial port
   while ( !feof(fp))
   {
