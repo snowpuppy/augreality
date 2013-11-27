@@ -121,9 +121,9 @@ int main(void) {
 	imu9Calibrate();
 	// Initialize IMU filtering
 	imu9FilterInit();
+	serialBufferClear();
 	// main loop.
 	while (1) {
-		ledToggle();
 		// Process Wireless information.
 		//processXbeeData(&state);
 		processGPSData();
@@ -268,32 +268,23 @@ static uint32_t gpsReadLine(char start, uint16_t length) {
  * GPS test function, reports new fixes to the serial port as they occur
  */
 static void processGPSData(void) {
-	float x = 0, y = 0; float latf = 0, lonf = 0;
-
+	float latf = 0, lonf = 0;
 	// Try to parse the GPS
 	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
 		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-		// Got it, print it out
-		//printf("[%2u] %d.%06d, %d.%06d\r\n", (unsigned int)gpsGetSatellites(),
-		//	lat / 1000000, abs(lat % 1000000), lon / 1000000, abs(lon % 1000000));
-		// Stuff data into buffer for spi.
-
 		// Find origin as first lat/lon coordinate.
-		latf = (float)lat / (float)1000000;
-		lonf = (float)lon / (float)1000000;
-		if (originLat == 0 && originLon == 0 && gpsGetSatellites() > 3) {
+		latf = (float)lat * 0.000001f;
+		lonf = (float)lon * 0.000001f;
+		if (originLat == 0.f && originLon == 0.f && gpsGetSatellites() > 2) {
 			originLat = latf;
 			originLon = lonf;
 		}
 		// Find difference bet. locations.
 		latf = latf - originLat;
 		lonf = lonf - originLon;
-		// Find offset in meters.
-		x = latf*DECIMALSPERDEGLAT;
-		y = lonf*DECIMALSPERDEGLON;
 		// Stuff the buffer.
-		*((float *)&headsetData[0]) = x; // x pos
-		*((float *)&headsetData[4]) = y; // y pos
+		*((float *)&headsetData[0]) = latf * DECIMALSPERDEGLAT; // x pos
+		*((float *)&headsetData[4]) = lonf * DECIMALSPERDEGLON; // y pos
 	}
 }
 
@@ -380,6 +371,7 @@ static void processIMUData(void) {
 		*((float *) &headsetData[12]) = roll * (45.f / (float)PI); // roll
 		*((float *) &headsetData[16]) = yaw * (180.f / (float)PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
+		ledToggle();
 	}
 }
 
