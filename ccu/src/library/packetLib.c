@@ -158,10 +158,10 @@ int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 	static uint8_t updateNumber = 0;
 	updateObjInstance_t p = {0};
 
-    p.packetType = UPDATEOBJINSTANCE;
-    p.numObj = numObjects;
-    p.updateNumber = updateNumber++;
-    p.objList = objList;
+  p.packetType = UPDATEOBJINSTANCE;
+  p.numObj = numObjects;
+  p.updateNumber = updateNumber++;
+  p.objList = objList;
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
