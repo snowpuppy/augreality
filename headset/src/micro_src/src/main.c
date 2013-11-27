@@ -29,6 +29,7 @@
 // SPI COMMANDS (from gpu to headset)
 #define GETHEADSETDATA 1
 #define FLUSHSPIBUFFER 2
+#define GETXBEEDATA 3
 
 // IMU constants
 #define HIST_SIZE 5
@@ -471,24 +472,33 @@ static void processFuelGuage(void) {
 // kind of data is being requested by the gpu. The
 // gpu can request xbee data or imu/gps/rssi/fuel data.
 void spiReceivedByte(uint8_t data) {
-    if (data == GETHEADSETDATA) {
-      spiWriteByte(HEADSETDATABYTES);
-      spiWriteBytes(headsetData, HEADSETDATABYTES);
-      spiWriteByte(0);
-      //fputc(data,xbee);
-    }
-    // reset origin.
-    if (data == FLUSHSPIBUFFER) {
-        // Reset origin for GPS. This may need to
-        // be changed to a seperate command.
-        // (I would like to eliminate it by sampling
-        //  the GPS signal till it become stable.)
-        originLat = 0, originLon = 0;
-        // Empty the buffer and push a zero.
-        emptySpiBuffer();
-        spiWriteByte(0);
-        //fputc('a',xbee);
-    }
+	if (data == GETHEADSETDATA) {
+		spiWriteByte(HEADSETDATABYTES);
+		spiWriteBytes(headsetData, HEADSETDATABYTES);
+		spiWriteByte(0);
+		//fputc(data,xbee);
+	}
+	// reset origin.
+	if (data == FLUSHSPIBUFFER) {
+		// Reset origin for GPS. This may need to
+		// be changed to a seperate command.
+		// (I would like to eliminate it by sampling
+		//  the GPS signal till it become stable.)
+		originLat = 0, originLon = 0;
+		// Empty the buffer and push a zero.
+		emptySpiBuffer();
+		spiWriteByte(0);
+		//fputc('a',xbee);
+	}
+	// Send XBee packet data
+	if (data == GETXBEEDATA) {
+		if (numXbeeDataBytes > 0) {
+			spiWriteByte(numXbeeDataBytes);
+			spiWriteBytes(xbeeData, numXbeeDataBytes);
+			spiWriteByte(0);
+			numXbeeDataBytes = 0;
+		}
+	}
 }
 // Function: serializeBroadcast
 // Purpose: Convert a broadCastPacket to a byte stream

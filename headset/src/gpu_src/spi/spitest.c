@@ -5,15 +5,19 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
+#define GETXBEEDATA 3
+#define CLEARSPIBUFFER 2
 #define CHIP_SELECT 1
 #define SPI_CLK 4000000
-#define FILENAME "output.tar"
+#define FILENAME "output.txt"
 
 int main(void) {
-	const char text[] = "D";
-	char buffer[256] = {0};
+	unsigned char buffer[256] = {0};
+	unsigned char data = CLEARSPIBUFFER;
   int fd = 0;
+	uint32_t filesize = 0;
 	unsigned int i = 0;
   unsigned char dataSize = 0;
   unsigned int numBytesToRead = 0;
@@ -38,50 +42,58 @@ int main(void) {
 	// GPIO for chip select
 	pinMode(CHIP_SELECT, OUTPUT);
 
-	strcpy(buffer, text);
+	// clear spi buffer
+	wiringPiSPIDataRW(0, &data, 1);
+	
+	// Wait for data from XBEE
+	while (data == 0)
+	{
+		// send command
+		data = GETXBEEDATA;
+		wiringPiSPIDataRW(0, &data, 1);
+		// sleep for 10 microseconds
+		// to give processor time to copy data.
+		usleep(10);
+		data = 0;
+		wiringPiSPIDataRW(0, &data, 1);
+	}
+	usleep(10);
+	// Read in type of data and then read
+	// the file size
+	wiringPiSPIDataRW(0,buffer,(uint32_t)data);
+	filesize = *((uint32_t *)&buffer[1]);
+	printf("Read %d bytes for packet of type %d, filesize = %d\n", (uint32_t)data, (uint32_t)buffer[0], filesize);
 
-  while (dataSize == 0)
-  {
-    //test SPI
-    digitalWrite(CHIP_SELECT, HIGH);
-    wiringPiSPIDataRW(0, (unsigned char *)buffer, strlen(text));
-    digitalWrite(CHIP_SELECT, LOW);
-    // Extract the size as a number.
-    // The micro should send us one byte
-    // to indicate how much data should be read.
-    dataSize = *((unsigned char *)buffer);
-    if (dataSize != 0)
-    {
-      fprintf(stdout, "dataSize = %x\n", dataSize);
-    }
-    // copy original content back to buffer.
-    strcpy(buffer, text);
-    usleep(1000); // sleep for 1 millisecond
-  }
-  printf("Done with loop. Receiving data.\n");
-  usleep(1000);
+	// Write first set of bytes to the file.
+	fwrite(&buffer[5], 1, (uint32_t)(data-5), filefp);
 
-  // Read in data from spi and save it to file!
-  for (i = 0; i < dataSize; i += numBytesToRead)
-  {
-    numBytesToRead = ( (255 < dataSize - i) ? 255 : dataSize - i);
-    digitalWrite(CHIP_SELECT, HIGH);
-    wiringPiSPIDataRW(0, (unsigned char *)buffer, numBytesToRead);
-    digitalWrite(CHIP_SELECT, LOW);
-    //bytesRead = read(fd,buffer, (255 < bytesRead - i) ? 255 : bytesRead - i);
-    buffer[numBytesToRead] = '\0';
-    //fprintf(stdout,"i = %d, dataSize = %x, numBytesToRead = %x buffer = %s\n",i,dataSize, numBytesToRead,buffer);
-    fprintf(stdout,"%s\n",buffer);
-    fwrite(buffer, 1, numBytesToRead, filefp);
-  }
+	// decrement remaining bytes
+	// to be read.
+	filesize -= ((uint32_t)data-5);
+
+	// Get entire file and write
+	// to output file.
+  while (filesize > 0)
+	{
+		// Wait for data from XBEE
+		while (data == 0)
+		{
+			// send command
+			data = GETXBEEDATA;
+			wiringPiSPIDataRW(0, &data, 1);
+			// sleep for 10 microseconds
+			// to give processor time to copy data.
+			usleep(10);
+			data = 0;
+			wiringPiSPIDataRW(0, &data, 1);
+		}
+		usleep(10);
+
+		wiringPiSPIDataRW(0,buffer,(uint32_t)data);
+		fwrite(buffer, 1, (uint32_t)data, filefp);
+		filesize -= (uint32_t)data;
+	}
   fclose(filefp);
-
-  /*
-	// dump the output
-	for (i = 0; i < strlen(text); i++)
-		printf("%02X(%c) ", (unsigned int)(unsigned char)buffer[i], buffer[i]);
-	puts("");
-  */
 
 	return 0;
 }
