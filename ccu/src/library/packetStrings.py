@@ -30,13 +30,8 @@ class Struct:
 			retStr = retStr + "\t%s\t%s;\n" % i
 		retStr += "} %s_t;\n" % ( self.name, )
 		return retStr
-	def sizeFunctionPrototype(self):
-		retStr = "\nuint32_t\t%sSize(void);" % (self.name, )
-		return retStr
-	def sizeFunction(self):
-		retStr = "\nuint32_t\t%sSize(void)\n{" % (self.name, )
-		retStr += "\n\treturn %s;" % (self.size, )
-		retStr += "\n}\n"
+	def printSize(self):
+		retStr = "\n#define %s %s" % (self.name.upper() + "SIZE", self.size)
 		return retStr
 	def packFunctionPrototype(self):
 		retStr = "\nvoid\t%sPack(%s_t *p, uint8_t *buf);" % (self.name, self.name )
@@ -51,7 +46,45 @@ class Struct:
 		retStr += "\n}\n"
 		return retStr
 
+# additional #defines shared
+# between headset and ccu
+addDefines = """
+#define MAXNUMHEADSETS 10
+#define HEADERSIZE 3
+#define CRCSIZE 2
+"""
+# Shared functions between headset and ccu
+addFuncProtStr = """
+void addHeader(uint8_t *buf);
+uint16_t calcCrc(char *packet, int size);"""
 
+addFuncDefStr = """
+void addHeader(uint8_t *buf)
+{
+  buf[0] = 'P';
+  buf[1] = 'A';
+  buf[2] = 'C';
+  return;
+}
+
+// Function: calcCrc
+// This function takes a list of characters
+// which has probably been cast that way from a
+// structure and performs a crc calculation.
+uint16_t calcCrc(char *packet, int size)
+{
+  uint16_t ret = 0;
+  // Make sure min size is one byte plus the 16bit crc
+  if (packet != 0 /*NULL*/ && size > 1+sizeof(short))
+  {
+    ret = ( ((short)packet[0]) << 8) + packet[size-sizeof(short)];
+    return ret;
+  }
+  return 0;
+}
+"""
+
+# Packet definitions
 typesEnum = """
 // PACKETS
 enum packetType

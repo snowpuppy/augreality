@@ -11,9 +11,6 @@
 #include "packetLib.h"
 
 // Constants
-#define MAXNUMHEADSETS 10
-#define HEADERSIZE 3
-#define CRCSIZE 2
 #define BAUDRATE B57600
 #define XBEEPORT "/dev/ttyUSB0"
 
@@ -26,22 +23,6 @@ uint16_t g_numHeartBeating = 0;
 heartBeatInfo_t g_heartBeating[MAXNUMHEADSETS];
 int32_t g_port;
 
-
-// Function: calcCrc
-// This function takes a list of characters
-// which has probably been cast that way from a
-// structure and performs a crc calculation.
-uint16_t calcCrc(char *packet, int size)
-{
-  uint16_t ret = 0;
-  // Make sure min size is one byte plus the 16bit crc
-  if (packet != NULL && size > 1+sizeof(short))
-  {
-    ret = ( ((short)packet[0]) << 8) + packet[size-sizeof(short)];
-    return ret;
-  }
-  return 0;
-}
 
 // API FUNCTIONS
 
@@ -138,7 +119,7 @@ int16_t sendFile(char *filename)
 	// Get size of file.
 	//p.numBytes = ;
 	// Pack the packet to a byte stream.
-  loadStaticDataToBytes(&p,buf);
+  loadStaticDataPack(&p,&buf[HEADERSIZE]);
 	// Add header info and crc.
   addHeader(buf);
 	// Write the packet to the serial port.
@@ -260,24 +241,6 @@ int16_t findHeartBeating(uint32_t id)
 		}
 	}
 	return -1;
-}
-
-uint8_t loadStaticDataToBytes(loadStaticData_t *p, uint8_t *buf)
-{
-  uint8_t i = HEADERSIZE;
-  buf[i] = p->packetType;
-  i += sizeof(p->packetType);
-  *((uint32_t *)&buf[i]) = p->numBytes;
-  i += sizeof(p->numBytes);
-  return i;
-}
-
-void addHeader(uint8_t *buf)
-{
-  buf[0] = 'P';
-  buf[1] = 'A';
-  buf[2] = 'C';
-  return;
 }
 
 int openComPort()

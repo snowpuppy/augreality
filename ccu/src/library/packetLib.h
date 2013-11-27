@@ -2,8 +2,8 @@
 // Contains the definition of the
 // packets exchanged wirelessly. The
 // header and crc data will be added later.
-#ifndef PACKET_H
-#define PACKET_H
+#ifndef PACKETLIB_H
+#define PACKETLIB_H
 #include "packets.h"
 
 /**
@@ -40,8 +40,6 @@ typedef struct headsetPos
 
 // Functions
 int openComPort();
-void addHeader(uint8_t *buf);
-uint8_t loadStaticDataToBytes(loadStaticData_t *p, uint8_t *buf);
 int16_t findHeartBeating(uint32_t id);
 int16_t findBroadCasting(uint16_t id);
 int16_t goBack(uint16_t id);
@@ -57,6 +55,5 @@ int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originL
 int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size);
 uint16_t getNumBroadCasting();
 int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id);
-uint16_t calcCrc(char *packet, int size);
 
 #endif
