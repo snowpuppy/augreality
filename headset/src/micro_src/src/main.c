@@ -15,17 +15,14 @@
 #define LOADSTATICDATA 1
 #define RUNSIMULATION  2
 
-// Packet Types for the
-// headset.
-#define ACCEPTPACKET 0
-#define UPDATEOBJPACKET 1
-#define ENDSIMPACKET 2
-#define BACKPACKET 3
-#define STATICDATAPACKET 4
+// XBee state constants
+#define XBEEDISCOVERYSTATE 0
+#define XBEEPARSINGSTATE 1
 
 // Define number of bytes for
 // headset updates to gpu.
 #define HEADSETDATABYTES 22
+#define NUMXBEEDATABYTES 256
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
@@ -51,6 +48,8 @@ static struct {
 } gpsState;
 
 // Global Variables
+static uint8_t xbeeData[HEADSETDATABYTES];
+static uint8_t numXbeeDataBytes = 0;
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
@@ -194,11 +193,13 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
  */
 static void processXbeeData(uint8_t *state) {
 	uint8_t buf[256];
-	uint8_t numBytes = 0;
+	uint32_t numBytes = 0, bytesToRead = 0;
+	uint8_t bytesRead = 0;
 	uint32_t i = 0;
+	static xbeeState = XBEEDISCOVERYSTATE;
 	// If packets are available, then just
 	// keep processing them.
-	while (fcount(xbee) > 0) {
+	while (fcount(xbee) > 4) {
 		// If bytes are available, then receive packet.
 		// Send packet to spi or trigger appropriate action.
 		getBytes(buf, 3);
@@ -207,34 +208,53 @@ static void processXbeeData(uint8_t *state) {
 			// Get type of packet
 			getBytes(buf, 1);
 			switch (buf[0]) {
-			case ACCEPTPACKET:
-			case UPDATEOBJPACKET:
-			case ENDSIMPACKET:
-			case BACKPACKET:
-			case STATICDATAPACKET:
+			case ACCEPTHEADSET:
+				break;
+			case UPDATEOBJINSTANCE:
+				break;
+			case ENDSIMULATION:
+				break;
+			case STARTSIMULATION:
+				break;
+			case GOBACK:
+				break;
+			case LOADSTATICDATA:
+				xbeeState = XBEEPARSINGSTATE;
+				parseStaticDataPacket();
 				// Get number of bytes
-				getBytes(buf, 1);
-				spiWriteByte(buf[0]);
-				numBytes = (uint8_t) buf[0];
+				getBytes(buf, 4);
+				xbeeData[0] = buf[0];
+				xbeeData[1] = buf[1];
+				xbeeData[2] = buf[2];
+				xbeeData[3] = buf[3];
+				numBytes = *((uint32_t *)buf);
 
-				// get remaining bytes from wireless.
-				getBytes(buf, (uint32_t) numBytes);
-				// write all bytes to spi!
-				for (i = 0; i < numBytes; i++) {
-					spiWriteByte(buf[i]);
-					//fputc(buf[i], xbee);
+				while(numBytes > 0)
+				{
+					// get remaining bytes from wireless.
+					getBytes(buf, (uint32_t) numBytes);
+					// write all bytes to spi!
+					for (i = 0; i < numBytes; i++)
+					{
+						spiWriteByte(buf[i]);
+						//fputc(buf[i], xbee);
+					}
+					// spiWriteByte(0);
+					// Toggle LED for status, output character + 1
+					ledToggle();
+					fputc('b', xbee);
+					//fputc(numBytes, xbee);
 				}
-				spiWriteByte(0);
-				// Toggle LED for status, output character + 1
-				ledToggle();
-				fputc('b', xbee);
-				//fputc(numBytes, xbee);
 				break;
 			default:
 				break;
 			}
 		}
 	}
+}
+
+static parseStaticDataPacket(void);
+{
 }
 
 // Reads a line from the GPS

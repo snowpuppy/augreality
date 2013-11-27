@@ -16,6 +16,17 @@
 #define SERIAL_PORT_SPARE 0x02
 #define SERIAL_PORT_USB 0x03
 
+// Size of buffer, in bytes, for the communication ring buffers
+// Can be at most 256 before overflowing the space in a byte; must be a power of two
+#define COMM_BUFFER_SIZE 0x80
+
+// Structure containing a ring buffer
+typedef struct {
+	uint16_t head;
+	uint16_t tail;
+	char buffer[COMM_BUFFER_SIZE];
+} RingBuffer_TypeDef;
+
 /**
  * Determine the number of available characters on the specified port.
  *
