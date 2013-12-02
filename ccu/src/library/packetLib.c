@@ -118,6 +118,7 @@ int16_t sendFile(char *filename)
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
 	//p.numBytes = ;
+  printf("Sending file of size: %d\n", p.numBytes);
 	// Pack the packet to a byte stream.
   loadStaticDataPack(&p,&buf[HEADERSIZE]);
 	// Add header info and crc.
