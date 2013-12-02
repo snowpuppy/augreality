@@ -12,7 +12,6 @@
 // The initial state is
 // BROADCASTSTATE
 #define BROADCASTSTATE 0
-#define LOADSTATICDATA 1
 #define RUNSIMULATION  2
 
 // XBee state constants
@@ -70,7 +69,7 @@ static float yawHist[4 * IMU_HISTORY];
 static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet);
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
-static void processXbeeData(uint8_t *state);
+static void processXbeeData();
 void spiReceivedByte(uint8_t data);
 static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
@@ -130,7 +129,7 @@ int main(void) {
 	// main loop.
 	while (1) {
 		// Process Wireless information.
-		//processXbeeData(&state);
+		processXbeeData();
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
@@ -197,19 +196,19 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
  * and appropriate data will be immediately sent over spi. It is assumed
  * that spi is running much faster than xbee traffic.
  */
-static void processXbeeData(uint8_t *state) {
+static void processXbeeData() {
 	// use a small buffer to detect the type
 	// of packet.
-	uint8_t buf[16];
+	static uint8_t buf[16];
 	static uint32_t xbeeState = XBEEDISCOVERYSTATE;
 	// If packets are available
 	// then start processing them.
-	if (fcount(xbee) > 4 && xbeeState == XBEEDISCOVERYSTATE) {
+	if (fcount(xbee) > 2 && xbeeState == XBEEDISCOVERYSTATE) {
 		// If bytes are available, then receive packet.
 		// Send packet to spi or trigger appropriate action.
-		getBytes(buf, 3);
-		if (buf[0] == 'P' && buf[1] == 'A' && buf[2] == 'C') {
-			//fputc('a', xbee);
+		// This is a sequence detector for 'P','A','C'
+		getBytes(buf, 1);
+		if (buf[2] == 'P' && buf[1] == 'A' && buf[0] == 'C') {
 			// Get type of packet
 			getBytes(buf, 1);
 			switch (buf[0]) {
@@ -234,6 +233,10 @@ static void processXbeeData(uint8_t *state) {
 			default:
 				break;
 			}
+		}
+		else {
+			buf[2] = buf[1];
+			buf[1] = buf[0];
 		}
 	}
 	// Process packets depending on the
@@ -262,38 +265,40 @@ static void parseStaticDataPacket(uint32_t *state) {
 	// indicate number of bytes that should be read:
 	// either 64 or numBytesLeft
 	uint32_t bytesToRead = 0;
-	uint32_t i = 0;
+	static uint32_t i_local = 0;
 	static uint8_t foundNumBytes = 0;
 
 	// Extract the number of bytes for the
 	// file in advance.
 	if (!foundNumBytes && fcount(xbee) > 4) {
 		// Get number of bytes to read
-		xbeeData[0] = (uint8_t)LOADSTATICDATA;
-		getBytes(xbeeData+1, 4);
-		numBytesLeft = *((uint32_t *)xbeeData);
-		i = 5;
+		xbeeData[0] = LOADSTATICDATA;
+		getBytes(&xbeeData[1], 4);
+		numBytesLeft = *((uint32_t *)&xbeeData[1]);
+		i_local = 5;
 		foundNumBytes = 1;
+		//fputc('a', xbee);
 	}
 
 	// calculate number of bytes to read
-	bytesToRead = numBytesLeft < (COMM_BUFFER_SIZE/2) ? numBytesLeft : (COMM_BUFFER_SIZE/2);
+	bytesToRead = numBytesLeft < (COMM_BUFFER_SIZE/16) ? numBytesLeft : (COMM_BUFFER_SIZE/16);
 
-	if (fcount(xbee) > bytesToRead ) {
+	if (foundNumBytes && (fcount(xbee) >= bytesToRead) && numXbeeDataBytes == 0) {
 		// get remaining bytes from wireless.
-		getBytes(&xbeeData[i], (uint32_t)bytesToRead);
+		__disable_irq();
+		getBytes(&xbeeData[i_local], (uint32_t)bytesToRead);
 		numBytesLeft -= bytesToRead;
 		// Protect updating the number of bytes to read.
-		__disable_irq();
-		numXbeeDataBytes = bytesToRead + i;
+		numXbeeDataBytes = bytesToRead + i_local;
 		__enable_irq();
 
 		// If we're done, reset to get next packet.
-		if (numBytesLeft == 0) {
+		if (numBytesLeft <= 0) {
 			*state = XBEEDISCOVERYSTATE; 
 			foundNumBytes = 0;
 			numBytesLeft = 0;
 		}
+		i_local = 0;
 		// Toggle LED for status, output character + 1
 		//ledToggle();
 		//fputc('b', xbee);
@@ -493,10 +498,18 @@ void spiReceivedByte(uint8_t data) {
 	// Send XBee packet data
 	if (data == GETXBEEDATA) {
 		if (numXbeeDataBytes > 0) {
+			printf("%d\n", numXbeeDataBytes);
 			spiWriteByte(numXbeeDataBytes);
 			spiWriteBytes(xbeeData, numXbeeDataBytes);
 			spiWriteByte(0);
 			numXbeeDataBytes = 0;
+		}
+		else
+		{
+			// Confirm that a request was sent,
+			// but no data available.
+			spiWriteByte(1);
+			spiWriteByte(0);
 		}
 	}
 }
