@@ -68,7 +68,7 @@ int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size)
 int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originLon )
 {
 	// Create a packet and stuff it.
-	accpetHeadset_t p = {0};
+	acceptHeadset_t p = {0};
 	p.packetType = BROADCASTPACKET;
 	p.id = ccuId;
 	p.x = originLat;
@@ -275,4 +275,9 @@ int openComPort()
 	tcsetattr(g_port,TCSANOW,&tio);
 
 	return g_port;
+}
+
+int16_t writeByteStream(uint8_t *buf, uint16_t size)
+{
+	return write(g_port, (void *)buf, size);
 }

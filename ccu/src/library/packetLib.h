@@ -6,6 +6,26 @@
 #define PACKETLIB_H
 #include "packets.h"
 
+// Api requests made from gui
+// and from the simulation to
+// get updated information
+// about the headsets.
+enum apiRequest
+{
+	GETBROADCASTIDS = 1,
+	GETNUMBROADCAST,
+	GETBROADCASTLOC,
+	GETPOSITION,
+	GETNUMALIVE,
+	GETALIVE,
+	SENDUPDATEOBJS,
+	SENDFILE,
+	SENDEND,
+	SENDSTART,
+	SENDACCEPT,
+	SENDGOBACK
+};
+
 /**
 * @brief broadCastInfo used to keep track of
 *		 broadCast packet info from headsets.
@@ -44,7 +64,6 @@ int16_t findHeartBeating(uint32_t id);
 int16_t findBroadCasting(uint16_t id);
 int16_t goBack(uint16_t id);
 int16_t getPos(headsetPos_t *pos, uint16_t id);
-int16_t getPos(headsetPos_t *pos, uint16_t id);
 uint16_t getNumAlive();
 uint16_t getAlive(uint16_t id);
 int16_t updateObjs(objInfo_t *objList, uint8_t numObjects);
@@ -55,5 +74,6 @@ int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originL
 int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size);
 uint16_t getNumBroadCasting();
 int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id);
+int16_t writeByteStream(uint8_t *buf, uint16_t size);
 
 #endif

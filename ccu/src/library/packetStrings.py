@@ -131,7 +131,7 @@ acceptHeadsetStr = """
 // Sent from ccu to one headset.
 // This tells the headset it is included and
 // tells it where the geospatial origin is."""
-acceptHeadset = Struct("accpetHeadset", acceptHeadsetStr)
+acceptHeadset = Struct("acceptHeadset", acceptHeadsetStr)
 acceptHeadset.addMember("uint8_t", "packetType", 1)
 acceptHeadset.addMember("uint16_t", "id", 2)
 acceptHeadset.addMember("float", "x", 4)
