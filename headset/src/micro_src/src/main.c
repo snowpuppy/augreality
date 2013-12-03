@@ -394,7 +394,7 @@ static void processGPSData(void) {
 // Rssi is also set to be sent through spi.
 static void processIMUData(void) {
 	// Processing variables
-	vector g, a, m;
+	ivector g, a, m;
 	float roll, pitch, yaw;
 	// Timing related variables
 	const uint32_t UPDATE_PERIOD_MS = 16;
@@ -411,12 +411,12 @@ static void processIMUData(void) {
 			rollHist[histIndex] = rollHist[histIndex+1];
 		}
 		// get new sensor data
-		imu9Raw(&g, &a, &m);
+		imu9Read(&g, &a, &m);
 		// calculate pitch/yaw/roll based on new sensor data
 		pitchHist[histIndex] = a_pitch(a);
 		rollHist[histIndex] = a_roll(a);
 		yawHist[histIndex] =
-				m_pr_yaw(m, rollHist[histIndex], pitchHist[histIndex]);
+				m_pr_yaw(m, pitchHist[histIndex], rollHist[histIndex]);
 				// roll and pitch swapped due to physical orientation of sensor
 
 		// filter pitch/yaw/roll values
@@ -429,8 +429,8 @@ static void processIMUData(void) {
 			roll += rollHist[histIndex] * filterCoeffs[histIndex];
 		}
 		// Convert to degrees
-		*((float *) &headsetData[8]) = pitch * (180. / PI); // pitch
-		*((float *) &headsetData[12]) = roll * (180. / PI); // roll
+		*((float *) &headsetData[8]) = pitch * (45. / PI); // pitch
+		*((float *) &headsetData[12]) = roll * (45. / PI); // roll
 		*((float *) &headsetData[16]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 		ledToggle();
