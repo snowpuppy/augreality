@@ -28,7 +28,7 @@ class Struct:
 		retStr = self.comment
 		retStr += "\ntypedef struct %s\n{\n" % (self.name, )
 		for i in self.members:
-			retStr = retStr + "\t%s\t%s;\n" % i
+			retStr = retStr + "\t%s\t%s;\n" % (i[0], i[1])
 		retStr += "} %s_t;\n" % ( self.name, )
 		return retStr
 	def printSize(self):
@@ -43,11 +43,11 @@ class Struct:
 		for i in self.members:
 			if (i[0] in self.validTypes):
 				if (i[2] == 0):
-					retStr += "\n\t*((%s *)&buf[i]) = p->%s;" % (i[0], i[1])
+					retStr += "\n\t*((%s *)&buf[i]) = p->%s;" % (i[0], i[1].split('[')[0])
 					retStr += "\n\ti += sizeof(%s);" % (i[0], )
-				else
-					for j in range(i[2],0):
-						retStr += "\n\t*((%s *)&buf[i]) = p->%s[j];" % (i[0], i[1])
+				else:
+					for j in range(i[2]):
+						retStr += "\n\t*((%s *)&buf[i]) = p->%s[%d];" % (i[0], i[1].split('[')[0], j)
 						retStr += "\n\ti += sizeof(%s);" % (i[0], )
 
 		retStr += "\n}\n"
