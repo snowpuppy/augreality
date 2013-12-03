@@ -215,7 +215,6 @@ void xbeeInit(uint8_t *xbeeId)
 		fputc('L',xbee);
 		fputc('\r',xbee);
 		getBytes(xbeeId,8);
-		xbeeId = *((uint32_t *)xbeeId);
 	}
 }
 
