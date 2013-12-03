@@ -196,12 +196,12 @@ void serviceConnections(int fd)
 void _getBroadCastIDs(int fd)
 {
 	int rc = 0;
-	uint16_t ids[MAXNUMHEADSETS];
+	uint8_t ids[MAXNUMHEADSETS*SIZEOFID];
 	int num = getNumBroadCasting();
 	// get ids.
 	getBroadCastingIDs(ids, num);
 	// send the return message.
-	rc = write(fd, (void *)ids, num*sizeof(uint16_t));
+	rc = write(fd, (void *)ids, num*SIZEOFID);
 }
 void _getNumBroadcast(int fd)
 {
@@ -212,11 +212,11 @@ void _getNumBroadcast(int fd)
 void _getBroadcastLoc(int fd)
 {
 	int rc = 0;
-	uint16_t id = 0;
+	uint8_t id[SIZEOFID];
 	headsetPos_t pos = {0};
 	// Read in the id
-	rc = read(fd, (void *)&id, sizeof(id));
-	if (rc < sizeof(id)) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); }
+	rc = read(fd, (void *)id, SIZEOFID);
+	if (rc < SIZEOFID) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); }
 	// Find the Loc element for this id and send our reply.
 	getBroadCastingLoc(&pos, id);
 	// Send the position information out.
@@ -225,11 +225,11 @@ void _getBroadcastLoc(int fd)
 void _getPosition(int fd)
 {
 	int rc = 0;
-	uint16_t id = 0;
+	uint8_t id[SIZEOFID];
 	headsetPos_t pos = {0};
 	// Read in the id
-	rc = read(fd, (void *)&id, sizeof(id));
-	if (rc < sizeof(id)) { perror("Error:_getPosition: read less than size of id!\n"); }
+	rc = read(fd, (void *)id, SIZEOFID);
+	if (rc < SIZEOFID) { perror("Error:_getPosition: read less than size of id!\n"); }
 	// Find the Loc element for this id and send our reply.
 	getPos(&pos, id);
 	// Send the position information out.
@@ -245,11 +245,11 @@ void _getNumAlive(int fd)
 void _getAlive(int fd)
 {
 	int rc = 0;
-	uint16_t id = 0;
+	uint8_t id[SIZEOFID];
 	uint16_t alive = 0;
 	// Read in the id
-	rc = read(fd, (void *)&id, sizeof(id));
-	if (rc < sizeof(id)) { perror("Error:_getAlive: read less than size of id!\n"); }
+	rc = read(fd, (void *)id, SIZEOFID);
+	if (rc < SIZEOFID) { perror("Error:_getAlive: read less than size of id!\n"); }
 	// Find the Loc element for this id and send our reply.
 	alive = getAlive(id);
 	// Send the position information out.
@@ -335,7 +335,7 @@ void _sendStart(int fd)
 }
 void _sendAccept(int fd)
 {
-	uint8_t buf[ACCPETHEADSETSIZE + HEADERSIZE];
+	uint8_t buf[ACCEPTHEADSETSIZE + HEADERSIZE];
 	acceptHeadset_t p = {0};
 	p.packetType = ACCEPTHEADSET;
 	//p.id = getCcuId();
@@ -345,7 +345,7 @@ void _sendAccept(int fd)
 	//getOrigin(&p.x, &p.y, /*id of headset */);
 	addHeader(buf);
 	acceptHeadsetPack(&p, buf);
-	writeByteStream(buf, ACCPETHEADSETSIZE + HEADERSIZE);
+	writeByteStream(buf, ACCEPTHEADSETSIZE + HEADERSIZE);
 }
 // This needs to be sent to specific address
 // or broadcast as needed...
