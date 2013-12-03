@@ -75,6 +75,7 @@ static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
 static void parseStaticDataPacket(uint32_t *state);
+void xbeeInit(uint8_t *xbeeId);
 
 /**
  * System initialization
@@ -115,7 +116,7 @@ static void imu9FilterInit(void) {
 // Function: main
 // Starting point for all other functions.
 int main(void) {
-	uint32_t xbeeId = 0;
+	uint8_t xbeeId[16] = {0};
 	// Sys init
 	init();
 	msleep(1500L);
@@ -127,7 +128,7 @@ int main(void) {
 	imu9FilterInit();
 	serialBufferClear();
 	// Initialize XBee settings
-	xbeeInit(&xbeeId);
+	xbeeInit(xbeeId);
 	// main loop.
 	while (1) {
 		// Process Wireless information.
@@ -194,29 +195,28 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
 // Purpose: Grab the mac address
 // so that it can be used to identify
 // this headset.
-void xbeeInit(uint32_t *xbeeId)
+void xbeeInit(uint8_t *xbeeId)
 {
-	uint8_t buf[8] = {0};
 	fputc('+',xbee);
 	fputc('+',xbee);
 	fputc('+',xbee);
 	// Wait for ok.
-	getBytes(buf,2);
-	if (buf[0] == 'O' && buf[1] == 'K')
+	getBytes(xbeeId,2);
+	if (xbeeId[0] == 'O' && xbeeId[1] == 'K')
 	{
 		fputc('A',xbee);
 		fputc('T',xbee);
 		fputc('S',xbee);
 		fputc('H',xbee);
-		fputc('\n',xbee);
-		getBytes(&buf[2],2);
+		fputc('\r',xbee);
+		getBytes(&xbeeId[8],8);
 		fputc('A',xbee);
 		fputc('T',xbee);
 		fputc('S',xbee);
 		fputc('L',xbee);
-		fputc('\n',xbee);
-		getBytes(buf,2);
-		xbeeId = *((uint32_t *)buf);
+		fputc('\r',xbee);
+		getBytes(xbeeId,8);
+		xbeeId = *((uint32_t *)xbeeId);
 	}
 }
 
