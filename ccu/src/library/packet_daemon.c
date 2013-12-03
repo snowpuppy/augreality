@@ -8,18 +8,31 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "packets.h"
+#include "packetLib.h"
+#include "threadInterface.h"
 
 // Other functions.
 int readBytes(int fd, char *data, int numBytes);
+void printFloatBytes(char *buf);
 
 // Main Function.
 int main(void)
 {
   int fd = 0;
+	int ret = 0;
 	broadCastPacket_t packet;
 
-	fd = openComPort();
-  sendFile("../sim/sampleFile.tar");
+  // Create a separate thread which will launch server functions
+	ret = initServer();
+	if (ret < 0)
+	{
+		perror("Problem starting thread...\n"); return 1;
+	}
+	// Wait forever
+	while(1);
+  // Open the serial port for communication.
+	//fd = openComPort();
+  //sendFile("../sim/sampleFile.tar");
 /*
 	//res = write(fd,"abcdh",5);
 	while (1)

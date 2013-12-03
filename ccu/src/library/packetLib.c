@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "packets.h"
 #include "packetLib.h"
+#include "threadInterface.h"
 
 // Constants
 #define BAUDRATE B57600
