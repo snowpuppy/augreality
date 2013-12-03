@@ -66,7 +66,6 @@ static float rollHist[IMU_HISTORY];
 static float yawHist[IMU_HISTORY];
 
 // Function declarations
-static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet);
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
 static void processXbeeData();
@@ -115,6 +114,7 @@ static void imu9FilterInit(void) {
 // Function: main
 // Starting point for all other functions.
 int main(void) {
+	uint32_t xbeeId = 0;
 	// Sys init
 	init();
 	msleep(1500L);
@@ -125,6 +125,8 @@ int main(void) {
 	// Initialize IMU filtering
 	imu9FilterInit();
 	serialBufferClear();
+	// Initialize XBee settings
+	xbeeInit(&xbeeId);
 	// main loop.
 	while (1) {
 		// Process Wireless information.
@@ -184,6 +186,36 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
 		for (i = 0; i < numBytes; i++) {
 			data[i] = fgetc(xbee);
 		}
+	}
+}
+
+// Function: xbeeInit()
+// Purpose: Grab the mac address
+// so that it can be used to identify
+// this headset.
+void xbeeInit(uint32_t *xbeeId)
+{
+	uint8_t buf[8] = {0};
+	fputc('+',xbee);
+	fputc('+',xbee);
+	fputc('+',xbee);
+	// Wait for ok.
+	getBytes(buf,2);
+	if (buf[0] == 'O' && buf[1] == 'K')
+	{
+		fputc('A',xbee);
+		fputc('T',xbee);
+		fputc('S',xbee);
+		fputc('H',xbee);
+		fputc('\n',xbee);
+		getBytes(&buf[2],2);
+		fputc('A',xbee);
+		fputc('T',xbee);
+		fputc('S',xbee);
+		fputc('L',xbee);
+		fputc('\n',xbee);
+		getBytes(buf,2);
+		xbeeId = *((uint32_t *)buf);
 	}
 }
 
@@ -475,29 +507,6 @@ void spiReceivedByte(uint8_t data) {
 			spiWriteByte(0);
 		}
 	}
-}
-// Function: serializeBroadcast
-// Purpose: Convert a broadCastPacket to a byte stream
-// for sending over xbee wireless.
-static void serializeBroadcast(uint8_t *buffer, broadCastPacket_t *packet) {
-    /*
-	buffer[0] = packet->header[0];
-	buffer[1] = packet->header[1];
-	buffer[2] = packet->header[2];
-	buffer[3] = packet->type;
-	buffer[4] = ((uint8_t *)&packet->address)[0];
-	buffer[5] = ((uint8_t *)&packet->address)[1];
-	buffer[6] = ((uint8_t *)&packet->latitude)[0];
-	buffer[7] = ((uint8_t *)&packet->latitude)[1];
-	buffer[8] = ((uint8_t *)&packet->latitude)[2];
-	buffer[9] = ((uint8_t *)&packet->latitude)[3];
-	buffer[10] = ((uint8_t *)&packet->longitude)[0];
-	buffer[11] = ((uint8_t *)&packet->longitude)[1];
-	buffer[12] = ((uint8_t *)&packet->longitude)[2];
-	buffer[13] = ((uint8_t *)&packet->longitude)[3];
-	buffer[14] = ((uint8_t *)&packet->crc)[0];
-	buffer[15] = ((uint8_t *)&packet->crc)[1];
-    */
 }
 
 // Function: sendBroadcast
