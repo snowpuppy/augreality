@@ -58,12 +58,12 @@ static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
-#define IMU_HISTORY 4
+#define IMU_HISTORY 5
 static uint32_t histIndex = 0;
-static float gyroAccum = 0.0f;
+const float filterCoeffs[IMU_HISTORY] = {.10, .15, .20, .25, .30};
 static float pitchHist[IMU_HISTORY];
 static float rollHist[IMU_HISTORY];
-static float yawHist[4 * IMU_HISTORY];
+static float yawHist[IMU_HISTORY];
 
 // Function declarations
 static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
@@ -104,13 +104,12 @@ static void init(void) {
  * IMU filtering initialization
  */
 static void imu9FilterInit(void) {
-	vector g, a, m;
-	float pitch, roll;
-	// Take initial reading, set up gyro accumulator
-	imu9Read(&g, &a, &m);
-	pitch = a_pitch(&a);
-	roll = a_roll(&a);
-	gyroAccum = m_pr_yaw(&m, roll, pitch);
+	// Zero history vectors
+	for (histIndex = 0; histIndex < IMU_HISTORY; ++histIndex) {
+		pitchHist[histIndex] = 0;
+		rollHist[histIndex] = 0;
+		yawHist[histIndex] = 0;
+	}
 }
 
 // Function: main
@@ -388,36 +387,6 @@ static void processGPSData(void) {
 	}
 }
 
-// Function: imuYawUpdate
-// Purpose: Perform long-term moving average filtering on the
-static float imuYawUpdate(float yaw) {
-	uint32_t plusMinusPi = 0; float total = 0.0f;
-	yawHist[histIndex] = yaw;
-	// Ring buffer
-	for (uint32_t i = 0; i < 4 * IMU_HISTORY; i++) {
-		float value = yawHist[i];
-		if (plusMinusPi == 0) {
-			// Use this to correctly handle wraps around the singularity
-			if (value > 0.7f) plusMinusPi = 1;
-			else if (value < -0.7f) plusMinusPi = 2;
-		} else {
-			// Correctly handle wraps around +/- PI
-			if (value < -0.7f && plusMinusPi == 1)
-				value += (float)(2.0 * PI);
-			if (value > 0.7f && plusMinusPi == 2)
-				value -= (float)(2.0 * PI);
-		}
-		total += value;
-	}
-	// Return averaged value
-	total = total * (1.0f / 16.0f);
-	if (total < (float)-PI)
-		total += (float)(2.0 * PI);
-	else if (total > (float)PI)
-		total -= (float)(2.0 * PI);
-	return total;
-}
-
 // Function: processIMUData
 // Purpose: Stuffs current IMU values in buffer
 // so that they can be sent to the GPU and over
@@ -427,7 +396,7 @@ static float imuYawUpdate(float yaw) {
 static void processIMUData(void) {
 	// Processing variables
 	vector g, a, m;
-	float roll, pitch, yaw, gyroYaw, yawRate;
+	float roll, pitch, yaw;
 	// Timing related variables
 	const uint32_t UPDATE_PERIOD_MS = 16;
 	static unsigned long imuTimer = 0;
@@ -436,40 +405,34 @@ static void processIMUData(void) {
 		// Index history array
 		uint32_t hist = histIndex % IMU_HISTORY;
 		imuTimer = currentTime;
-		imu9Read(&g, &a, &m);
-		// Calculate variables
-		pitch = a_pitch(&a);
-		roll = a_roll(&a);
-		yaw = m_pr_yaw(&m, pitch, roll);
-		// Get gyro rate angle in rad/s by multiplying by DT
-		yawRate = g_pr_yaw(&g, pitch, roll) * (3.054326e-4f * (float)UPDATE_PERIOD_MS * 0.001f);
-		// RNL and accumulate
-		if (yawRate > -0.005f && yawRate < 0.005f) yawRate = 0.f;
-		gyroYaw = gyroAccum + yawRate;
-		// Adjust gyro yaw into range (-pi, pi)
-		if (gyroYaw < (float)-PI)
-			gyroYaw += (float)(2.0 * PI);
-		else if (gyroYaw > (float)PI)
-			gyroYaw -= (float)(2.0 * PI);
-		// Compute actual yaw by rolling the gyro yaw accumulated total towards compass
-		gyroYaw = gyroYaw - ((gyroYaw - yaw) * 0.008f);
-		gyroAccum = gyroYaw;
-		// Store in history
-		pitchHist[hist] = pitch;
-		rollHist[hist] = roll;
-		yaw = imuYawUpdate(yaw);
-		histIndex = (histIndex + 1) % (4 * IMU_HISTORY);
-		// Calculate the average of the pitch, roll (4 samples)
-		pitch = 0.0f;
-		roll = 0.0f;
-		for (uint32_t i = 0; i < IMU_HISTORY; i++) {
-			pitch += pitchHist[i];
-			roll += rollHist[i];
+		// push back pitch/yaw/roll history
+		for (histIndex = 0; histIndex < IMU_HISTORY-1; ++histIndex) {
+			pitchHist[histIndex] = pitchHist[histIndex+1];
+			yawHist[histIndex] = yawHist[histIndex+1];
+			rollHist[histIndex] = rollHist[histIndex+1];
+		}
+		// get new sensor data
+		imu9Raw(&g, &a, &m);
+		// calculate pitch/yaw/roll based on new sensor data
+		pitchHist[histIndex] = a_pitch(a);
+		rollHist[histIndex] = a_roll(a);
+		yawHist[histIndex] =
+				m_pr_yaw(m, rollHist[histIndex], pitchHist[histIndex]);
+				// roll and pitch swapped due to physical orientation of sensor
+
+		// filter pitch/yaw/roll values
+		pitch = 0;
+		yaw = 0;
+		roll = 0;
+		for (histIndex = 0; histIndex < HIST_SIZE; ++histIndex) {
+			pitch += pitchHist[histIndex] * filterCoeffs[histIndex];
+			yaw += yawHist[histIndex] * filterCoeffs[histIndex];
+			roll += rollHist[histIndex] * filterCoeffs[histIndex];
 		}
 		// Convert to degrees
-		*((float *) &headsetData[8]) = pitch * (45.f / (float)PI); // pitch
-		*((float *) &headsetData[12]) = roll * (45.f / (float)PI); // roll
-		*((float *) &headsetData[16]) = yaw * (180.f / (float)PI); // yaw
+		*((float *) &headsetData[8]) = pitch * (180. / PI); // pitch
+		*((float *) &headsetData[12]) = roll * (180. / PI); // roll
+		*((float *) &headsetData[16]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 		ledToggle();
 	}
