@@ -13,12 +13,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include "serverComm.h"
 
 // CONSTANTS
 #define PORT 7777
+#define LISTENQ 100
+#define DEBUG 1
 
 // FUNCTIONS
 int bindServer(uint16_t port);
+void serviceConnections(int fd);
+void sendBroadCastData(int connfd);
+void sendHeartbeatData(int connfd);
 
 int main(void)
 {
@@ -32,6 +38,7 @@ int main(void)
   // Wait for data from clients. (use select)
   serviceConnections(inetfd);
   // Do things in response to receipt of data.
+  close(inetfd);
   return 0;
 }
 
@@ -78,34 +85,60 @@ int bindServer(uint16_t port)
 
 void serviceConnections(int fd)
 {
+  int rc = 0;
   int clientlen = 0, connfd;
   struct sockaddr_in clientaddr = {0};
   struct hostent *host = NULL;
-  char *haddr = NULL;
+  // Select variables
+  //fd_set rfds;
+  //struct timeval tv;
 
   while(1)
   {
+    uint8_t packetType = 0;
     clientlen = sizeof(clientaddr);
-    connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &clientlen);
+    connfd = accept(fd, (struct sockaddr *)&clientaddr, &clientlen);
     host = gethostbyaddr( (const char *)&clientaddr.sin_addr.s_addr, sizeof(clientaddr.sin_addr.s_addr), AF_INET);
 #if DEBUG == 1
     printf("Connected to %s\n", host->h_name);
 #endif
 
-    if ( (childpid = fork()) == 0)
+    // Handle the request here.
+    rc = read(connfd, (void *)&packetType, 1);
+    switch(packetType)
     {
-        // Handle the request here.
-        //
-        // write(connfd, buf, n) where n is the number of bytes to write.
-#if DEBUG == 1
-        printf("##### SPAWNED CHILD PROCESS WITH ID=%d\n", childpid);
-#endif
-        close(listenfd);
-        handleClientRequest(connfd, host, clientaddr);
-        exit(0);
+      case GETBROADCAST:
+        sendBroadCastData(connfd);
+        break;
+      case GETHEARTBEAT:
+        sendHeartbeatData(connfd);
+        break;
+      default:
+        break;
     }
-
-    // Close socket.
     close(connfd);
   }
+}
+
+void sendBroadCastData(int connfd)
+{
+  broadCastInfo_t p = {0};
+  p.address = 0x3322;
+  p.latitude = 345.22;
+  p.longitude = 222.45;
+  //htonBroadCastInfo(&p);
+  write(connfd, (void *)&p, sizeof(p));
+}
+
+void sendHeartbeatData(int connfd)
+{
+  heartBeatInfo_t p = {0};
+  p.id = 0x3322;
+  p.x = 22;
+  p.y = 32;
+  p.pitch = 30;
+  p.roll = 90;
+  p.yaw = 180;
+  //htonHeartBeatInfo(&p);
+  write(connfd, (void *)&p, sizeof(p));
 }
