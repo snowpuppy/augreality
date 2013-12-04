@@ -37,6 +37,9 @@ class Struct:
 	def packFunctionPrototype(self):
 		retStr = "\nvoid\t%sPack(%s_t *p, uint8_t *buf);" % (self.name, self.name )
 		return retStr
+	def unpackFunctionPrototype(self):
+		retStr = "\nvoid\t%sUnpack(%s_t *p, uint8_t *buf);" % (self.name, self.name )
+		return retStr
 	def packFunction(self):
 		retStr = "\nvoid\t%sPack(%s_t *p, uint8_t *buf)\n{" % (self.name, self.name )
 		retStr += "\n\tuint32_t i = 0;\n"
@@ -48,6 +51,21 @@ class Struct:
 				else:
 					for j in range(i[2]):
 						retStr += "\n\t*((%s *)&buf[i]) = p->%s[%d];" % (i[0], i[1].split('[')[0], j)
+						retStr += "\n\ti += sizeof(%s);" % (i[0], )
+
+		retStr += "\n}\n"
+		return retStr
+	def unpackFunction(self):
+		retStr = "\nvoid\t%sUnpack(%s_t *p, uint8_t *buf)\n{" % (self.name, self.name )
+		retStr += "\n\tuint32_t i = 0;\n"
+		for i in self.members:
+			if (i[0] in self.validTypes):
+				if (i[2] == 0):
+					retStr += "\n\tp->%s = *((%s *)&buf[i]);" % (i[1].split('[')[0], i[0])
+					retStr += "\n\ti += sizeof(%s);" % (i[0], )
+				else:
+					for j in range(i[2]):
+						retStr += "\n\t p->%s[%d] = *((%s *)&buf[i]);" % (i[1].split('[')[0],j, i[0])
 						retStr += "\n\ti += sizeof(%s);" % (i[0], )
 
 		retStr += "\n}\n"

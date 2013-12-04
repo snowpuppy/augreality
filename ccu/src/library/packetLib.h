@@ -78,5 +78,8 @@ int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds);
 uint16_t getNumBroadCasting();
 int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id);
 int16_t writeByteStream(uint8_t *buf, uint16_t size);
+uint8_t detectHeader(uint8_t *pac);
+void getHeartBeatPacket(void);
+void getBroadCastPacket(void);
 
 #endif

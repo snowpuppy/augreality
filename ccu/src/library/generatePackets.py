@@ -35,6 +35,7 @@ for i in packetList:
 fdh.write("\n// Packet Functions\n")
 for i in packetList:
 	fdh.write(i.packFunctionPrototype())
+	fdh.write(i.unpackFunctionPrototype())
 # add additional function prototypes
 # shared between headset and ccu
 fdh.write(addFuncProtStr)
@@ -46,6 +47,7 @@ fdh.write("\n#endif");
 fdc.write("#include \"packets.h\"\n")
 for i in packetList:
 	fdc.write(i.packFunction());
+	fdc.write(i.unpackFunction());
 # add additional function definitions
 # shared between headset and ccu
 fdc.write(addFuncDefStr)

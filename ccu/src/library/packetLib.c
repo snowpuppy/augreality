@@ -16,6 +16,7 @@
 #define XBEEPORT "/dev/ttyUSB0"
 
 // Local Function prototypes.
+int readBytes(int fd, char *data, int numBytes);
 
 // Global Variables.
 uint16_t g_numBroadCasting = 0;
@@ -244,7 +245,7 @@ int16_t findHeartBeating(uint8_t *id)
 	int16_t i = 0;
 	for (i = 0; i < MAXNUMHEADSETS; i++)
 	{
-		if (strncmp(g_heartBeating[i].id, id, SIZEOFID) == 0 )
+		if (strncmp(g_heartBeating[i].id, id, SIZEOFID/2) == 0 )
 		{
 			return i;
 		}
@@ -287,4 +288,101 @@ int openComPort()
 int16_t writeByteStream(uint8_t *buf, uint16_t size)
 {
 	return write(g_port, (void *)buf, size);
+}
+
+
+
+// Function to read in a fixed number
+// of bytes from the serial stream.
+// User is responsible for pointer size.
+int readBytes(int fd, char *data, int numBytes)
+{
+  int bytesRead = 0;
+  int res = 0;
+  //printf("Reading %d bytes.\n", numBytes);
+  while (bytesRead < numBytes)
+  {
+    res = read(fd, data, numBytes - bytesRead);
+    //printf("%d bytes read.\n", res);
+    if (res < 0)
+    {
+      perror("Error reading serial data.\n");
+    }
+    else
+    {
+      // increment number of bytes read.
+      // Keep reading till the expected number
+      // of bytes is read.
+      bytesRead += res;
+    }
+  }
+}
+
+// Function: printFloatBytes
+// Purpose: Used to print the hex
+// values of a floating point number
+// as a sanity check that they are
+// coming in correctly.
+void printFloatBytes(char *buf)
+{
+  int i = 0;
+  printf("Floating value:");
+  for (i = 0; i < 4; i++)
+  {
+    printf(" [%d] = %X",i,buf[i]);
+  }
+  printf("\n");
+}
+
+uint8_t detectHeader(uint8_t *pac)
+{
+	uint8_t quit = 0;
+	uint8_t ret = 0;
+	while (!quit)
+	{
+		pac[2] = pac[1];
+		pac[1] = pac[0];
+		readBytes(g_port,pac,1);
+		if (pac[2] == 'P' && pac[1] == 'A' && pac[0] == 'C')
+		{
+			readBytes(g_port,&ret,1);
+			return ret;
+		}
+	}
+}
+
+void getBroadCastPacket(void)
+{
+	broadCastPacket_t p;
+	uint16_t i = 0;
+	uint8_t buf[BROADCASTPACKETSIZE];
+	readBytes(g_port, buf, BROADCASTPACKETSIZE);
+	broadCastPacketUnpack(&p,buf);
+	if (findBroadCasting(p.address) < 0)
+	{
+		i = g_numBroadCasting;
+		strncpy(g_broadCasting[i].address, p.address, SIZEOFID);
+		g_broadCasting[i].latitude = p.lattitude;
+		g_broadCasting[i].longitude = p.longitude;
+		g_numBroadCasting++;
+	}
+}
+void getHeartBeatPacket(void)
+{
+	heartBeat_t p;
+	uint16_t i = 0;
+	uint8_t buf[ACCEPTHEADSETSIZE];
+	readBytes(g_port, buf, ACCEPTHEADSETSIZE);
+	heartBeatUnpack(&p,buf);
+	if (findHeartBeating(p.id) < 0)
+	{
+		i = g_numHeartBeating;
+		strncpy(g_heartBeating[i].id, p.id, SIZEOFID/2);
+		g_heartBeating[i].x = p.x;
+		g_heartBeating[i].y = p.y;
+		g_heartBeating[i].roll = p.roll;
+		g_heartBeating[i].pitch = p.pitch;
+		g_heartBeating[i].roll = p.roll;
+		g_numHeartBeating++;
+	}
 }
