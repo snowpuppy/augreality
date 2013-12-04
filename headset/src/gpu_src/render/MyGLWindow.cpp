@@ -26,6 +26,7 @@
 #include <ngl/ShaderLib.h>
 #include <iostream>
 #include <math.h>
+#include "gameobject.h"
 
 float MyGLWindow::floatbuffer[5] = { 0.0f };
 uint8_t MyGLWindow::charbuffer[2] = { 0 };
@@ -40,13 +41,6 @@ int compare(const void * a, const void * b) {
 }
 
 float MyGLWindow::windowAverage() {
-	/*
-	//sliding window filter
-	float sum = 0.0f;
-	for(int i=0; i<WINDOW_SIZE; i++)
-	  sum+=window[i];
-	return sum/(float)WINDOW_SIZE;
-	*/
 	 //median filter
 	float tmp[WINDOW_SIZE];
 	for(int i=0; i<WINDOW_SIZE; i++) tmp[i]=window[i];
@@ -61,7 +55,7 @@ MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
 	m_exit=false;
 	myX = myY = 0.0f;
 	windowIndex = 0;
-	for(int i=0; i<WINDOW_SIZE; i++) window[i]=0.0f;
+	for(int i=0; i<WINDOW_SIZE; i++) window[i]=0.0;
 }
 MyGLWindow::~MyGLWindow()
 {
@@ -90,7 +84,7 @@ void MyGLWindow::initializeGL()
 	// transformations
 	// first we create a mesh from an obj passing in the obj file and texture
 	std::cout<<"building mesh\n";
-	m_mesh = new ngl::Obj("models/pacman.obj", "models/pikachu.png");
+	m_mesh = new ngl::Obj("models/pacman.obj", "textures/pacman.jpg");
 	t_mesh = new ngl::Obj("models/square.obj", "textures/tetris.jpg");
 	e_mesh = new ngl::Obj("models/square.obj", "textures/pikachu.png");
 	s_mesh = new ngl::Obj("models/square.obj","textures/tetris.jpg");
@@ -177,6 +171,8 @@ void MyGLWindow::initializeGL()
 	batt3->createVAO();
 	batt4->createVAO();
 	batt5->createVAO();
+	
+	loadConfigFile();
 }
 
 
@@ -198,14 +194,11 @@ Player MyGLWindow::readSpiData() {
 	result.gps_y = buffer()[0];
 	result.roll = buffer()[2];
 	result.pitch = -buffer()[3];
-	//addToWindow(-(buffer()[4]+90));
-	//result.yaw = windowAverage();
 	result.yaw = -(buffer()[4] + 90);
 	addToWindow((float)(unsigned int)charbuffer[0]);
 	result.rssi = (int)windowAverage();
-	//result.rssi = charbuffer[0];
 	result.battery = charbuffer[1];
-	printf("RSSI: %d Battery: %d Yaw:%.3f\n", (int)result.rssi, (int)result.battery, result.yaw);
+	//printf("RSSI: %d Battery: %d Yaw:%.3f\n", (int)result.rssi, (int)result.battery, result.yaw);
 	//unlock mutex
 	pthread_mutex_unlock(&mut);
 
@@ -243,7 +236,7 @@ void MyGLWindow::paintGL()
 	//m_transformStack.setPosition(10+myX, myY, 0);
 	m_transformStack.setPosition(0, 5, 0);
 	loadMatricesToShader(m_transformStack);
-	m_mesh->draw();
+	//m_mesh->draw();
 	m_transformStack.popTransform();
 
 	for(int i=0; i-1<p.rssi/10; i++) {
@@ -253,7 +246,7 @@ void MyGLWindow::paintGL()
 	m_transformStack.pushTransform();
 	m_transformStack.setPosition(5,0,i);
 	loadMatricesToShader(m_transformStack);
-	t_mesh->draw();
+	//t_mesh->draw();
 	m_transformStack.popTransform();
 	}
 
@@ -264,7 +257,7 @@ void MyGLWindow::paintGL()
 	m_transformStack.pushTransform();
 	m_transformStack.setPosition(-5,0,i);
 	loadMatricesToShader(m_transformStack);
-	e_mesh->draw();
+	//e_mesh->draw();
 	m_transformStack.popTransform();
 	}
 
@@ -274,8 +267,30 @@ void MyGLWindow::paintGL()
 	m_transformStack.pushTransform();
 	m_transformStack.setPosition(0,-5,0);
 	loadMatricesToShader(m_transformStack);
-	s_mesh->draw();
+	//s_mesh->draw();
 	m_transformStack.popTransform();
+	
+		
+	for(int i=0; i<256; i++) {
+		object = objects[i];
+		//check if this object should be drawn
+		//std::cout << object.isVisible() << objects[i].isVisible() << "\n";
+		if(object.isVisible()) {
+				//move and rotate object appropriately
+				//final.identity();
+				//trans.setMatrix(final);
+				//m_transformStack.setPosition(object.x, object.y, 0.0);
+				m_transformStack.setGlobal(trans);
+				m_transformStack.pushTransform();
+				m_transformStack.setPosition(object.x, object.y, 0.0);
+				m_transformStack.setRotation(object.yaw, object.pitch, object.roll);
+				loadMatricesToShader(m_transformStack);
+				std::cout << i << " " << object.x << " " << object.y << " " << object.filename << "\n";
+				//draw the object
+				object.mesh->draw();
+				m_transformStack.popTransform();
+		}
+	}
 	
 	//setup for 2d drawing
 	ngl::Vec4 From2d(0, 0, 0);
@@ -326,40 +341,9 @@ void MyGLWindow::paintGL()
 	
 	glEnable(GL_DEPTH_TEST);
 	
-	/*
-	ngl::Transformation trans;
-	ngl::Mat4 final;
-	ngl::Mat4 translate;
-	ngl::Mat4 rotX;
-	ngl::Mat4 rotY;
-	ngl::Mat4 rotZ;
-	for(int i=0; i<256; i++) {
-		object = objects[i];
-		//check if this object should be drawn
-		if(object.isVisible()) {
-				//move and rotate object appropriately
-				translate.translate(object.getX(), object.getY(), 0.0f);
-				rotX.rotateX(object.getRoll());
-				rotY.rotateY(object.getPitch());
-				rotZ.rotateZ(object.getYaw());
-				final = translate*rotX*rotY*rotZ;
-				trans.setMatrix(final);
-				m_transformStack.setGlobal(trans);
-				m_transformStack.pushTransform();
-				loadMatricesToShader(m_transformStack);
+
 	
-				//draw the object
-				object.getMesh()->draw();
-				m_transformStack.popTransform();
-		}
-	}
-	*/
-	
-	//draw text
-	//std::ostringstream oss;
-	//oss << "Battery: " << p.battery << "% RSSI: " << p.rssi;
-	//const std::string status = oss.str();
-	//text->renderText(100, 50, "hello world");
+
 	
 	//wait for next frame
 	glFlush();
@@ -427,171 +411,26 @@ SDL_Event event;
 
 }
 
-// Perform matrix*Vector multiplication
-vector_t multiplyMatVec(vector_t vec, matrix_t A)
-{
-    vector_t rVec = {{0}};
-    rVec.val[0] = A.val[0]*vec.val[0] + A.val[1]*vec.val[1] + A.val[2]*vec.val[2];
-    rVec.val[1] = A.val[3]*vec.val[0] + A.val[4]*vec.val[1] + A.val[5]*vec.val[2];
-    rVec.val[2] = A.val[6]*vec.val[0] + A.val[7]*vec.val[1] + A.val[8]*vec.val[2];
-    return rVec;
-}
+void MyGLWindow::loadConfigFile() {
+	for(int i=0; i<256; i++) objects[i] = GameObject();
+	int numEntries;
+	int index;
+	bool threed;
+	float locx, locy, orx, ory, orz;
+	std::string filename;
+	bool show;
+	float scale;
+	std::string id;
 
-// Perform 3x3 matrix multiplication.
-matrix_t multiplyMat(matrix_t A, matrix_t B)
-{
-    matrix_t C = {{0}};
-    C.val[0] = A.val[0]*B.val[0] + A.val[1]*B.val[3] + A.val[2]*B.val[6];
-    C.val[1] = A.val[0]*B.val[1] + A.val[1]*B.val[4] + A.val[2]*B.val[7];
-    C.val[2] = A.val[0]*B.val[2] + A.val[1]*B.val[5] + A.val[2]*B.val[8];
-    C.val[3] = A.val[3]*B.val[0] + A.val[4]*B.val[3] + A.val[5]*B.val[6];
-    C.val[4] = A.val[3]*B.val[1] + A.val[4]*B.val[4] + A.val[5]*B.val[7];
-    C.val[5] = A.val[3]*B.val[2] + A.val[4]*B.val[5] + A.val[5]*B.val[8];
-    C.val[6] = A.val[6]*B.val[0] + A.val[7]*B.val[3] + A.val[8]*B.val[6];
-    C.val[7] = A.val[6]*B.val[1] + A.val[7]*B.val[4] + A.val[8]*B.val[7];
-    C.val[8] = A.val[6]*B.val[2] + A.val[7]*B.val[5] + A.val[8]*B.val[8];
-
-    return C;
-}
-
-void setMat(matrix_t *rotX, matrix_t *rotY, matrix_t *rotZ, float pitch, float yaw, float roll)
-{
-    float sinRoll = sin(roll*MYPI/180);
-    float cosRoll = cos(roll*MYPI/180);
-    float sinYaw  = sin(yaw*MYPI/180);
-    float cosYaw  = cos(yaw*MYPI/180);
-    float sinPitch = sin(pitch*MYPI/180);
-    float cosPitch = cos(pitch*MYPI/180);
-    rotX->val[0] = 1;
-    rotX->val[1] = 0;
-    rotX->val[2] = 0;
-    rotX->val[3] = 0;
-    rotX->val[4] = cosPitch;
-    rotX->val[5] = sinPitch;
-    rotX->val[6] = 0;
-    rotX->val[7] = -sinPitch;
-    rotX->val[8] = cosPitch;
-
-    rotY->val[0] = cosYaw;
-    rotY->val[1] = 0;
-    rotY->val[2] = -sinYaw;
-    rotY->val[3] = 0;
-    rotY->val[4] = 1;
-    rotY->val[5] = 0;
-    rotY->val[6] = sinYaw;
-    rotY->val[7] = 0;
-    rotY->val[8] = cosYaw;
-
-
-    rotZ->val[0] = cosRoll;
-    rotZ->val[1] = sinRoll;
-    rotZ->val[2] = 0;
-    rotZ->val[3] = -sinRoll;
-    rotZ->val[4] = cosRoll;
-    rotZ->val[5] = 0;
-    rotZ->val[6] = 0;
-    rotZ->val[7] = 0;
-    rotZ->val[8] = 1;
-    /*
-    matrix_t rotX = {1       ,0,        0,
-                     0        cosPitch, sinPitch,
-                     0,       -sinPitch,cosPitch};
-    matrix_t rotY = {cosYaw  ,0,        -sinYaw,
-                     0        1,        0,
-                     sinYaw,  0,        cosYaw};
-    matrix_t rotZ = {cosRoll, sinRoll,  0,
-                     -sinRoll,cosRoll,  0,
-                     0,       0,        1};
-    */
-}
-/*
-void MyGLWindow::print(std::string str) {
-	glDisable(GL_DEPTH_TEST);
-	//buffer to hold 'pixel' data
-	bool pixels[4][5];
-	
-	ngl::Transformation trans;
-	ngl::Mat4 final;
-	
-	//setup new camera matrix
-	ngl::Vec4 From(0, 0, 0);
-	ngl::Vec4 To(0, 0, 1);
-	ngl::Vec4 Up(0,1, 0);
-	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
-	m_cam->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
-
-	//loop through string
-	for(int i=0; i<str.length; i++) {
-		switch(str[i]) {
-		case '0':
-			pixels = {	{true,true,true,true},
-						{true,false,false,true},
-						{true,false,false,true},
-						{true,false,false,true},
-						{true,true,true,true} };
-			break;
-		
-		case '1':
-			pixels = {	{false,false,true,false},
-						{false,true,true,false},
-						{false,false,true,false},
-						{false,false,true,false},
-						{false,true,true,true} };
-			break;
-			
-		case '2':
-			pixels = {	{true,true,true,true},
-						{false,false,false,true},
-						{true,true,true,true},
-						{true,false,false,false},
-						{true,true,true,true} };
-			break;
-			
-		case '3':
-			pixels = {	{true,true,true,true},
-						{false,false,false,true},
-						{true,true,true,true},
-						{false,false,false,true},
-						{true,true,true,true} };
-			break;
-			
-		case '4':
-			pixels = {	{true,false,false,true},
-						{true,false,false,true},
-						{true,true,true,true},
-						{false,false,false,true},
-						{false,false,false,true} };
-			break;
-		case '5':
-			pixels = {	{true,false,false,true},
-						{true,false,false,false},
-						{true,true,true,true},
-						{false,false,false,true},
-						{true,true,true,true} };
-			break;
-		default:
-			pixels = {false};
-			break;
-		}
-		//loop through pixels in character
-		for(int j=0; j<4; j++) {
-			for(int k=0; k<5; k++) {
-				//draw single 'pixel' if it should be drawn
-				if (pixels[j][k]) {
-					//translate pacman model
-					final.identity();
-					trans.setMatrix(final);
-					m_transformStack.setGlobal(trans);
-					m_transformStack.pushTransform();
-					m_transformStack.setPosition((5*i)+j,k,50);
-					loadMatricesToShader(m_transformStack);
-					// draw the mesh
-					m_mesh->draw();
-					m_transformStack.popTransform();
-				}
-			}
-		}
+	std::ifstream file("config.txt");
+	if(!file) {
+		//there's an error here, but i won't do anything to handle that
 	}
-	glEnable(GL_DEPTH_TEST);
+
+	while(file >> index) {
+		file >> threed >> locx >> locy >> orx >> ory >> orz >> filename >> show >> scale;
+		objects[index] = GameObject(locx, locy, orx, ory, orz, show, threed, index, filename, scale);
+		std::cout << objects[index].x << " " << objects[index].y << " " << objects[index].isVisible() << "\n";
+	}
 }
-*/
+

@@ -2,7 +2,10 @@
 #define GAMEOBJECT_H__
 
 #include <string>
+#include <ngl/Obj.h>
 #define MODEL_DIR "models/"
+#define TEXTURE_DIR "textures/"
+
 typedef unsigned char uint8_t;
 
 class GameObject {
@@ -22,9 +25,9 @@ public:
         float getYaw() {return yaw;}
         bool isVisible() {return visible;}
 
-//private:
         float x;
         float y;
+        float z;
         float pitch;
         float roll;
         float yaw;
@@ -33,7 +36,7 @@ public:
         bool threeD;
         float scale;
         std::string filename;
-        //ngl::Obj *mesh;
+        ngl::Obj *mesh;
 };
 
 #endif

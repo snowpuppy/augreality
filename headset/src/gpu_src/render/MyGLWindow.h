@@ -24,8 +24,6 @@
 #define SENSOR_SIZE 22
 #define MYPI 3.1415926535
 #define WINDOW_SIZE 15
-//#define F false
-//#define T true
 
 #include <ngl/EGLWindow.h>
 #include <ngl/Camera.h>
@@ -37,6 +35,8 @@
 #include <wiringPiSPI.h>
 #include <string>
 #include <sstream>
+
+#include "gameobject.h"
 
 extern pthread_mutex_t mut;
 
@@ -70,6 +70,7 @@ void setMat(matrix_t *rotX, matrix_t *rotY, matrix_t *rotZ, float pitch, float y
 class MyGLWindow : public ngl::EGLWindow
 {
 	public :
+		void loadConfigFile() ;
 		static float floatbuffer[5];
 		static uint8_t charbuffer[2];
 		static float *buffer();
@@ -164,6 +165,8 @@ class MyGLWindow : public ngl::EGLWindow
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Vec4 m_modelPos;
     bool m_exit;
+    GameObject objects[256];
+    GameObject object;
 
 };
 
