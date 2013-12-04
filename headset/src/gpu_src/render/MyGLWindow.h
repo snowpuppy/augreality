@@ -22,12 +22,17 @@
 #define HIGH 1
 #define LOW 0
 #define SENSOR_SIZE 22
+#define MYPI 3.1415926535
+#define WINDOW_SIZE 15
+//#define F false
+//#define T true
 
 #include <ngl/EGLWindow.h>
 #include <ngl/Camera.h>
 #include <ngl/Light.h>
 #include <ngl/TransformStack.h>
 #include <ngl/Obj.h>
+#include <ngl/Text.h>
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 #include <string>
@@ -35,7 +40,7 @@
 
 extern pthread_mutex_t mut;
 
-typedef struct player_t {
+struct Player {
 	float gps_x;
 	float gps_y;
 	float pitch;
@@ -43,7 +48,23 @@ typedef struct player_t {
 	float roll;
 	uint8_t rssi;
 	uint8_t battery;
-} Player;
+};
+
+struct matrix_t
+{
+    float val[9];
+};
+
+struct vector_t
+{
+    float val[3];
+};
+
+
+// Some functions.
+vector_t multiplyMatVec(vector_t vec, matrix_t A);
+matrix_t multiplyMat(matrix_t A, matrix_t B);
+void setMat(matrix_t *rotX, matrix_t *rotY, matrix_t *rotZ, float pitch, float yaw, float roll);
 
 /// @brief this class create our window by inheriting the features of the EGL Window
 class MyGLWindow : public ngl::EGLWindow
@@ -63,11 +84,15 @@ class MyGLWindow : public ngl::EGLWindow
 		virtual void paintGL();
 		void processEvents();
 		inline bool exit(){return m_exit;}
-
+		void print(std::string str);
 	protected :
 		/// @brief one time OpenGL initialisation
 		virtual void initializeGL();
 	private :
+	  float windowAverage();
+	  void addToWindow(float f);
+	float window[WINDOW_SIZE];
+	int windowIndex;
 	ngl::Text *text;
 	void readSensorPacket(unsigned char *buf);
 	Player readSpiData();
@@ -80,11 +105,28 @@ class MyGLWindow : public ngl::EGLWindow
 
 		ngl::TransformStack m_transformStack;
 		ngl::Camera *m_cam;
+		ngl::Camera *twod_cam;
 		ngl::Light *m_light;
 		ngl::Obj *m_mesh;
 		ngl::Obj *t_mesh;
+		ngl::Obj *e_mesh;
+		ngl::Obj *s_mesh;
+		ngl::Obj *twod_mesh;
+		ngl::Obj *rssi1;
+		ngl::Obj *rssi2;
+		ngl::Obj *rssi3;
+		ngl::Obj *rssi4;
+		ngl::Obj *rssi5;
+		ngl::Obj *batt1;
+		ngl::Obj *batt2;
+		ngl::Obj *batt3;
+		ngl::Obj *batt4;
+		ngl::Obj *batt5;
+		
 		GLuint vboIds[2];
 		GLuint m_location;
+        float myPitch, myRoll, myYaw, myX, myY;
+
 		    //----------------------------------------------------------------------------------------------------------------------
     /// @brief used to store the x rotation mouse value
     //----------------------------------------------------------------------------------------------------------------------
