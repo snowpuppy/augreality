@@ -365,6 +365,7 @@ void getBroadCastPacket(void)
 		g_broadCasting[i].latitude = p.lattitude;
 		g_broadCasting[i].longitude = p.longitude;
 		g_numBroadCasting++;
+    printf("Processed broadcast packet num: %d\n", g_numBroadCasting);
 	}
 }
 void getHeartBeatPacket(void)

@@ -55,9 +55,11 @@ def getBroadCastIDs():
 	numIds = s.recv(1)
 	data = ""
 	if (ord(numIds) > 0):
-		numToRead = calcsize(BROADCASTIDSFORMATR %s (numIds,))
-		reply = s.recv(numToRead);
-		data = unpack(BROADCASTIDSFORMATR % (numIds,),reply);
+		print (BROADCASTIDSFORMATR % (ord(numIds)*16,));
+		numToRead = calcsize(BROADCASTIDSFORMATR % (ord(numIds)*16,))
+		print "numToRead:",numToRead
+		reply = s.recv(numToRead*16);
+		data = unpack(BROADCASTIDSFORMATR % (ord(numIds)*16,),reply);
 	print "NumIds:",ord(numIds)
 	print "IDs: ",data
 	s.close()
