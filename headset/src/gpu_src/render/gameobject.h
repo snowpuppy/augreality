@@ -13,7 +13,7 @@ class GameObject {
 public:
         //constructors
         GameObject();
-        GameObject(float x, float y, float pitch, float yaw, float roll, bool visible, bool threeD, uint8_t id, std::string filename, float scale);
+        GameObject(float x, float y, float z, float pitch, float yaw, float roll, bool visible, bool threeD, uint8_t id, std::string filename, float scale);
 
         void update(float x, float y, float pitch, float yaw, float roll);
 

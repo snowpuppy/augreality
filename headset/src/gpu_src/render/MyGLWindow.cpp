@@ -212,15 +212,15 @@ void MyGLWindow::paintGL()
 	
 	//update camera
 	Player p = readSpiData();
-	ngl::Vec4 From(p.gps_x+myX, p.gps_y+myY, 0);
-	ngl::Vec4 To(p.gps_x+myX,p.gps_y+myY+1,0);
+	ngl::Vec4 From(p.gps_x+myX, p.gps_y+myY, myPitch);
+	ngl::Vec4 To(p.gps_x+myX,p.gps_y+myY+1,myPitch);
 	ngl::Vec4 Up(0,0,1);
 	m_cam->set(From,To,Up);
 	m_cam->setShape(30,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
 	
 	m_cam->yaw(p.yaw+myYaw);
 	m_cam->roll(p.roll+myRoll);
-	m_cam->pitch(p.pitch+myPitch);
+	//m_cam->pitch(p.pitch+myPitch);
 	
 	ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 	(*shader)["Texture"]->use();
@@ -284,6 +284,8 @@ void MyGLWindow::paintGL()
 				m_transformStack.pushTransform();
 				m_transformStack.setPosition(object.x, object.y, 0.0);
 				m_transformStack.setRotation(object.yaw, object.pitch, object.roll);
+				ngl::Vec3 scaler = ngl::Vec3(object.scale, object.scale, object.scale);
+				m_transformStack.setScale(scaler);
 				loadMatricesToShader(m_transformStack);
 				std::cout << i << " " << object.x << " " << object.y << " " << object.filename << "\n";
 				//draw the object
@@ -413,10 +415,9 @@ SDL_Event event;
 
 void MyGLWindow::loadConfigFile() {
 	for(int i=0; i<256; i++) objects[i] = GameObject();
-	int numEntries;
 	int index;
 	bool threed;
-	float locx, locy, orx, ory, orz;
+	float locx, locy, locz, orx, ory, orz;
 	std::string filename;
 	bool show;
 	float scale;
@@ -428,8 +429,8 @@ void MyGLWindow::loadConfigFile() {
 	}
 
 	while(file >> index) {
-		file >> threed >> locx >> locy >> orx >> ory >> orz >> filename >> show >> scale;
-		objects[index] = GameObject(locx, locy, orx, ory, orz, show, threed, index, filename, scale);
+		file >> threed >> locx >> locy >> locz >> orx >> ory >> orz >> filename >> show >> scale;
+		objects[index] = GameObject(locx, locy, locz, orx, ory, orz, show, threed, index, filename, scale);
 		std::cout << objects[index].x << " " << objects[index].y << " " << objects[index].isVisible() << "\n";
 	}
 }

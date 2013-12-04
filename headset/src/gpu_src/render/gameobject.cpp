@@ -7,10 +7,10 @@ GameObject::GameObject() {
 	id = 0;
 }
 
-GameObject::GameObject(float x, float y, float pitch, float yaw, float roll, bool visible, bool threeD, uint8_t id, std::string filename, float scale) {
+GameObject::GameObject(float x, float y, float z, float pitch, float yaw, float roll, bool visible, bool threeD, uint8_t id, std::string filename, float scale) {
         this->x = x;
         this->y = y;
-        this->z = 0.0;
+        this->z = z;
         this->pitch = pitch;
         this->yaw = yaw;
         this->roll = roll;
@@ -20,6 +20,5 @@ GameObject::GameObject(float x, float y, float pitch, float yaw, float roll, boo
         this->filename = filename;
         this->scale = scale;
         this->mesh = new ngl::Obj(MODEL_DIR + filename + ".obj", TEXTURE_DIR + filename + ".jpg");
-		//this->mesh = new ngl::Obj("models/pacman.obj", "textures/pacman.jpg");
         this->mesh->createVAO();
 }
