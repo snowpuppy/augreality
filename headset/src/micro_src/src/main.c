@@ -10,11 +10,22 @@
 
 // States of the headset.
 // The initial state is
-// BROADCASTSTATE
+// BROADCASTSTATE where the
+// headset advertises its
+// id and location. The
+// next state is load file
+// data where the xbee waits
+// for file data to come in.
+// After start simulation is
+// sent, the headset begins
+// simulation.
 #define BROADCASTSTATE 0
+#define LOADFILEDATA 1
 #define RUNSIMULATION  2
 
-// XBee state constants
+// XBee packet state constants
+// First the xbee discovers a packet
+// and then it parses it as it comes in.
 #define XBEEDISCOVERYSTATE 0
 #define XBEEPARSINGSTATE 1
 
@@ -32,6 +43,16 @@
 
 // IMU constants
 #define HIST_SIZE 5
+
+// Time constants
+#define ONE_SECOND 1000
+#define HALF_SECOND 500
+
+#define LATOFFSET 0
+#define LONOFFSET 4
+#define PITOFFSET 8
+#define ROLOFFSET 12
+#define YAWOFFSET 16
 
 // Spi shared data.
 // Data ready indicator.
@@ -66,9 +87,9 @@ static float rollHist[IMU_HISTORY];
 static float yawHist[IMU_HISTORY];
 
 // Function declarations
-static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
+static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
-static void processXbeeData();
+static void processXbeeData(uint8_t *id);
 void spiReceivedByte(uint8_t data);
 static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
@@ -131,7 +152,7 @@ int main(void) {
 	// main loop.
 	while (1) {
 		// Process Wireless information.
-		processXbeeData();
+		processXbeeData(xbeeId);
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
@@ -194,15 +215,13 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
 // Purpose: Grab the mac address
 // so that it can be used to identify
 // this headset.
-void xbeeInit(uint8_t *xbeeId)
-{
+void xbeeInit(uint8_t *xbeeId) {
 	fputc('+',xbee);
 	fputc('+',xbee);
 	fputc('+',xbee);
 	// Wait for ok.
 	getBytes(xbeeId,2);
-	if (xbeeId[0] == 'O' && xbeeId[1] == 'K')
-	{
+	if (xbeeId[0] == 'O' && xbeeId[1] == 'K') {
 		fputc('A',xbee);
 		fputc('T',xbee);
 		fputc('S',xbee);
@@ -226,11 +245,24 @@ void xbeeInit(uint8_t *xbeeId)
  * and appropriate data will be immediately sent over spi. It is assumed
  * that spi is running much faster than xbee traffic.
  */
-static void processXbeeData() {
+static void processXbeeData(uint8_t *id) {
 	// use a small buffer to detect the type
 	// of packet.
 	static uint8_t buf[16];
 	static uint32_t xbeeState = XBEEDISCOVERYSTATE;
+	static uint32_t count = 0;
+	static uint32_t state = BROADCASTSTATE;
+	float lat = 0, lon = 0;
+
+	// Check if a broadcast packet needs to be sent.
+	// Only send when in broadcast state and send every half second.
+	if (state == BROADCASTSTATE && (millis() > count + HALF_SECOND) )
+	{
+		lat = *((float *)&headsetData[LATOFFSET]);
+		lon = *((float *)&headsetData[LONOFFSET]);
+		count = millis();
+		sendBroadCast(id, lat, lon);
+	}
 	// If packets are available
 	// then start processing them.
 	if (fcount(xbee) > 2 && xbeeState == XBEEDISCOVERYSTATE) {
@@ -244,18 +276,26 @@ static void processXbeeData() {
 			switch (buf[0]) {
 			case ACCEPTHEADSET:
 				xbeeState = ACCEPTHEADSET;
+				state = LOADFILEDATA;
 				break;
 			case UPDATEOBJINSTANCE:
 				xbeeState = UPDATEOBJINSTANCE;
 				break;
 			case ENDSIMULATION:
 				xbeeState = ENDSIMULATION;
+				state = BROADCASTSTATE;
 				break;
 			case STARTSIMULATION:
 				xbeeState = STARTSIMULATION;
+				state = RUNSIMULATION;
 				break;
 			case GOBACK:
 				xbeeState = GOBACK;
+				if (state == LOADFILEDATA) {
+					state = BROADCASTSTATE;
+				} else if (state == STARTSIMULATION) {
+					state = LOADFILEDATA;
+				}
 				break;
 			case LOADSTATICDATA:
 				xbeeState = LOADSTATICDATA;
@@ -273,14 +313,19 @@ static void processXbeeData() {
 	// packet we're expecting.
 	switch (xbeeState) {
 		case ACCEPTHEADSET:
+			//parseAcceptHeadset();
 			break;
 		case UPDATEOBJINSTANCE:
+			//parseUpdateObjInst();
 			break;
 		case ENDSIMULATION:
+			//parseEndSimulation();
 			break;
 		case STARTSIMULATION:
+			//parseStartSimulation();
 			break;
 		case GOBACK:
+			//parseGoBack();
 			break;
 		case LOADSTATICDATA:
 			parseStaticDataPacket(&xbeeState);
@@ -381,8 +426,8 @@ static void processGPSData(void) {
 		latf = latf - originLat;
 		lonf = lonf - originLon;
 		// Stuff the buffer.
-		*((float *)&headsetData[0]) = latf * DECIMALSPERDEGLAT; // x pos
-		*((float *)&headsetData[4]) = lonf * DECIMALSPERDEGLON; // y pos
+		*((float *)&headsetData[LATOFFSET]) = latf * DECIMALSPERDEGLAT; // x pos
+		*((float *)&headsetData[LONOFFSET]) = lonf * DECIMALSPERDEGLON; // y pos
 	}
 }
 
@@ -429,9 +474,9 @@ static void processIMUData(void) {
 			roll += rollHist[histIndex] * filterCoeffs[histIndex];
 		}
 		// Convert to degrees
-		*((float *) &headsetData[8]) = pitch * (45. / PI); // pitch
-		*((float *) &headsetData[12]) = roll * (45. / PI); // roll
-		*((float *) &headsetData[16]) = yaw * (180. / PI); // yaw
+		*((float *) &headsetData[PITOFFSET]) = pitch * (45. / PI); // pitch
+		*((float *) &headsetData[ROLOFFSET]) = roll * (45. / PI); // roll
+		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 		ledToggle();
 	}
@@ -513,26 +558,22 @@ void spiReceivedByte(uint8_t data) {
 // that the headset is looking to be configured.
 // Example:
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
-static void sendBroadcast(uint16_t netAddr, float latitude, float longitude) {
-    /*
-	uint8_t buffer[256];
-	broadCastPacket_t packet;
+static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude) {
+	uint8_t buffer[BROADCASTPACKETSIZE + HEADERSIZE];
+	broadCastPacket_t p;
 	uint32_t i = 0;
 
-	packet.header[0] = 'P';
-	packet.header[1] = 'A';
-	packet.header[2] = 'C';
-	packet.type = 0;
-	packet.address = netAddr;
-	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(uint32_t)(latitude*10000);
-	packet.longitude = longitude; // 0x1155ee99; // (uint32_t)(longitude*10000);
-	packet.crc = calcCrc((char *)&packet, sizeof(packet));
-	serializeBroadcast(buffer, &packet);
-	// Write to the buffer as a series of characters.
-	for (i = 0; i < 16; i++)
-	{
-		fputc(buffer[i], xbee);
+	addHeader(buffer);
+	p.packetType = BROADCASTPACKET;
+	// Copy address over to packet.
+	for (i = 0; i < 16; i++) {
+		p.address[i] = netAddr[i];
 	}
-    */
+	p.lattitude = lattitude;
+	p.longitude = longitude;
+	//p.crc = calcCrc((char *)&p, sizeof(p));
+	broadCastPacketPack(&p, &buffer[HEADERSIZE]);
+	// Write to the buffer as a series of characters.
+	serialWriteBytes(SERIAL_PORT_XBEE, buffer, BROADCASTPACKETSIZE + HEADERSIZE);
 	return;
 }
