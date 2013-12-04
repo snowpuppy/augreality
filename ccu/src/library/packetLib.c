@@ -14,7 +14,6 @@
 // Constants
 #define BAUDRATE B57600
 #define XBEEPORT "/dev/ttyUSB0"
-#define SIZEOFID 16
 
 // Local Function prototypes.
 

@@ -197,16 +197,17 @@ void _getBroadCastIDs(int fd)
 {
 	int rc = 0;
 	uint8_t ids[MAXNUMHEADSETS*SIZEOFID];
-	int num = getNumBroadCasting();
+	uint8_t num = (uint8_t)getNumBroadCasting();
 	// get ids.
 	getBroadCastingIDs(ids, num);
 	// send the return message.
+	rc = write(fd, (void *)&num, sizeof(num));
 	rc = write(fd, (void *)ids, num*SIZEOFID);
 }
 void _getNumBroadcast(int fd)
 {
 	int rc = 0;
-	int num = getNumBroadCasting();
+	uint8_t num = (uint8_t) getNumBroadCasting();
 	rc = write(fd, (void *)&num, sizeof(num));
 }
 void _getBroadcastLoc(int fd)
