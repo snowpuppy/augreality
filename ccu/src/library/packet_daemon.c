@@ -12,7 +12,6 @@
 #include "threadInterface.h"
 
 // Other functions.
-int readBytes(int fd, char *data, int numBytes);
 void printFloatBytes(char *buf);
 
 // Main Function.
@@ -20,6 +19,8 @@ int main(void)
 {
   int fd = 0;
 	int ret = 0;
+	uint8_t pac[3];
+	uint8_t packetType = 0;
 	broadCastPacket_t packet;
 
   // Create a separate thread which will launch server functions
@@ -29,9 +30,27 @@ int main(void)
 		perror("Problem starting thread...\n"); return 1;
 	}
 	// Wait forever
-	while(1);
-  // Open the serial port for communication.
-	//fd = openComPort();
+	while(1)
+	{
+		// Open the serial port for communication.
+		fd = openComPort();
+		// detect packet header
+		packetType = detectHeader(pac);
+		// Process the type of packet.
+		switch(packetType)
+		{
+			case BROADCASTPACKET:
+				getBroadCastPacket();
+				break;
+			case HEARTBEAT:
+				getHeartBeatPacket();
+				break;
+			case CONFIRMUPDATE:
+				break;
+			default:
+				break;
+		}
+	}
   //sendFile("../sim/sampleFile.tar");
 /*
 	//res = write(fd,"abcdh",5);
@@ -80,44 +99,3 @@ int main(void)
 	return 0;
 }
 
-// Function to read in a fixed number
-// of bytes from the serial stream.
-// User is responsible for pointer size.
-int readBytes(int fd, char *data, int numBytes)
-{
-  int bytesRead = 0;
-  int res = 0;
-  //printf("Reading %d bytes.\n", numBytes);
-  while (bytesRead < numBytes)
-  {
-    res = read(fd, data, numBytes - bytesRead);
-    //printf("%d bytes read.\n", res);
-    if (res < 0)
-    {
-      perror("Error reading serial data.\n");
-    }
-    else
-    {
-      // increment number of bytes read.
-      // Keep reading till the expected number
-      // of bytes is read.
-      bytesRead += res;
-    }
-  }
-}
-
-// Function: printFloatBytes
-// Purpose: Used to print the hex
-// values of a floating point number
-// as a sanity check that they are
-// coming in correctly.
-void printFloatBytes(char *buf)
-{
-  int i = 0;
-  printf("Floating value:");
-  for (i = 0; i < 4; i++)
-  {
-    printf(" [%d] = %X",i,buf[i]);
-  }
-  printf("\n");
-}
