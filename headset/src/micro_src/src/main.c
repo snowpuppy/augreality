@@ -10,11 +10,22 @@
 
 // States of the headset.
 // The initial state is
-// BROADCASTSTATE
+// BROADCASTSTATE where the
+// headset advertises its
+// id and location. The
+// next state is load file
+// data where the xbee waits
+// for file data to come in.
+// After start simulation is
+// sent, the headset begins
+// simulation.
 #define BROADCASTSTATE 0
+#define LOADFILEDATA 1
 #define RUNSIMULATION  2
 
-// XBee state constants
+// XBee packet state constants
+// First the xbee discovers a packet
+// and then it parses it as it comes in.
 #define XBEEDISCOVERYSTATE 0
 #define XBEEPARSINGSTATE 1
 
@@ -30,8 +41,15 @@
 #define FLUSHSPIBUFFER 2
 #define GETXBEEDATA 3
 
-// IMU constants
-#define HIST_SIZE 5
+// Time constants
+#define ONE_SECOND 1000
+#define HALF_SECOND 500
+
+#define LATOFFSET 0
+#define LONOFFSET 4
+#define PITOFFSET 8
+#define ROLOFFSET 12
+#define YAWOFFSET 16
 
 // Spi shared data.
 // Data ready indicator.
@@ -58,23 +76,24 @@ static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
-#define IMU_HISTORY 4
+#define IMU_HISTORY 15
 static uint32_t histIndex = 0;
-static float gyroAccum = 0.0f;
+const float filterCoeffIncr = 2. / (float)(IMU_HISTORY*IMU_HISTORY + IMU_HISTORY);
 static float pitchHist[IMU_HISTORY];
 static float rollHist[IMU_HISTORY];
-static float yawHist[4 * IMU_HISTORY];
+static float yawHist[IMU_HISTORY];
 
 // Function declarations
-static void sendBroadcast(uint16_t netAddr, float latitude, float longitude);
+static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude);
 static void getBytes(uint8_t *data, uint32_t numBytes);
-static void processXbeeData();
+static void processXbeeData(uint8_t *id);
 void spiReceivedByte(uint8_t data);
 static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
 static void parseStaticDataPacket(uint32_t *state);
+void xbeeInit(uint8_t *xbeeId);
 
 /**
  * System initialization
@@ -103,19 +122,18 @@ static void init(void) {
  * IMU filtering initialization
  */
 static void imu9FilterInit(void) {
-	vector g, a, m;
-	float pitch, roll;
-	// Take initial reading, set up gyro accumulator
-	imu9Read(&g, &a, &m);
-	pitch = a_pitch(&a);
-	roll = a_roll(&a);
-	gyroAccum = m_pr_yaw(&m, roll, pitch);
+	// Zero history vectors
+	for (histIndex = 0; histIndex < IMU_HISTORY; ++histIndex) {
+		pitchHist[histIndex] = 0;
+		rollHist[histIndex] = 0;
+		yawHist[histIndex] = 0;
+	}
 }
 
 // Function: main
 // Starting point for all other functions.
 int main(void) {
-	uint32_t xbeeId = 0;
+	uint8_t xbeeId[16] = {0};
 	// Sys init
 	init();
 	msleep(1500L);
@@ -127,11 +145,11 @@ int main(void) {
 	imu9FilterInit();
 	serialBufferClear();
 	// Initialize XBee settings
-	xbeeInit(&xbeeId);
+	xbeeInit(xbeeId);
 	// main loop.
 	while (1) {
 		// Process Wireless information.
-		processXbeeData();
+		processXbeeData(xbeeId);
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
@@ -194,29 +212,25 @@ static void getBytes(uint8_t *data, uint32_t numBytes) {
 // Purpose: Grab the mac address
 // so that it can be used to identify
 // this headset.
-void xbeeInit(uint32_t *xbeeId)
-{
-	uint8_t buf[8] = {0};
+void xbeeInit(uint8_t *xbeeId) {
 	fputc('+',xbee);
 	fputc('+',xbee);
 	fputc('+',xbee);
 	// Wait for ok.
-	getBytes(buf,2);
-	if (buf[0] == 'O' && buf[1] == 'K')
-	{
+	getBytes(xbeeId,2);
+	if (xbeeId[0] == 'O' && xbeeId[1] == 'K') {
 		fputc('A',xbee);
 		fputc('T',xbee);
 		fputc('S',xbee);
 		fputc('H',xbee);
-		fputc('\n',xbee);
-		getBytes(&buf[2],2);
+		fputc('\r',xbee);
+		getBytes(&xbeeId[8],8);
 		fputc('A',xbee);
 		fputc('T',xbee);
 		fputc('S',xbee);
 		fputc('L',xbee);
-		fputc('\n',xbee);
-		getBytes(buf,2);
-		xbeeId = *((uint32_t *)buf);
+		fputc('\r',xbee);
+		getBytes(xbeeId,8);
 	}
 }
 
@@ -228,11 +242,24 @@ void xbeeInit(uint32_t *xbeeId)
  * and appropriate data will be immediately sent over spi. It is assumed
  * that spi is running much faster than xbee traffic.
  */
-static void processXbeeData() {
+static void processXbeeData(uint8_t *id) {
 	// use a small buffer to detect the type
 	// of packet.
 	static uint8_t buf[16];
 	static uint32_t xbeeState = XBEEDISCOVERYSTATE;
+	static uint32_t count = 0;
+	static uint32_t state = BROADCASTSTATE;
+	float lat = 0, lon = 0;
+
+	// Check if a broadcast packet needs to be sent.
+	// Only send when in broadcast state and send every half second.
+	if (state == BROADCASTSTATE && (millis() > count + HALF_SECOND) )
+	{
+		lat = *((float *)&headsetData[LATOFFSET]);
+		lon = *((float *)&headsetData[LONOFFSET]);
+		count = millis();
+		sendBroadCast(id, lat, lon);
+	}
 	// If packets are available
 	// then start processing them.
 	if (fcount(xbee) > 2 && xbeeState == XBEEDISCOVERYSTATE) {
@@ -246,18 +273,26 @@ static void processXbeeData() {
 			switch (buf[0]) {
 			case ACCEPTHEADSET:
 				xbeeState = ACCEPTHEADSET;
+				state = LOADFILEDATA;
 				break;
 			case UPDATEOBJINSTANCE:
 				xbeeState = UPDATEOBJINSTANCE;
 				break;
 			case ENDSIMULATION:
 				xbeeState = ENDSIMULATION;
+				state = BROADCASTSTATE;
 				break;
 			case STARTSIMULATION:
 				xbeeState = STARTSIMULATION;
+				state = RUNSIMULATION;
 				break;
 			case GOBACK:
 				xbeeState = GOBACK;
+				if (state == LOADFILEDATA) {
+					state = BROADCASTSTATE;
+				} else if (state == STARTSIMULATION) {
+					state = LOADFILEDATA;
+				}
 				break;
 			case LOADSTATICDATA:
 				xbeeState = LOADSTATICDATA;
@@ -275,14 +310,19 @@ static void processXbeeData() {
 	// packet we're expecting.
 	switch (xbeeState) {
 		case ACCEPTHEADSET:
+			//parseAcceptHeadset();
 			break;
 		case UPDATEOBJINSTANCE:
+			//parseUpdateObjInst();
 			break;
 		case ENDSIMULATION:
+			//parseEndSimulation();
 			break;
 		case STARTSIMULATION:
+			//parseStartSimulation();
 			break;
 		case GOBACK:
+			//parseGoBack();
 			break;
 		case LOADSTATICDATA:
 			parseStaticDataPacket(&xbeeState);
@@ -383,39 +423,9 @@ static void processGPSData(void) {
 		latf = latf - originLat;
 		lonf = lonf - originLon;
 		// Stuff the buffer.
-		*((float *)&headsetData[0]) = latf * DECIMALSPERDEGLAT; // x pos
-		*((float *)&headsetData[4]) = lonf * DECIMALSPERDEGLON; // y pos
+		*((float *)&headsetData[LATOFFSET]) = latf * DECIMALSPERDEGLAT; // x pos
+		*((float *)&headsetData[LONOFFSET]) = lonf * DECIMALSPERDEGLON; // y pos
 	}
-}
-
-// Function: imuYawUpdate
-// Purpose: Perform long-term moving average filtering on the
-static float imuYawUpdate(float yaw) {
-	uint32_t plusMinusPi = 0; float total = 0.0f;
-	yawHist[histIndex] = yaw;
-	// Ring buffer
-	for (uint32_t i = 0; i < 4 * IMU_HISTORY; i++) {
-		float value = yawHist[i];
-		if (plusMinusPi == 0) {
-			// Use this to correctly handle wraps around the singularity
-			if (value > 0.7f) plusMinusPi = 1;
-			else if (value < -0.7f) plusMinusPi = 2;
-		} else {
-			// Correctly handle wraps around +/- PI
-			if (value < -0.7f && plusMinusPi == 1)
-				value += (float)(2.0 * PI);
-			if (value > 0.7f && plusMinusPi == 2)
-				value -= (float)(2.0 * PI);
-		}
-		total += value;
-	}
-	// Return averaged value
-	total = total * (1.0f / 16.0f);
-	if (total < (float)-PI)
-		total += (float)(2.0 * PI);
-	else if (total > (float)PI)
-		total -= (float)(2.0 * PI);
-	return total;
 }
 
 // Function: processIMUData
@@ -426,50 +436,58 @@ static float imuYawUpdate(float yaw) {
 // Rssi is also set to be sent through spi.
 static void processIMUData(void) {
 	// Processing variables
-	vector g, a, m;
-	float roll, pitch, yaw, gyroYaw, yawRate;
+	ivector g, a, m;
+	float roll, pitch, yaw, yawOffset, yawTmp;
 	// Timing related variables
 	const uint32_t UPDATE_PERIOD_MS = 16;
 	static unsigned long imuTimer = 0;
 	unsigned long currentTime = millis();
 	if (currentTime > imuTimer + UPDATE_PERIOD_MS) {
 		// Index history array
-		uint32_t hist = histIndex % IMU_HISTORY;
 		imuTimer = currentTime;
+		// push back pitch/yaw/roll history
+		for (histIndex = 0; histIndex < IMU_HISTORY-1; ++histIndex) {
+			pitchHist[histIndex] = pitchHist[histIndex+1];
+			yawHist[histIndex] = yawHist[histIndex+1];
+			rollHist[histIndex] = rollHist[histIndex+1];
+		}
+		// get new sensor data
 		imu9Read(&g, &a, &m);
-		// Calculate variables
-		pitch = a_pitch(&a);
-		roll = a_roll(&a);
-		yaw = m_pr_yaw(&m, pitch, roll);
-		// Get gyro rate angle in rad/s by multiplying by DT
-		yawRate = g_pr_yaw(&g, pitch, roll) * (3.054326e-4f * (float)UPDATE_PERIOD_MS * 0.001f);
-		// RNL and accumulate
-		if (yawRate > -0.005f && yawRate < 0.005f) yawRate = 0.f;
-		gyroYaw = gyroAccum + yawRate;
-		// Adjust gyro yaw into range (-pi, pi)
-		if (gyroYaw < (float)-PI)
-			gyroYaw += (float)(2.0 * PI);
-		else if (gyroYaw > (float)PI)
-			gyroYaw -= (float)(2.0 * PI);
-		// Compute actual yaw by rolling the gyro yaw accumulated total towards compass
-		gyroYaw = gyroYaw - ((gyroYaw - yaw) * 0.008f);
-		gyroAccum = gyroYaw;
-		// Store in history
-		pitchHist[hist] = pitch;
-		rollHist[hist] = roll;
-		yaw = imuYawUpdate(yaw);
-		histIndex = (histIndex + 1) % (4 * IMU_HISTORY);
-		// Calculate the average of the pitch, roll (4 samples)
-		pitch = 0.0f;
-		roll = 0.0f;
-		for (uint32_t i = 0; i < IMU_HISTORY; i++) {
-			pitch += pitchHist[i];
-			roll += rollHist[i];
+		// calculate pitch/yaw/roll based on new sensor data
+		pitchHist[histIndex] = a_pitch(a);
+		rollHist[histIndex] = a_roll(a);
+		yawHist[histIndex] =  m_pr_yaw(m, pitchHist[histIndex], rollHist[histIndex]);
+
+		// filter pitch/yaw/roll values
+		pitch = 0;
+		yaw = 0;
+		roll = 0;
+		// center yaw range around most recent yaw measurement
+		// i.e. [yaw_recent-PI,yaw_recent+PI]
+		// (assumes not more than PI differential from 
+		yawOffset = yawHist[IMU_HISTORY-1];
+		for (histIndex = 0; histIndex < IMU_HISTORY; ++histIndex) {
+			pitch += pitchHist[histIndex] * filterCoeffIncr*(histIndex+1);
+			roll += rollHist[histIndex] * filterCoeffIncr*(histIndex+1);
+			yawTmp = yawHist[histIndex] - yawOffset;
+			if (yawTmp > PI) {
+				yawTmp -= 2*PI;
+			} else if (yawTmp < -PI) {
+				yawTmp += 2*PI;
+			}
+			yaw += yawTmp * filterCoeffIncr*(histIndex+1);
+		}
+		// convert yaw range back to [-PI,+PI]
+		yaw += yawOffset;
+		if (yawTmp > PI) {
+			yawTmp -= 2*PI;
+		} else if (yawTmp < -PI) {
+			yawTmp += 2*PI;
 		}
 		// Convert to degrees
-		*((float *) &headsetData[8]) = pitch * (45.f / (float)PI); // pitch
-		*((float *) &headsetData[12]) = roll * (45.f / (float)PI); // roll
-		*((float *) &headsetData[16]) = yaw * (180.f / (float)PI); // yaw
+		*((float *) &headsetData[PITOFFSET]) = pitch * (180. / PI); // pitch
+		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
+		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 		ledToggle();
 	}
@@ -551,26 +569,22 @@ void spiReceivedByte(uint8_t data) {
 // that the headset is looking to be configured.
 // Example:
 // sendBroadcast(0x33FF, 12347.5533, 56782.5533);
-static void sendBroadcast(uint16_t netAddr, float latitude, float longitude) {
-    /*
-	uint8_t buffer[256];
-	broadCastPacket_t packet;
+static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude) {
+	uint8_t buffer[BROADCASTPACKETSIZE + HEADERSIZE];
+	broadCastPacket_t p;
 	uint32_t i = 0;
 
-	packet.header[0] = 'P';
-	packet.header[1] = 'A';
-	packet.header[2] = 'C';
-	packet.type = 0;
-	packet.address = netAddr;
-	packet.latitude = 0x475dce8e; //0x2233ff44; //latitude; //0x2233ff44; //(uint32_t)(latitude*10000);
-	packet.longitude = longitude; // 0x1155ee99; // (uint32_t)(longitude*10000);
-	packet.crc = calcCrc((char *)&packet, sizeof(packet));
-	serializeBroadcast(buffer, &packet);
-	// Write to the buffer as a series of characters.
-	for (i = 0; i < 16; i++)
-	{
-		fputc(buffer[i], xbee);
+	addHeader(buffer);
+	p.packetType = BROADCASTPACKET;
+	// Copy address over to packet.
+	for (i = 0; i < 16; i++) {
+		p.address[i] = netAddr[i];
 	}
-    */
+	p.lattitude = lattitude;
+	p.longitude = longitude;
+	//p.crc = calcCrc((char *)&p, sizeof(p));
+	broadCastPacketPack(&p, &buffer[HEADERSIZE]);
+	// Write to the buffer as a series of characters.
+	serialWriteBytes(SERIAL_PORT_XBEE, buffer, BROADCASTPACKETSIZE + HEADERSIZE);
 	return;
 }

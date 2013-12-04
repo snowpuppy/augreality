@@ -25,16 +25,37 @@
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
 #include <iostream>
+#include <math.h>
+#include "gameobject.h"
 
 float MyGLWindow::floatbuffer[5] = { 0.0f };
 uint8_t MyGLWindow::charbuffer[2] = { 0 };
 
+void MyGLWindow::addToWindow(float f) {
+	window[windowIndex] = f;
+	windowIndex = (windowIndex+1) % (WINDOW_SIZE-1);
+}
+
+int compare(const void * a, const void * b) {
+	return( *(int *)a - *(int *)b );
+}
+
+float MyGLWindow::windowAverage() {
+	 //median filter
+	float tmp[WINDOW_SIZE];
+	for(int i=0; i<WINDOW_SIZE; i++) tmp[i]=window[i];
+	qsort(tmp, WINDOW_SIZE, sizeof(int), compare);
+	return tmp[WINDOW_SIZE/2];
+}
 
 MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
 {
 	std::cout<<"My GL Window Ctor\n";
 	makeSurface();
 	m_exit=false;
+	myX = myY = 0.0f;
+	windowIndex = 0;
+	for(int i=0; i<WINDOW_SIZE; i++) window[i]=0.0;
 }
 MyGLWindow::~MyGLWindow()
 {
@@ -47,6 +68,39 @@ float * MyGLWindow::buffer() {
 
 void MyGLWindow::initializeGL()
 {
+	// Now we will create a basic Camera from the graphics library
+	// This is a static camera so it only needs to be set once
+	// First create Values for the camera position
+	ngl::Vec4 From(0,0,0);
+	ngl::Vec4 To(1,0,0);
+	ngl::Vec4 Up(0,0,1);
+	// now load to our new camera
+	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
+	// set the shape using FOV 45 Aspect Ratio based on Width and Height
+	// The final two are near and far clipping planes of 0.5 and 10
+	m_cam->setShape(30.0,10.0/7.0,0.05,350.0,ngl::PERSPECTIVE);
+	// now create our light this is done after the camera so we can pass the
+	// transpose of the projection Mat4 to the light to do correct eye space
+	// transformations
+	// first we create a mesh from an obj passing in the obj file and texture
+	std::cout<<"building mesh\n";
+	m_mesh = new ngl::Obj("models/pacman.obj", "textures/pacman.jpg");
+	t_mesh = new ngl::Obj("models/square.obj", "textures/tetris.jpg");
+	e_mesh = new ngl::Obj("models/square.obj", "textures/pikachu.png");
+	s_mesh = new ngl::Obj("models/square.obj","textures/tetris.jpg");
+	
+	batt1 = new ngl::Obj("models/square.obj", "textures/batt1.png");
+	batt2 = new ngl::Obj("models/square.obj", "textures/batt2.png");
+	batt3 = new ngl::Obj("models/square.obj", "textures/batt3.png");
+	batt4 = new ngl::Obj("models/square.obj", "textures/batt4.png");
+	batt5 = new ngl::Obj("models/square.obj", "textures/batt5.png");
+	
+	rssi1 = new ngl::Obj("models/square.obj", "textures/rssi1.png");
+	rssi2 = new ngl::Obj("models/square.obj", "textures/rssi2.png");
+	rssi3 = new ngl::Obj("models/square.obj", "textures/rssi3.png");
+	rssi4 = new ngl::Obj("models/square.obj", "textures/rssi4.png");
+	rssi5 = new ngl::Obj("models/square.obj", "textures/rssi5.png");
+
 	GLuint renderbuffers[2];
 
 	// Let's create multiple names/ids at once.
@@ -99,35 +153,26 @@ void MyGLWindow::initializeGL()
 	shader->linkProgramObject("Texture");
 
 	(*shader)["Texture"]->use();
-
-	// Now we will create a basic Camera from the graphics library
-	// This is a static camera so it only needs to be set once
-	// First create Values for the camera position
-	ngl::Vec4 From(0,0,0);
-	ngl::Vec4 To(1,0,0);
-	ngl::Vec4 Up(0,0,1);
-	// now load to our new camera
-	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
-	// set the shape using FOV 45 Aspect Ratio based on Width and Height
-	// The final two are near and far clipping planes of 0.5 and 10
-	m_cam->setShape(30,(float)16.0/9.0,0.05,350,ngl::PERSPECTIVE);
-	// now create our light this is done after the camera so we can pass the
-	// transpose of the projection Mat4 to the light to do correct eye space
-	// transformations
-	// first we create a mesh from an obj passing in the obj file and texture
-	std::cout<<"building mesh\n";
-	m_mesh = new ngl::Obj("models/pacman.obj","textures/pacman.jpg");
-	t_mesh = new ngl::Obj("models/tetris.obj","textures/tetris.jpg");
 	std::cout<<"create vao\n";
 	// now we need to create this as a VAO so we can draw it
 	m_mesh->createVAO();
 	t_mesh->createVAO();
+	e_mesh->createVAO();
+	s_mesh->createVAO();
 	
-	//setup text using roboto font 
-	text = new Text("fonts/Roboto-Regular.ttf", 20);
-	//set color to white
-	text->setColour(1.0, 1.0, 1.0);
-	text->setScreenSize(m_width, m_height);
+	rssi1->createVAO();
+	rssi2->createVAO();
+	rssi3->createVAO();
+	rssi4->createVAO();
+	rssi5->createVAO();
+	
+	batt1->createVAO();
+	batt2->createVAO();
+	batt3->createVAO();
+	batt4->createVAO();
+	batt5->createVAO();
+	
+	loadConfigFile();
 }
 
 
@@ -144,16 +189,16 @@ Player MyGLWindow::readSpiData() {
 	Player result;
 	//lock mutex
 	pthread_mutex_lock(&mut);
-	
 	//read buffer
-	result.gps_x = buffer()[0];
-	result.gps_y = buffer()[1];
+	result.gps_x = buffer()[1];
+	result.gps_y = buffer()[0];
 	result.roll = buffer()[2];
 	result.pitch = -buffer()[3];
-	result.yaw = -buffer()[4];
-	result.rssi = charbuffer[0];
+	result.yaw = -(buffer()[4] + 90);
+	addToWindow((float)(unsigned int)charbuffer[0]);
+	result.rssi = (int)windowAverage();
 	result.battery = charbuffer[1];
-	
+	//printf("RSSI: %d Battery: %d Yaw:%.3f\n", (int)result.rssi, (int)result.battery, result.yaw);
 	//unlock mutex
 	pthread_mutex_unlock(&mut);
 
@@ -167,82 +212,146 @@ void MyGLWindow::paintGL()
 	
 	//update camera
 	Player p = readSpiData();
-	ngl::Vec4 From(p.gps_x, p.gps_y, 0);
-	ngl::Vec4 To(p.gps_x+1,p.gps_y,0);
+	ngl::Vec4 From(p.gps_x+myX, p.gps_y+myY, myPitch);
+	ngl::Vec4 To(p.gps_x+myX,p.gps_y+myY+1,myPitch);
 	ngl::Vec4 Up(0,0,1);
-	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
-	m_cam->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
-	m_cam->pitch(-p.yaw);
-	m_cam->roll(p.pitch);
-	m_cam->yaw(-p.roll);
-
+	m_cam->set(From,To,Up);
+	m_cam->setShape(30,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
+	
+	m_cam->yaw(p.yaw+myYaw);
+	m_cam->roll(p.roll+myRoll);
+	//m_cam->pitch(p.pitch+myPitch);
+	
 	ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 	(*shader)["Texture"]->use();
 
-	//translate pacman model
+	//yellow pacman model
 	ngl::Transformation trans;
 	ngl::Mat4 final;
 	final.identity();
-	trans.setMatrix(final);
+	final.translate(0,5,0);
+	//trans.setMatrix(final);
 	m_transformStack.setGlobal(trans);
 	m_transformStack.pushTransform();
-	m_transformStack.setPosition(5,0,0);
+	//m_transformStack.setPosition(10+myX, myY, 0);
+	m_transformStack.setPosition(0, 5, 0);
 	loadMatricesToShader(m_transformStack);
-	
-	// draw the mesh
-	m_mesh->draw();
+	//m_mesh->draw();
 	m_transformStack.popTransform();
 
-	//translate model view
+	for(int i=0; i-1<p.rssi/10; i++) {
+	//purple tetris model
 	final.identity();
 	m_transformStack.setGlobal(trans);
 	m_transformStack.pushTransform();
-	m_transformStack.setPosition(5,2,0);
+	m_transformStack.setPosition(5,0,i);
 	loadMatricesToShader(m_transformStack);
-	
-	// draw the mesh
-	t_mesh->draw();
+	//t_mesh->draw();
+	m_transformStack.popTransform();
+	}
+
+	for(int i=0; i-1<p.battery/10; i++) {
+	//yellow tetris model
+	final.rotateZ(i*10);
+	m_transformStack.setGlobal(trans);
+	m_transformStack.pushTransform();
+	m_transformStack.setPosition(-5,0,i);
+	loadMatricesToShader(m_transformStack);
+	//e_mesh->draw();
+	m_transformStack.popTransform();
+	}
+
+	//blue pacman model
+	final.identity();
+	m_transformStack.setGlobal(trans);
+	m_transformStack.pushTransform();
+	m_transformStack.setPosition(0,-5,0);
+	loadMatricesToShader(m_transformStack);
+	//s_mesh->draw();
 	m_transformStack.popTransform();
 	
-	/*
-	ngl::Transformation trans;
-	ngl::Mat4 final;
-	ngl::Mat4 translate;
-	ngl::Mat4 rotX;
-	ngl::Mat4 rotY;
-	ngl::Mat4 rotZ;
+		
 	for(int i=0; i<256; i++) {
 		object = objects[i];
 		//check if this object should be drawn
+		//std::cout << object.isVisible() << objects[i].isVisible() << "\n";
 		if(object.isVisible()) {
 				//move and rotate object appropriately
-				translate.translate(object.getX(), object.getY(), 0.0f);
-				rotX.rotateX(object.getRoll());
-				rotY.rotateY(object.getPitch());
-				rotZ.rotateZ(object.getYaw());
-				final = translate*rotX*rotY*rotZ;
-				trans.setMatrix(final);
+				//final.identity();
+				//trans.setMatrix(final);
+				//m_transformStack.setPosition(object.x, object.y, 0.0);
 				m_transformStack.setGlobal(trans);
 				m_transformStack.pushTransform();
+				m_transformStack.setPosition(object.x, object.y, 0.0);
+				m_transformStack.setRotation(object.yaw, object.pitch, object.roll);
+				ngl::Vec3 scaler = ngl::Vec3(object.scale, object.scale, object.scale);
+				m_transformStack.setScale(scaler);
 				loadMatricesToShader(m_transformStack);
-	
+				std::cout << i << " " << object.x << " " << object.y << " " << object.filename << "\n";
 				//draw the object
-				object.getMesh()->draw();
+				object.mesh->draw();
 				m_transformStack.popTransform();
 		}
 	}
-	*/
 	
-	//draw text
-	std::ostringstream oss;
-	oss << "Battery: " << p.battery << "% RSSI: " << p.rssi;
-	const std::string status = oss.str();
-	text->renderText(50, 50, status);
+	//setup for 2d drawing
+	ngl::Vec4 From2d(0, 0, 0);
+	ngl::Vec4 To2d(0, -1, 0);
+	ngl::Vec4 Up2d(0, 0, -1);
+	m_cam = new ngl::Camera(From2d,To2d,Up2d,ngl::PERSPECTIVE);
+	m_cam->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
+	
+	glDisable(GL_DEPTH_TEST);
+	
+	//draw battery indicator
+	final.identity();
+	m_transformStack.setGlobal(trans);
+	m_transformStack.pushTransform();
+	m_transformStack.setPosition(-6,-15,-6);
+	loadMatricesToShader(m_transformStack);
+	if(p.battery <= 20) {
+		batt1->draw();
+	} else if(p.battery <=40) {
+		batt2->draw();
+	} else if(p.battery <=60) {
+		batt3->draw();
+	} else if(p.battery <=80) {
+		batt4->draw();
+	} else if(p.battery <=100) {
+		batt5->draw();
+	}
+	m_transformStack.popTransform();
+	
+	//draw rssi indicator
+	final.identity();
+	m_transformStack.setGlobal(trans);
+	m_transformStack.pushTransform();
+	m_transformStack.setPosition(6,-15,-6);
+	loadMatricesToShader(m_transformStack);
+	if(p.rssi <= 15) {
+		rssi1->draw();
+	} else if(p.rssi <=30) {
+		rssi2->draw();
+	} else if(p.rssi <=45) {
+		rssi3->draw();
+	} else if(p.rssi <=60) {
+		rssi4->draw();
+	} else if(p.rssi <=75) {
+		rssi5->draw();
+	}
+	m_transformStack.popTransform();
+	
+	glEnable(GL_DEPTH_TEST);
+	
+
+	
+
 	
 	//wait for next frame
 	glFlush();
 	glFinish();
 	swapBuffers();
+	delete m_cam;
 }
 
 void MyGLWindow::processEvents()
@@ -258,8 +367,44 @@ SDL_Event event;
 
 					switch( event.key.keysym.sym )
 					{
-						case SDLK_ESCAPE :  m_exit=true; break;
-						default : break;
+                    case SDLK_ESCAPE :
+                        m_exit=true;
+                        break;
+			case SDLK_p:
+			m_exit = true;
+			break;
+                    case SDLK_LEFT:
+                        myYaw -= 5;
+                        break;
+                    case SDLK_RIGHT:
+                        myYaw += 5;
+                        break;
+                    case SDLK_UP:
+                        myPitch += 5;
+                        break;
+                    case SDLK_DOWN:
+                        myPitch -= 5;
+                        break;
+					case SDLK_q:
+						myRoll -= 5;
+						break;
+					case SDLK_e:
+						myRoll += 5;
+						break;
+                    case SDLK_w:
+						myX++;
+						break;
+					case SDLK_s:
+						myX--;
+						break;
+					case SDLK_a:
+						myY++;
+						break;
+					case SDLK_d:
+						myY--;
+						break;
+                    default:
+                        break;
 					}
 
 				break;
@@ -268,5 +413,25 @@ SDL_Event event;
 
 }
 
+void MyGLWindow::loadConfigFile() {
+	for(int i=0; i<256; i++) objects[i] = GameObject();
+	int index;
+	bool threed;
+	float locx, locy, locz, orx, ory, orz;
+	std::string filename;
+	bool show;
+	float scale;
+	std::string id;
 
+	std::ifstream file("config.txt");
+	if(!file) {
+		//there's an error here, but i won't do anything to handle that
+	}
+
+	while(file >> index) {
+		file >> threed >> locx >> locy >> locz >> orx >> ory >> orz >> filename >> show >> scale;
+		objects[index] = GameObject(locx, locy, locz, orx, ory, orz, show, threed, index, filename, scale);
+		std::cout << objects[index].x << " " << objects[index].y << " " << objects[index].isVisible() << "\n";
+	}
+}
 

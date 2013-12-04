@@ -20,6 +20,10 @@
 #include "bcm_host.h"
 #include <SDL/SDL.h>
 
+#define GETHEADSETDATA 1
+#define FLUSHSPIBUFFER 2
+#define GETXBEEDATA 3
+
 
 MyGLWindow *win;
 pthread_mutex_t mut;
@@ -33,29 +37,45 @@ bcm_host_deinit();
 
 
 void readSensorPacket(unsigned char *buf) {
+	#define SENSOR_OFFSET (5*sizeof(float))
 	pthread_mutex_lock(&mut);
-	memcpy(MyGLWindow::buffer(), buf, SENSOR_SIZE-2);
-	memcpy(MyGLWindow::charbuffer, buf, 2);
+	memcpy(MyGLWindow::buffer(), buf, SENSOR_OFFSET);
+	memcpy(MyGLWindow::charbuffer, buf + SENSOR_OFFSET, SENSOR_SIZE - SENSOR_OFFSET);
 	pthread_mutex_unlock(&mut);
+}
+
+// Function: clearSpiBuffer
+// Purpose: This function sends the flush
+// buffer command to the headset to indicate
+// that it should remove all items from its spi
+// buffer.
+void clearSpiBuffer(void)
+{
+    char data = FLUSHSPIBUFFER;
+	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
 }
 
 void *spiThread(void *arg) {
 	// Buffer for all data
 	unsigned char buf[SENSOR_SIZE] = {0};
+	wiringPiSetup();
+	wiringPiSPISetup(0, 4000000);
+	sleep(5);
+	// Evict the buffer
+    clearSpiBuffer();
+	sleep(5);
 
 	while(1) {
-		//lock mutex
 		unsigned char dataSize = 0;
 
 		// Signal a byte to read.
 		buf[0] = 1;
-		wiringPiSPIDataRW(0, (unsigned char *)buf,1);
-		
+		wiringPiSPIDataRW(0, (unsigned char *)buf, 1);
+
 		//read sensor data from SPI
 		while (dataSize == 0) {
-			//buf[0] = SENSOR_PACKET;
-			memset(buf,0,SENSOR_SIZE);
-			wiringPiSPIDataRW(0, (unsigned char *)buf,1);
+			buf[0] = 0;
+			wiringPiSPIDataRW(0, (unsigned char *)buf, 1);
 			dataSize = buf[0];
 			usleep(1000);
 		}
@@ -63,6 +83,7 @@ void *spiThread(void *arg) {
 			fprintf(stderr, "Data size not correct.\n");
 		}
 		usleep(1000);
+		memset(buf,0,SENSOR_SIZE);
 		wiringPiSPIDataRW(0, buf, SENSOR_SIZE);
 		readSensorPacket(buf);
 
@@ -71,7 +92,8 @@ void *spiThread(void *arg) {
 	return NULL;
 }
 
-void startSpiThread(pthread_t t) {
+void startSpiThread(void) {
+	pthread_t t;
 	pthread_create(&t, NULL, spiThread, NULL);
 }
 
@@ -87,7 +109,6 @@ int main()
   }
 
 
-
 	SDL_Surface* myVideoSurface = SDL_SetVideoMode(0,0, 32,  SDL_SWSURFACE);
 	// Print out some information about the video surface
 	if (myVideoSurface != NULL) {
@@ -98,23 +119,15 @@ int main()
 	config->setRGBA(8,8,8,8);
 	// set the depth buffer
 	config->setDepth(24);
-	
 	// now create a new window using the default config
-	pthread_t t;
-	wiringPiSetup();
-	wiringPiSPISetup(0, 4000000);
-	startSpiThread(t);
-
+	startSpiThread();
 	win= new MyGLWindow(config);
-
 	
 	// loop and process (escape exits)
-	while(1)
+	while(!win->exit())
 	{
 		win->processEvents();
 		win->paintGL();
-		if(win->exit()==true)
-			break;
 	}
 }
 

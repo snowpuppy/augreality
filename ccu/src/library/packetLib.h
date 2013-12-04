@@ -6,6 +6,9 @@
 #define PACKETLIB_H
 #include "packets.h"
 
+// Constants
+#define SIZEOFID 16
+
 // Api requests made from gui
 // and from the simulation to
 // get updated information
@@ -32,9 +35,9 @@ enum apiRequest
 */
 typedef struct broadCastInfo
 {
-  uint16_t address; // network address of xbee
-  float latitude;   // latitude of headset
-  float longitude;  // longitude of headset
+  uint8_t address[16]; // network address of xbee
+  float latitude;      // latitude of headset
+  float longitude;     // longitude of headset
 } broadCastInfo_t;
 
 /**
@@ -44,7 +47,7 @@ typedef struct broadCastInfo
 */
 typedef struct heartBeatInfo
 {
-	uint16_t id;            // id of the player (same as xbee address)
+	uint8_t id[16];         // id of the player (same as xbee address)
 	float x,y;              // coordinates of player
 	float roll,pitch,yaw;   // orientation of player
 } heartBeatInfo_t;
@@ -60,20 +63,20 @@ typedef struct headsetPos
 
 // Functions
 int openComPort();
-int16_t findHeartBeating(uint32_t id);
-int16_t findBroadCasting(uint16_t id);
-int16_t goBack(uint16_t id);
-int16_t getPos(headsetPos_t *pos, uint16_t id);
+int16_t findHeartBeating(uint8_t *id);
+int16_t findBroadCasting(uint8_t *id);
+int16_t goBack(uint8_t *id);
+int16_t getPos(headsetPos_t *pos, uint8_t *id);
 uint16_t getNumAlive();
-uint16_t getAlive(uint16_t id);
+uint16_t getAlive(uint8_t *id);
 int16_t updateObjs(objInfo_t *objList, uint8_t numObjects);
 int16_t sendFile(char *filename);
-int16_t endSimulationID(uint16_t destId);
+int16_t endSimulationID(uint8_t *destId);
 int16_t startSimulation();
-int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originLon );
-int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size);
+int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originLon );
+int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds);
 uint16_t getNumBroadCasting();
-int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id);
+int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id);
 int16_t writeByteStream(uint8_t *buf, uint16_t size);
 
 #endif

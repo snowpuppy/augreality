@@ -30,7 +30,7 @@ int32_t g_port;
 // Function: getBroadCastingLoc(id)
 // Returns an object for a given id that specifies
 // the location information for that object.
-int16_t getBroadCastingLoc(headsetPos_t *pos, uint16_t id)
+int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id)
 {
 	int16_t index = -1;
 	index = findBroadCasting(id);
@@ -54,23 +54,27 @@ uint16_t getNumBroadCasting()
 // Copies id numbers into the list and returns
 // the number of values copied.
 // Returns the number of IDs in the array, -1 on error.
-int16_t getBroadCastingIDs(uint16_t *ids, uint16_t size)
+int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds)
 {
 	int16_t i = 0;
-	for (i = 0; i < size && i < g_numBroadCasting; i++)
+	for (i = 0; i < numIds && i < g_numBroadCasting; i++)
 	{
-		ids[i] = g_broadCasting[i].address;
+		strncpy(&ids[i*SIZEOFID], g_broadCasting[i].address, SIZEOFID);
 	}
 	return i;
 }
 
 // Function: acceptID(id)
-int16_t acceptID(uint16_t ccuId, uint16_t destId, float originLat, float originLon )
+int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originLon )
 {
+	uint16_t i = 0;
 	// Create a packet and stuff it.
 	acceptHeadset_t p = {0};
 	p.packetType = BROADCASTPACKET;
-	p.id = ccuId;
+	for (i = 0; i < SIZEOFID; i++)
+	{
+		p.id[i] = ccuId[i];
+	}
 	p.x = originLat;
 	p.y = originLon;
 	// Pack the packet to a byte stream.
@@ -89,7 +93,7 @@ int16_t startSimulation()
   return 0;
 }
 // endSimulationID(id)
-int16_t endSimulationID(uint16_t destId)
+int16_t endSimulationID(uint8_t *destId)
 {
 	endSimulation_t p = {0};
 	p.packetType = ENDSIMULATION;
@@ -152,7 +156,7 @@ int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
   return 0;
 }
 // getAlive(id)
-uint16_t getAlive(uint16_t id)
+uint16_t getAlive(uint8_t *id)
 {
 	int16_t ret = 0;
 	ret = findHeartBeating(id);
@@ -164,19 +168,22 @@ uint16_t getNumAlive()
 	return g_numHeartBeating;
 }
 // getAliveIDs()
-int16_t getAliveIDs(uint16_t *ids, uint16_t size)
+int16_t getAliveIDs(uint8_t *ids, uint16_t size)
 {
-	int16_t i = 0;
+	int16_t i = 0, j = 0;
 	for (i = 0; i < g_numHeartBeating && i < size; i++)
 	{
-		ids[i] = g_heartBeating[i].id;
+		for (j = 0; j < SIZEOFID; j++)
+		{
+			ids[i*SIZEOFID + j] = g_heartBeating[i].id[j];
+		}
 	}
 	return i;
 }
 // Function: getPos(id)
 // Sets position information for headset with id.
 // Returns -1 on error.
-int16_t getPos(headsetPos_t *pos, uint16_t id)
+int16_t getPos(headsetPos_t *pos, uint8_t *id)
 {
 	int16_t index = 0;
 	if (pos == NULL)
@@ -198,7 +205,7 @@ int16_t getPos(headsetPos_t *pos, uint16_t id)
 // Send a goBack message to the headset
 // indicating that it should transition to
 // an earlier state.
-int16_t goBack(uint16_t id)
+int16_t goBack(uint8_t *id)
 {
 	goBack_t p = {0};
 	p.packetType = GOBACK;
@@ -215,12 +222,12 @@ int16_t goBack(uint16_t id)
 // Purpose: abstract process of finding ids
 // 			in the data structure they are in.
 // Returns -1 on error
-int16_t findBroadCasting(uint16_t id)
+int16_t findBroadCasting(uint8_t *id)
 {
 	int16_t i = 0;
 	for (i = 0; i < MAXNUMHEADSETS; i++)
 	{
-		if (g_broadCasting[i].address == id)
+		if (strncmp(g_broadCasting[i].address, id, 16) == 0)
 		{
 			return i;
 		}
@@ -232,12 +239,12 @@ int16_t findBroadCasting(uint16_t id)
 // Purpose: abstract process of finding ids
 // 			in the data structure they are in.
 // Returns -1 on error
-int16_t findHeartBeating(uint32_t id)
+int16_t findHeartBeating(uint8_t *id)
 {
 	int16_t i = 0;
 	for (i = 0; i < MAXNUMHEADSETS; i++)
 	{
-		if (g_heartBeating[i].id == id)
+		if (strncmp(g_heartBeating[i].id, id, SIZEOFID) == 0 )
 		{
 			return i;
 		}
