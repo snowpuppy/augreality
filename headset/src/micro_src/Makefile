@@ -24,12 +24,12 @@ OUT:=$(BINDIR)/$(OUTNAME)
 .PHONY: all clean upload _force_look
 
 # By default, compile program
-all: $(BINDIR) $(OUT) include/packets.h src/packets.c
+all: include/packets.h src/packets.c $(BINDIR) $(OUT)
 
 # copy packet files from ccu
 include/packets.h:
 	../../../ccu/src/library/generatePackets.py ./include/ ./src/
-include/packets.c:
+src/packets.c:
 	../../../ccu/src/library/generatePackets.py ./include/ ./src/
 
 # Remove all intermediate object files (remove the binary directory)

@@ -129,7 +129,7 @@ void imu9Init() {
  * @param mag the vector to return magnetometer values
  * @return whether the operation completed successfully
  */
-bool imu9Raw(ivector *gyro, ivector *accel, ivector *mag) {
+bool imu9Read(ivector *gyro, ivector *accel, ivector *mag) {
 	uint8_t values[6];
 	bool ok = true;
 	if (i2cReadRegister(MAG_ADDRESS, LSM303_OUT_X_H_M, &values[0], 6)) {
@@ -157,29 +157,23 @@ bool imu9Raw(ivector *gyro, ivector *accel, ivector *mag) {
 	return ok;
 }
 
-/**
- * Reads calibrated data from the 9-DOF IMU.
- *
- * @param gyro the vector to return gyro values
- * @param accel the vector to return accelerometer values
- * @param mag the vector to return magnetometer values
- * @return whether the operation completed successfully
- */
-bool imu9Read(vector *gyro, vector *accel, vector *mag) {
-	ivector g, a, m;
-	if (imu9Raw(&g, &a, &m)) {
-		gyro->x = (float)(g.ix - calib.ix);
-		gyro->y = (float)(g.iy - calib.iy);
-		gyro->z = (float)(g.iz - calib.iz);
-		mag->x = (float)m.ix;
-		mag->y = (float)m.iy;
-		mag->z = (float)m.iz;
-		accel->x = (float)a.ix;
-		accel->y = (float)a.iy;
-		accel->z = (float)a.iz;
-		return true;
-	}
-	return false;
+// Function: fast_sqrt
+// Purpose: Calculate sqrt of a number.
+static float fast_sqrt( float number )
+{
+        long i;
+        float x2, y;
+        const float threehalfs = 1.5F;
+
+        x2 = number * 0.5F;
+        y  = number;
+        i  = * ( long * ) &y;                       // evil floating point bit level hacking
+        i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+        y  = * ( float * ) &i;
+        y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//      y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+        return 1/y;
 }
 
 /**
@@ -191,7 +185,7 @@ void imu9Calibrate(void) {
 	ivector g, a, m;
 	for (uint32_t i = 0; i < 64; i++) {
 		// Average 256 readings
-		imu9Raw(&g, &a, &m);
+		imu9Read(&g, &a, &m);
 		totalX += g.ix;
 		totalY += g.iy;
 		totalZ += g.iz;
@@ -204,34 +198,29 @@ void imu9Calibrate(void) {
 }
 
 // Function: a_pitch
-// Purpose: This function returns accelerometer pitch value
-float a_pitch(vector *a) {
-	float ss;
-	arm_sqrt_f32(a->y * a->y + a->z * a->z, &ss);
-	return atan2f(-a->x, ss);
+// Purpose: This function returns accelerometer pitch value?
+float a_pitch(ivector a)
+{
+	if ((a.iy == 0) && (a.iz == 0))
+    {
+		return PI/2;
+	}
+	return atan2(-a.ix, fast_sqrt(a.iy*a.iy + a.iz*a.iz));
 }
 
 // Function: m_pr_yaw
 // Purpose: Calculate yaw given IMU data.
-float m_pr_yaw(vector *m, float pitch, float roll) {
-	float sinRoll, cosRoll, sinPitch, cosPitch;
-
-	// Calculate sin, cos of pitch and roll
-	arm_sin_cos_f32(roll, &sinRoll, &cosRoll);
-	arm_sin_cos_f32(pitch, &sinPitch, &cosPitch);
-	// Calculate yaw from magnetometer
-	return atan2f(m->z * sinRoll - m->y * cosRoll, m->x * cosPitch + m->y * sinPitch * sinRoll +
-		m->z * sinPitch * cosRoll);
-}
-
-// Function: g_pr_yaw
-// Purpose: Calculate gyro yaw rate given IMU data.
-float g_pr_yaw(vector *g, float pitch, float roll) {
-	return g->z;
+float m_pr_yaw(ivector m, float pitch, float roll)
+{
+  return (float) atan2((m.iz*sin(roll) - m.iy*cos(roll)), (m.ix*cos(pitch) + m.iy*sin(pitch)*sin(roll) + m.iz*sin(pitch)*cos(roll)));
 }
 
 // Function: a_roll
 // Purpose: Calculate roll information.
-float a_roll(vector *a) {
-	return atan2f(a->y, a->z);
+float a_roll(ivector a)
+{
+	if (a.iz == 0) {
+		return PI/2;
+	}
+	return atan2(a.iy, a.iz);
 }
