@@ -41,9 +41,6 @@
 #define FLUSHSPIBUFFER 2
 #define GETXBEEDATA 3
 
-// IMU constants
-#define HIST_SIZE 5
-
 // Time constants
 #define ONE_SECOND 1000
 #define HALF_SECOND 500
@@ -79,9 +76,9 @@ static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
-#define IMU_HISTORY 5
+#define IMU_HISTORY 15
 static uint32_t histIndex = 0;
-const float filterCoeffs[IMU_HISTORY] = {.10, .15, .20, .25, .30};
+const float filterCoeffIncr = 2. / (float)(IMU_HISTORY*IMU_HISTORY + IMU_HISTORY);
 static float pitchHist[IMU_HISTORY];
 static float rollHist[IMU_HISTORY];
 static float yawHist[IMU_HISTORY];
@@ -440,14 +437,13 @@ static void processGPSData(void) {
 static void processIMUData(void) {
 	// Processing variables
 	ivector g, a, m;
-	float roll, pitch, yaw;
+	float roll, pitch, yaw, yawOffset, yawTmp;
 	// Timing related variables
 	const uint32_t UPDATE_PERIOD_MS = 16;
 	static unsigned long imuTimer = 0;
 	unsigned long currentTime = millis();
 	if (currentTime > imuTimer + UPDATE_PERIOD_MS) {
 		// Index history array
-		uint32_t hist = histIndex % IMU_HISTORY;
 		imuTimer = currentTime;
 		// push back pitch/yaw/roll history
 		for (histIndex = 0; histIndex < IMU_HISTORY-1; ++histIndex) {
@@ -460,22 +456,37 @@ static void processIMUData(void) {
 		// calculate pitch/yaw/roll based on new sensor data
 		pitchHist[histIndex] = a_pitch(a);
 		rollHist[histIndex] = a_roll(a);
-		yawHist[histIndex] =
-				m_pr_yaw(m, pitchHist[histIndex], rollHist[histIndex]);
-				// roll and pitch swapped due to physical orientation of sensor
+		yawHist[histIndex] =  m_pr_yaw(m, pitchHist[histIndex], rollHist[histIndex]);
 
 		// filter pitch/yaw/roll values
 		pitch = 0;
 		yaw = 0;
 		roll = 0;
-		for (histIndex = 0; histIndex < HIST_SIZE; ++histIndex) {
-			pitch += pitchHist[histIndex] * filterCoeffs[histIndex];
-			yaw += yawHist[histIndex] * filterCoeffs[histIndex];
-			roll += rollHist[histIndex] * filterCoeffs[histIndex];
+		// center yaw range around most recent yaw measurement
+		// i.e. [yaw_recent-PI,yaw_recent+PI]
+		// (assumes not more than PI differential from 
+		yawOffset = yawHist[IMU_HISTORY-1];
+		for (histIndex = 0; histIndex < IMU_HISTORY; ++histIndex) {
+			pitch += pitchHist[histIndex] * filterCoeffIncr*(histIndex+1);
+			roll += rollHist[histIndex] * filterCoeffIncr*(histIndex+1);
+			yawTmp = yawHist[histIndex] - yawOffset;
+			if (yawTmp > PI) {
+				yawTmp -= 2*PI;
+			} else if (yawTmp < -PI) {
+				yawTmp += 2*PI;
+			}
+			yaw += yawTmp * filterCoeffIncr*(histIndex+1);
+		}
+		// convert yaw range back to [-PI,+PI]
+		yaw += yawOffset;
+		if (yawTmp > PI) {
+			yawTmp -= 2*PI;
+		} else if (yawTmp < -PI) {
+			yawTmp += 2*PI;
 		}
 		// Convert to degrees
-		*((float *) &headsetData[PITOFFSET]) = pitch * (45. / PI); // pitch
-		*((float *) &headsetData[ROLOFFSET]) = roll * (45. / PI); // roll
+		*((float *) &headsetData[PITOFFSET]) = pitch * (180. / PI); // pitch
+		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
 		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
 		ledToggle();
