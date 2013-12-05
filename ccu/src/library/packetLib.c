@@ -346,15 +346,18 @@ uint8_t detectHeader(uint8_t *pac)
 		if (pac[2] == 'P' && pac[1] == 'A' && pac[0] == 'C')
 		{
 			readBytes(g_port,&ret,1);
+			pac[0] = pac[1] = pac[2] = 0;
 			return ret;
 		}
+		printf("\r%2.2X %2.2X %2.2X", pac[2], pac[1], pac[0]);
+		usleep(20000);
 	}
 }
 
 void getBroadCastPacket(void)
 {
 	broadCastPacket_t p;
-	uint16_t i = 0;
+	uint16_t i = 0, j = 0;
 	uint8_t buf[BROADCASTPACKETSIZE];
 	readBytes(g_port, buf, BROADCASTPACKETSIZE);
 	broadCastPacketUnpack(&p,buf);
@@ -365,7 +368,17 @@ void getBroadCastPacket(void)
 		g_broadCasting[i].latitude = p.lattitude;
 		g_broadCasting[i].longitude = p.longitude;
 		g_numBroadCasting++;
-    printf("Processed broadcast packet num: %d\n", g_numBroadCasting);
+    printf("\nProcessed broadcast packet num: %d\n", g_numBroadCasting);
+		printf("lat: %f, lon: %f, id: ", p.lattitude, p.longitude);
+		for (j = 0; j < 16; j++)
+		{
+			printf("%2.2X ", p.address[j]);
+		}
+		printf("\n");
+	}
+	else
+	{
+		printf("Got packet with existing id.\n");
 	}
 }
 void getHeartBeatPacket(void)

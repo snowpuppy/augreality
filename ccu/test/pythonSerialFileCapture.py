@@ -38,6 +38,8 @@ print "Filesize =", filesize
 count = 0
 while count < filesize:
   output = ser.read(1)     # read a byte
+  if (output != 'A'):
+    raise Exception("not correct.")
   newfile.write(output);
   print "i = %d: %x %c" % (i, ord(output), output )
   i = i + 1

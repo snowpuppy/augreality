@@ -32,14 +32,14 @@ SENDUPDATEOBJS = '\x07'
 SENDUPDATEOBJSFORMAT = '=BB'
 OBJSFORMAT = 'BBHH5f'			# objInfo struct
 SENDFILE = '\x08'
-SENDFILEFORMAT = '=BB'		# also need to send filename
+SENDFILEFORMAT = '=B'		# also need to send filename
 SENDEND = '\x09'
 SENDENDFORMAT = '=B16B'
-SENDSTART = '\x10'
+SENDSTART = '\x0a'
 SENDSTARTFORMAT = '=B'
-SENDACCEPT = '\x11'
+SENDACCEPT = '\x0b'
 SENDACCEPTFORMAT = '=B16B'
-SENDGOBACK = '\x12'
+SENDGOBACK = '\x0c'
 SENDGOBACKFORMAT = '=B16B'
 
 def getBroadCastIDs():
@@ -76,4 +76,137 @@ def getNumBroadCast():
 	reply = s.recv(1);
 	print "NumIds:",ord(reply)
 	s.close()
+
+def getBroadcastLoc(nid):
+	# Set command
+	# Pack info
+	command = GETBROADCASTLOC
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
+	# receive info
+	# Get number of ids to read.
+	data = ""
+	numToRead = calcsize( BROADCASTLOCFORMATR )
+	print "numToRead:", numToRead
+	reply = s.recv(numToRead);
+	data = unpack(BROADCASTLOCFORMATR,reply);
+	print "Position: ",data
+	s.close()
+
+def getPosition(nid):
+	# Set command
+	# Pack info
+	command = GETPOSITION
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
+	# receive info
+	# Get number of ids to read.
+	data = ""
+	numToRead = calcsize( POSITIONFORMATR )
+	print "numToRead:", numToRead
+	reply = s.recv(numToRead);
+	data = unpack(POSITIONFORMATR,reply);
+	print "Position: ",data
+	s.close()
+
+def getNumAlive():
+	# Set command
+	# Pack info
+	command = GETNUMALIVE
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	# receive info
+	reply = s.recv(1);
+	print "NumAlive:",ord(reply)
+	s.close()
+
+def getAlive(nid):
+	# Set command
+	# Pack info
+	command = GETALIVE
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
+	# receive info
+	# Get number of ids to read.
+	data = ""
+	reply = s.recv(1);
+	print "Alive: ", ord(reply)
+	s.close()
+
+def sendFile(filename):
+	# Set command
+	# Pack info
+	command = SENDFILE
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	# send filename length
+	s.send(chr(len(filename)))
+	# send filename
+	s.send(filename)
+
+def sendUpdateObjs(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
+	# Set command
+	# format SENDUPDATEOBJSFORMAT'=BB' 
+	# format OBJSFORMAT 'BBHH5f'
+	# Pack info
+	command = SENDUPDATEOBJS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(chr(num))
+	data = pack(OBJSFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
+	s.send(data)
+	
+def sendEnd(nid):
+	# Set command
+	# Pack info
+	command = SENDEND
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
+
+def sendStart():
+	# Set command
+	# Pack info
+	command = SENDSTART
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+
+def sendAccept(nid):
+	# Set command
+	# Pack info
+	command = SENDACCEPT
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
+
+def sendGoBack(nid):
+	# Set command
+	# Pack info
+	command = SENDGOBACK
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.send(nid)
 

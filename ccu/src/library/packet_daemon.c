@@ -51,6 +51,8 @@ int main(void)
 				break;
 		}
 	}
+	// Open the serial port for communication.
+	//fd = openComPort();
   //sendFile("../sim/sampleFile.tar");
 /*
 	//res = write(fd,"abcdh",5);

@@ -143,6 +143,7 @@ void serviceConnections(int fd)
 #endif
     // Handle the request here.
     rc = read(connfd, (void *)&packetType, 1);
+		printf("Packet type of %d received.\n", (int)packetType);
 		// Find out what type of request was sent
     switch(packetType)
     {
@@ -307,8 +308,9 @@ void _sendFile(int fd)
 		return;
 	}
 	// Read in filename
-	rc = read(fd, (void *)&filename, filenameSize+1);
-	if (rc < filenameSize+1) { perror("Error:_sendFile: read less than filenameSize+1!\n"); return;}
+	rc = read(fd, (void *)&filename, filenameSize);
+	if (rc < filenameSize) { perror("Error:_sendFile: read less than filenameSize!\n"); return;}
+	filename[filenameSize] = '\0';
 	// Send the file on its way!
 	sendFile(filename);
 }
@@ -324,6 +326,7 @@ void _sendEnd(int fd)
 	addHeader(buf);
 	endSimulationPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, ENDSIMULATIONSIZE + HEADERSIZE);
+	printf("Sent end command.\n");
 }
 void _sendStart(int fd)
 {
@@ -333,6 +336,7 @@ void _sendStart(int fd)
 	addHeader(buf);
 	startSimulationPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, STARTSIMULATIONSIZE + HEADERSIZE);
+	printf("Sent start command.\n");
 }
 void _sendAccept(int fd)
 {
@@ -345,8 +349,9 @@ void _sendAccept(int fd)
 	// and so I can update the origin correctly. :)
 	//getOrigin(&p.x, &p.y, /*id of headset */);
 	addHeader(buf);
-	acceptHeadsetPack(&p, buf);
+	acceptHeadsetPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, ACCEPTHEADSETSIZE + HEADERSIZE);
+	printf("Sent Accept command.\n");
 }
 // This needs to be sent to specific address
 // or broadcast as needed...
@@ -358,4 +363,5 @@ void _sendGoBack(int fd)
 	addHeader(buf);
 	goBackPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, GOBACKSIZE + HEADERSIZE);
+	printf("Sent GoBack command.\n");
 }
