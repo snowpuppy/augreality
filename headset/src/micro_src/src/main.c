@@ -71,12 +71,12 @@ static struct {
 
 // Global Variables
 static uint8_t xbeeData[COMM_BUFFER_SIZE];
-static uint8_t numXbeeDataBytes = 0;
+static volatile uint8_t numXbeeDataBytes = 0;
 static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
-#define IMU_HISTORY 15
+#define IMU_HISTORY 5
 static uint32_t histIndex = 0;
 const float filterCoeffIncr = 2. / (float)(IMU_HISTORY*IMU_HISTORY + IMU_HISTORY);
 static float pitchHist[IMU_HISTORY];
@@ -231,6 +231,13 @@ void xbeeInit(uint8_t *xbeeId) {
 		fputc('L',xbee);
 		fputc('\r',xbee);
 		getBytes(xbeeId,8);
+		// Exit command mode
+		fputc('A',xbee);
+		fputc('T',xbee);
+		fputc('C',xbee);
+		fputc('N',xbee);
+		fputc('\r',xbee);
+		msleep(500L);
 	}
 }
 
@@ -336,8 +343,8 @@ static void parseStaticDataPacket(uint32_t *state) {
 	static uint32_t numBytesLeft = 0;
 	// indicate number of bytes that should be read:
 	// either 64 or numBytesLeft
-	uint32_t bytesToRead = 0;
-	static uint32_t i_local = 0;
+	uint8_t bytesToRead;
+	static uint8_t i_local = 0;
 	static uint8_t foundNumBytes = 0;
 
 	// Extract the number of bytes for the
@@ -353,22 +360,19 @@ static void parseStaticDataPacket(uint32_t *state) {
 	}
 
 	// calculate number of bytes to read
-	bytesToRead = numBytesLeft < (COMM_BUFFER_SIZE/16) ? numBytesLeft : (COMM_BUFFER_SIZE/16);
+	bytesToRead = numBytesLeft < (COMM_BUFFER_SIZE >> 2) ? (uint8_t)numBytesLeft :
+		(COMM_BUFFER_SIZE >> 2);
 
 	if (foundNumBytes && (fcount(xbee) >= bytesToRead) && numXbeeDataBytes == 0) {
 		// get remaining bytes from wireless.
-		__disable_irq();
 		getBytes(&xbeeData[i_local], (uint32_t)bytesToRead);
-		numBytesLeft -= bytesToRead;
-		// Protect updating the number of bytes to read.
+		numBytesLeft -= (uint32_t)bytesToRead;
 		numXbeeDataBytes = bytesToRead + i_local;
-		__enable_irq();
 
 		// If we're done, reset to get next packet.
-		if (numBytesLeft <= 0) {
-			*state = XBEEDISCOVERYSTATE; 
+		if (numBytesLeft == 0) {
+			*state = XBEEDISCOVERYSTATE;
 			foundNumBytes = 0;
-			numBytesLeft = 0;
 		}
 		i_local = 0;
 		// Toggle LED for status, output character + 1
@@ -547,12 +551,13 @@ void spiReceivedByte(uint8_t data) {
 	}
 	// Send XBee packet data
 	if (data == GETXBEEDATA) {
-		if (numXbeeDataBytes > 0) {
-			printf("%d\n", numXbeeDataBytes);
-			spiWriteByte(numXbeeDataBytes);
-			spiWriteBytes(xbeeData, numXbeeDataBytes);
-			spiWriteByte(0);
+		uint8_t db = numXbeeDataBytes;
+		if (db > 0) {
 			numXbeeDataBytes = 0;
+			//printf("%d\n", numXbeeDataBytes);
+			spiWriteByte(db);
+			spiWriteBytes(xbeeData, db);
+			spiWriteByte(0);
 		}
 		else
 		{
