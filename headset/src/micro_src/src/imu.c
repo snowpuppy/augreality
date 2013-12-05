@@ -157,25 +157,6 @@ bool imu9Read(ivector *gyro, ivector *accel, ivector *mag) {
 	return ok;
 }
 
-// Function: fast_sqrt
-// Purpose: Calculate sqrt of a number.
-static float fast_sqrt( float number )
-{
-        long i;
-        float x2, y;
-        const float threehalfs = 1.5F;
-
-        x2 = number * 0.5F;
-        y  = number;
-        i  = * ( long * ) &y;                       // evil floating point bit level hacking
-        i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
-        y  = * ( float * ) &i;
-        y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//      y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-        return 1/y;
-}
-
 /**
  * Calibrates the IMU's gyro.
  */
@@ -198,29 +179,35 @@ void imu9Calibrate(void) {
 }
 
 // Function: a_pitch
-// Purpose: This function returns accelerometer pitch value?
-float a_pitch(ivector a)
-{
-	if ((a.iy == 0) && (a.iz == 0))
-    {
-		return PI/2;
-	}
-	return atan2(-a.ix, fast_sqrt(a.iy*a.iy + a.iz*a.iz));
+// Purpose: This function returns accelerometer pitch value
+float a_pitch(ivector a) {
+	float ss;
+	float y = (float)(int)a.iy, z = (float)(int)a.iz;
+	arm_sqrt_f32(y * y + z * z, &ss);
+	return atan2f((float)(-(int)a.ix), ss);
 }
 
 // Function: m_pr_yaw
 // Purpose: Calculate yaw given IMU data.
-float m_pr_yaw(ivector m, float pitch, float roll)
-{
-  return (float) atan2((m.iz*sin(roll) - m.iy*cos(roll)), (m.ix*cos(pitch) + m.iy*sin(pitch)*sin(roll) + m.iz*sin(pitch)*cos(roll)));
+float m_pr_yaw(ivector m, float pitch, float roll) {
+	float sinRoll, cosRoll, sinPitch, cosPitch, x, y, z;
+
+	// Calculate sin, cos of pitch and roll
+	arm_sin_cos_f32(roll, &sinRoll, &cosRoll);
+	arm_sin_cos_f32(pitch, &sinPitch, &cosPitch);
+	x = (float)(int)m.ix;
+	y = (float)(int)m.iy;
+	z = (float)(int)m.iz;
+	// Calculate yaw from magnetometer
+	return atan2f(z * sinRoll - y * cosRoll, x * cosPitch + y * sinPitch * sinRoll +
+		z * sinPitch * cosRoll);
 }
 
 // Function: a_roll
 // Purpose: Calculate roll information.
-float a_roll(ivector a)
-{
-	if (a.iz == 0) {
-		return PI/2;
-	}
-	return atan2(a.iy, a.iz);
+float a_roll(ivector a) {
+	float y, z;
+	y = (float)(int)a.iy;
+	z = (float)(int)a.iz;
+	return atan2f(y, z);
 }
