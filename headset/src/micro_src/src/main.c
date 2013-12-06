@@ -273,7 +273,7 @@ static void processXbeeData(uint8_t *id) {
 	}
 	// If packets are available
 	// then start processing them.
-	if (fcount(xbee) > 2 && xbeeState == XBEEDISCOVERYSTATE) {
+	if (fcount(xbee) >= 2 && xbeeState == XBEEDISCOVERYSTATE) {
 		// If bytes are available, then receive packet.
 		// Send packet to spi or trigger appropriate action.
 		// This is a sequence detector for 'P','A','C'

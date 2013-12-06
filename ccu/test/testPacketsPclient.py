@@ -53,8 +53,6 @@ while True:
 		sendFile(nid)
 	elif (num == 8):
 		sendEnd(nid)
-	elif (num == 9):
-		getNumBroadCast()
 	elif (num == 10):
 		sendStart()
 	elif (num == 11):

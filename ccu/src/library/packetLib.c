@@ -377,11 +377,11 @@ void getBroadCastPacket(void)
 			printf("%2.2X ", p.address[j]);
 		}
 		printf("\n");
-	}
+	}/*
 	else
 	{
 		printf("Got packet with existing id.\n");
-	}
+	}*/
 }
 void getHeartBeatPacket(void)
 {
