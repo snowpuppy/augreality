@@ -137,16 +137,16 @@ class AugRealObj:
   def handle0(self,event):
     self.handleNumEvent(0)
   def handleNumEvent(self,num):
-    #print "Key %d was pressed." % (num, )
+    print "Key %d was pressed." % (num, )
     if (self.state == SPLASHSCRE):
       pass
     elif (self.state == SELECTHEAD):
       pass
     elif (self.state == SELECTSIMU):
       # Hardcoded simulations.
-      if (num == 0):
-        sendFile("../sim/pacman.tar")
       if (num == 1):
+        sendFile("../sim/pacman.tar")
+      if (num == 2):
         sendFile("../sim/demo.tar")
       pass
     elif (self.state == RUNSIMULAT):
