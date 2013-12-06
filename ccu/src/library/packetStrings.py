@@ -59,7 +59,9 @@ class Struct:
 		retStr = "\nvoid\t%sUnpack(%s_t *p, uint8_t *buf)\n{" % (self.name, self.name )
 		retStr += "\n\tuint32_t i = 0;\n"
 		for i in self.members:
-			if (i[0] in self.validTypes):
+			# Updated to exclude packetType from unpacking...
+			# packetType is usually already read when I want to unpack.
+			if (i[0] in self.validTypes and i[1] != "packetType"):
 				if (i[2] == 0):
 					retStr += "\n\tp->%s = *((%s *)&buf[i]);" % (i[1].split('[')[0], i[0])
 					retStr += "\n\ti += sizeof(%s);" % (i[0], )
@@ -68,7 +70,7 @@ class Struct:
 						retStr += "\n\t p->%s[%d] = *((%s *)&buf[i]);" % (i[1].split('[')[0],j, i[0])
 						retStr += "\n\ti += sizeof(%s);" % (i[0], )
 
-		retStr += "\n}\n"
+		retStr += "\n\treturn;\n}\n"
 		return retStr
 
 # additional #defines shared

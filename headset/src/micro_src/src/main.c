@@ -391,11 +391,13 @@ static void parseEndSimulation(uint32_t *state) {
 */
 static void parseAcceptHeadset(uint32_t *state) {
 	acceptHeadset_t p;
-	uint8_t buf[ACCEPTHEADSETSIZE];
+	// use ACCEPTHEADSETSIZE-1 because packetType
+	// was already read.
+	uint8_t buf[ACCEPTHEADSETSIZE-1];
 
 	// Wait until we have entire packet in buffer.
-	if ( fcount(xbee) >= ACCEPTHEADSETSIZE ) {
-		getBytes(buf, (uint32_t)ACCEPTHEADSETSIZE);
+	if ( fcount(xbee) >= ACCEPTHEADSETSIZE-1 ) {
+		getBytes(buf, (uint32_t)ACCEPTHEADSETSIZE-1);
 		acceptHeadsetUnpack(&p, buf);
 		// Set the origin!
 		__disable_irq();

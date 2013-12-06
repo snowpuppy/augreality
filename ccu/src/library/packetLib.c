@@ -358,8 +358,10 @@ void getBroadCastPacket(void)
 {
 	broadCastPacket_t p;
 	uint16_t i = 0, j = 0;
-	uint8_t buf[BROADCASTPACKETSIZE];
-	readBytes(g_port, buf, BROADCASTPACKETSIZE);
+	// use BROADCASTPACKETSIZE-1 because
+	// packetType was already read
+	uint8_t buf[BROADCASTPACKETSIZE-1];
+	readBytes(g_port, buf, BROADCASTPACKETSIZE-1);
 	broadCastPacketUnpack(&p,buf);
 	if (findBroadCasting(p.address) < 0)
 	{
@@ -385,8 +387,10 @@ void getHeartBeatPacket(void)
 {
 	heartBeat_t p;
 	uint16_t i = 0;
-	uint8_t buf[ACCEPTHEADSETSIZE];
-	readBytes(g_port, buf, ACCEPTHEADSETSIZE);
+	// use HEARTBEATSIZE-1 because
+	// packetType was already read
+	uint8_t buf[HEARTBEATSIZE-1];
+	readBytes(g_port, buf, HEARTBEATSIZE-1);
 	heartBeatUnpack(&p,buf);
 	if (findHeartBeating(p.id) < 0)
 	{
