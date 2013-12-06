@@ -13,13 +13,17 @@
 #define GETHEADSETDATA 1
 #define CHIP_SELECT 1
 #define SPI_CLK 1000000
-#define OUTOUTFILENAME "output.txt"
+#define OUTFILENAME "output.txt"
 #define SENSOR_SIZE 22
 
 // Global variables
 objInfo_t g_objList[256];
 
 // Functions
+void getNewFile(uint8_t *buffer, uint8_t bytesRead);
+void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead);
+void startSimulation(uint8_t *buffer, uint8_t bytesRead);
+void endSimulation(uint8_t *buffer, uint8_t bytesRead);
 void clearSpiBuffer(void);
 void spiThread(void);
 void requestXbeeData(void);
@@ -82,6 +86,7 @@ uint8_t getCommandResponse(void)
 		// sleep
 		usleep(1000);
 	}
+	//printf("SizeOfData: %d\n", (uint32_t)data);
 	return data;
 }
 
@@ -89,14 +94,15 @@ uint8_t getSpiByte(void)
 {
 	uint8_t data = 0;
 	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
+	return data;
 }
 
 void getSpiBytes(uint8_t *buf, uint8_t numBytes)
 {
 	// Clear out the buffer.
-	memset(buffer, 0, numBytes);
+	memset(buf, 0, numBytes);
 	// Fill the buffer with data.
-	wiringPiSPIDataRW(0, (unsigned char *)buf, 1);
+	wiringPiSPIDataRW(0, (unsigned char *)buf, numBytes);
 }
 
 void spiThread(void)
@@ -117,9 +123,9 @@ void spiThread(void)
 	while(1) {
 		// reset data size to zero.
 		dataSize = 0;
-
+		//printf("Requesting Xbee data...\n");
 		// Process data from XBee
-		while (dataSize != 0)
+		while (dataSize == 0)
 		{
 			// Signal for xbee data.
 			requestXbeeData();
@@ -132,40 +138,46 @@ void spiThread(void)
 			// data. (This should happen a lot).
 			if (dataSize == 1 && buffer[0] == 0)
 				break;
+			printf("Received Xbee packet of type %d\n", (uint32_t)buffer[0]);
 			// Find out what kind of packet
 			// was sent and process it
 			// appropriately.
 			switch(buffer[0])
 			{
 				case LOADSTATICDATA:
+					printf("Received file packet.]n");
 					getNewFile(buffer, dataSize);
 					break;
 				case UPDATEOBJINSTANCE:
-					getObjectUpdateInfo();
+					getObjectUpdateInfo(buffer, dataSize);
 					break;
 				case STARTSIMULATION:
-					startSimulation();
+					startSimulation(buffer, dataSize);
 					break;
 				case ENDSIMULATION:
-					endSimulation();
+					endSimulation(buffer, dataSize);
 					break;
 				default:
 					break;
 			}
 		}
 
+		//printf("Requesting Headset data...\n");
 		// Get headset data!
-		dataSize = requestHeadsetData();
+		requestHeadsetData();
+		dataSize = getCommandResponse();
 		// verify data size
 		if (dataSize != SENSOR_SIZE) {
 			fprintf(stderr, "Data size not correct.\n");
+			clearSpiBuffer();
+			continue;
 		}
 		usleep(1000);
 		getSpiBytes(buf, dataSize);
 		//readSensorPacket(buf);
-		printf("x: %.03f, y: %.03f, p: %.03f, y: %.03f, r: %.03f\n", *((float*)&buf[0]),*((float*)&buf[4]), *((float*)&buf[8]), *((float*)&buf[12]), *((float*)&buf[16]) );
+		//printf("x: %.03f, y: %.03f, p: %.03f, y: %.03f, r: %.03f\n", *((float*)&buf[0]),*((float*)&buf[4]), *((float*)&buf[8]), *((float*)&buf[12]), *((float*)&buf[16]) );
 	}
-	return NULL;
+	return;
 }
 
 void endSimulation(uint8_t *buffer, uint8_t bytesRead)
@@ -184,7 +196,8 @@ void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
 {
 	// Object list to be updated.
 	// g_objList
-	uint8_t numObjectsLeft = buffer[0];
+	uint8_t dataSize = bytesRead;
+	uint8_t numObjectsLeft = buffer[1];
 	uint16_t i = 0;
 
 	// Note that packetType is NOT in buffer
