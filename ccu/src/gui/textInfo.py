@@ -6,4 +6,4 @@ SimulationInfoStr = "Use the numbers 0-9 to select the corresponding simulation.
                     "Use +/- to cycle back and forth for new simulations. " \
                     "Press Enter to run the selected simulation."
 RunInfoStr = "Running Simulation. Press Backspace to quit."
-HeadsetStr = "%d Headset ID = %d Status = %s\n"
+HeadsetStr = "%d Headset ID = %s%s Status = %s\n"

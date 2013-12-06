@@ -55,14 +55,20 @@ def getBroadCastIDs():
 	numIds = s.recv(1)
 	data = ""
 	if (ord(numIds) > 0):
-		print (BROADCASTIDSFORMATR % (ord(numIds)*16,));
+		#print (BROADCASTIDSFORMATR % (ord(numIds)*16,));
 		numToRead = calcsize(BROADCASTIDSFORMATR % (ord(numIds)*16,))
-		print "numToRead:",numToRead
+		#print "numToRead:",numToRead
 		reply = s.recv(numToRead*16);
 		data = unpack(BROADCASTIDSFORMATR % (ord(numIds)*16,),reply);
-	print "NumIds:",ord(numIds)
-	print "IDs: ",data
+	#print "NumIds:",ord(numIds)
+	#print "IDs: ",data
 	s.close()
+	output = []
+	# Format the data, then return it.
+	# Returns a list of 16 byte strings
+	for i in range(ord(numIds)):
+		output.append(''.join("%c" % chr(x) for x in data[i:i+16]))
+	return output
 
 def getNumBroadCast():
 	# Set command
@@ -76,6 +82,7 @@ def getNumBroadCast():
 	reply = s.recv(1);
 	print "NumIds:",ord(reply)
 	s.close()
+	return ord(reply)
 
 def getBroadcastLoc(nid):
 	# Set command
@@ -95,6 +102,8 @@ def getBroadcastLoc(nid):
 	data = unpack(BROADCASTLOCFORMATR,reply);
 	print "Position: ",data
 	s.close()
+	# returns x,y,roll,pitch,yaw
+	return data
 
 def getPosition(nid):
 	# Set command
@@ -109,11 +118,13 @@ def getPosition(nid):
 	# Get number of ids to read.
 	data = ""
 	numToRead = calcsize( POSITIONFORMATR )
-	print "numToRead:", numToRead
+	#print "numToRead:", numToRead
 	reply = s.recv(numToRead);
 	data = unpack(POSITIONFORMATR,reply);
-	print "Position: ",data
+	#print "Position: ",data
 	s.close()
+	# returns x,y,roll,pitch,yaw
+	return data
 
 def getNumAlive():
 	# Set command
@@ -125,8 +136,9 @@ def getNumAlive():
 	s.send(command)
 	# receive info
 	reply = s.recv(1);
-	print "NumAlive:",ord(reply)
+	#print "NumAlive:",ord(reply)
 	s.close()
+	return ord(reply)
 
 def getAlive(nid):
 	# Set command
@@ -141,8 +153,9 @@ def getAlive(nid):
 	# Get number of ids to read.
 	data = ""
 	reply = s.recv(1);
-	print "Alive: ", ord(reply)
+	#print "Alive: ", ord(reply)
 	s.close()
+	return ord(reply)
 
 def sendFile(filename):
 	# Set command

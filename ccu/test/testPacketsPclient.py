@@ -37,7 +37,8 @@ while True:
 	if (len(args) > 1):
 		nid = args[1]
 	else:
-		nid = "bad1bad1bad1bad1"
+		#nid = "bad1bad1bad1bad1"
+		nid = '40A66DAE\r13A200\r'
 	if (num == 0):
 		getBroadCastIDs()
 	elif (num == 1):

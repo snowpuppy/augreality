@@ -9,6 +9,7 @@ WRAPLENGTH = 480
 
 from Tkinter import *
 from textInfo import *
+from guiNetInterface import *
 
 class AugRealObj:
   def __init__(self, root):
@@ -27,6 +28,9 @@ class AugRealObj:
     self.root.bind("<KP_9>",self.handle9)
     self.root.bind("<KP_0>",self.handle0)
 
+    # set refresh event handler
+    self.root.after(1000, self.refreshList)
+
     # Create All objects for each state.
     # SPLASHSCRE
     self.WelcomeText = Label(root, wraplength=WRAPLENGTH,text="Welcome to Augmented Reality.\n\n\nPlease Press Enter.")
@@ -36,12 +40,14 @@ class AugRealObj:
     self.HeadsetStrList = []
     # Initialize Headset status.
     for i in range(10):
-      self.HeadsetStrList.append(HeadsetStr % (i, -1, "Disconnected"))
+      self.HeadsetStrList.append(HeadsetStr % (i, "-1","-1", "Disconnected"))
     self.Headsets = Label(root,bg="white", wraplength=WRAPLENGTH,text=" ".join(self.HeadsetStrList))
     # SELECTSIMU
     self.SimulationInfoStr = SimulationInfoStr
     self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
+    # (Hard coded for now...)
     self.SimulationList = [ "1 Pac-Man" ]
+    self.SimulationList.append("2 Demo")
     self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH, text=" ".join(self.SimulationList))
     # RUNSIMULAT
     self.RunInfoStr = RunInfoStr
@@ -86,10 +92,12 @@ class AugRealObj:
       self.state = SELECTSIMU
       self.teardownSelectHead()
       self.setupSelectSimu()
+      sendAccept('40A66DAE\r3A200\r')
     elif (self.state == SELECTSIMU):
       self.state = RUNSIMULAT
       self.teardownSelectSimu()
       self.setupRunSimulation()
+      sendStart()
     elif (self.state == RUNSIMULAT):
       pass
   def handleBackspace(self,event):
@@ -102,10 +110,12 @@ class AugRealObj:
       self.teardownSelectSimu()
       self.setupSelectHead()
       self.state = SELECTHEAD
+      sendGoBack('40A66DAE\r3A200\r')
     elif (self.state == RUNSIMULAT):
       self.teardownRunSimulat()
       self.setupSelectHead()
       self.state = SELECTHEAD
+      sendGoBack('40A66DAE\r3A200\r')
   def handle1(self,event):
     self.handleNumEvent(1)
   def handle2(self,event):
@@ -127,15 +137,27 @@ class AugRealObj:
   def handle0(self,event):
     self.handleNumEvent(0)
   def handleNumEvent(self,num):
-    print "Key %d was pressed." % (num, )
+    #print "Key %d was pressed." % (num, )
     if (self.state == SPLASHSCRE):
       pass
     elif (self.state == SELECTHEAD):
       pass
     elif (self.state == SELECTSIMU):
+      # Hardcoded simulations.
+      if (num == 0):
+        sendFile("../sim/pacman.tar")
+      if (num == 1):
+        sendFile("../sim/demo.tar")
       pass
     elif (self.state == RUNSIMULAT):
       pass
+  def refreshList(self):
+    myList = getBroadCastIDs()
+    for i in range(len(myList)):
+      listItems = myList[i].split()
+      self.HeadsetStrList[i] = HeadsetStr % (i, listItems[0], listItems[1], "Available")
+    self.Headsets.configure(text=" ".join(self.HeadsetStrList))
+    self.root.after(1000, self.refreshList)
 
 root = Tk()
 
