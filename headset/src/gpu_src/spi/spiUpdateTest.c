@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "packets.h"
-#include <vector>
 
 #define GETXBEEDATA 3
 #define FLUSHSPIBUFFER 2
