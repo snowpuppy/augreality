@@ -29,6 +29,7 @@ helpStr = """Enter a number to test a function:
 10 SENDSTART       _sendStart(int fd);
 11 SENDACCEPT      _sendAccept(int fd);
 12 SENDGOBACK      _sendGoBack(int fd);
+13 exit
 """
 while True:
 	inpu = raw_input(helpStr)
@@ -63,3 +64,5 @@ while True:
 		sendAccept(nid)
 	elif (num == 12):
 		sendGoBack(nid)
+	elif (num == 13):
+		exit()
