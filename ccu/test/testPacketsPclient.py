@@ -7,7 +7,10 @@
 #
 from struct import *
 import socket
+import sys
+import os
 
+sys.path.append(os.path.realpath('../src/gui/'))
 from guiNetInterface import *
 
 GETBROADCAST = 1
