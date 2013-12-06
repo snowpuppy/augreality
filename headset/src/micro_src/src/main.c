@@ -93,6 +93,10 @@ static void processGPSData(void);
 static void processIMUData(void);
 static void processFuelGuage(void);
 static void parseStaticDataPacket(uint32_t *state);
+static void parseStartSimulation(uint32_t *state);
+static void parseEndSimulation(uint32_t *state);
+static void parseAcceptHeadset(uint32_t *state);
+static void parseUpdateObjInst(uint32_t *state);
 void xbeeInit(uint8_t *xbeeId);
 
 /**
@@ -299,6 +303,8 @@ static void processXbeeData(uint8_t *id) {
 					state = BROADCASTSTATE;
 				} else if (state == STARTSIMULATION) {
 					state = LOADFILEDATA;
+					// endSimulation wil do what we need.
+					xbeeState = ENDSIMULATION;
 				}
 				break;
 			case LOADSTATICDATA:
@@ -317,25 +323,132 @@ static void processXbeeData(uint8_t *id) {
 	// packet we're expecting.
 	switch (xbeeState) {
 		case ACCEPTHEADSET:
-			//parseAcceptHeadset();
+			parseAcceptHeadset(&xbeeState);
 			break;
 		case UPDATEOBJINSTANCE:
-			//parseUpdateObjInst();
+			parseUpdateObjInst(&xbeeState);
 			break;
 		case ENDSIMULATION:
-			//parseEndSimulation();
+			parseEndSimulation(&xbeeState);
 			break;
 		case STARTSIMULATION:
-			//parseStartSimulation();
+			parseStartSimulation(&xbeeState);
 			break;
 		case GOBACK:
 			//parseGoBack();
+			xbeeState = XBEEDISCOVERYSTATE;
 			break;
 		case LOADSTATICDATA:
 			parseStaticDataPacket(&xbeeState);
 			break;
 		default:
 			break;
+	}
+}
+
+/**
+* @brief Tells gpu to start simulation.
+*
+* @param state
+*/
+static void parseStartSimulation(uint32_t *state) {
+	// Check to see if there's space on
+	// the buffer.
+	if (numXbeeDataBytes == 0) {
+		// put info on the buffer.
+		xbeeData[0] = STARTSIMULATION;
+		numXbeeDataBytes = 1;
+		// reset to discovery state
+		*state = XBEEDISCOVERYSTATE;
+	}
+}
+
+/**
+* @brief Tells gpu to end simulation. (go back
+*				 to default screen.)
+*
+* @param state
+*/
+static void parseEndSimulation(uint32_t *state) {
+	// Check to see if there's space on
+	// the buffer.
+	if (numXbeeDataBytes == 0) {
+		// put info on the buffer.
+		xbeeData[0] = ENDSIMULATION;
+		numXbeeDataBytes = 1;
+		// reset to discovery state
+		*state = XBEEDISCOVERYSTATE;
+	}
+}
+
+/**
+* @brief parseAcceptHeadset - Get contents of
+*	an accept headset packet. Set originLat,
+* originLon. TODO: store id of ccu.
+*
+* @param state - xbee state, must be reset to
+*								 discovery.
+*/
+static void parseAcceptHeadset(uint32_t *state) {
+	acceptHeadset_t p;
+	uint8_t buf[ACCEPTHEADSETSIZE];
+
+	// Wait until we have entire packet in buffer.
+	if ( fcount(xbee) >= ACCEPTHEADSETSIZE ) {
+		getBytes(buf, (uint32_t)ACCEPTHEADSETSIZE);
+		acceptHeadsetUnpack(&p, buf);
+		// Set the origin!
+		__disable_irq();
+		originLat = p.x;
+		originLon = p.y;
+		__enable_irq();
+		// reset the state to discover
+		// more packets.
+		*state = XBEEDISCOVERYSTATE;
+	}
+}
+
+/**
+* @brief parseUpdateObjInst - collects a variable
+*					number of updates to objects. There is
+*					packet data at the beginning which is
+*					collected once. Afterwards each object
+*					is read after it has been accumulated
+*					in the buffer. This object is sent over spi.
+*
+* @param state - xbee state (reset to discovery)
+*/
+static void parseUpdateObjInst(uint32_t *state) {
+	static uint8_t numObjsLeft = 0;
+	static uint8_t i_local = 0;
+	static uint8_t foundNumObjs = 0;
+
+	// Extract the number of objs to update
+	if (!foundNumObjs && fcount(xbee) > UPDATEOBJINSTANCESIZE-1) {
+		xbeeData[0] = UPDATEOBJINSTANCE;
+		getBytes(&xbeeData[1], UPDATEOBJINSTANCESIZE-1);
+		// Get number of objs to read
+		numObjsLeft = xbeeData[1];
+		i_local = UPDATEOBJINSTANCESIZE-1;
+		foundNumObjs = 1;
+	}
+
+	// Read in each object.
+	if (foundNumObjs && (fcount(xbee) >= OBJINFOSIZE) && numXbeeDataBytes == 0) {
+		// get remaining bytes from wireless.
+		getBytes(&xbeeData[i_local], (uint32_t)OBJINFOSIZE);
+		numObjsLeft--;
+		numXbeeDataBytes = OBJINFOSIZE + i_local;
+
+		// If we're done, reset to get next packet.
+		if (numObjsLeft == 0) {
+			*state = XBEEDISCOVERYSTATE;
+			foundNumObjs = 0;
+		}
+		i_local = 0;
+		// Toggle LED for status, output character + 1
+		//ledToggle();
+		//fputc('b', xbee);
 	}
 }
 
