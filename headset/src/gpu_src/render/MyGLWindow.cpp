@@ -32,17 +32,20 @@ float MyGLWindow::floatbuffer[5] = { 0.0f };
 uint8_t MyGLWindow::charbuffer[2] = { 0 };
 
 //add to window used for RSSI sliding window filter
-void MyGLWindow::addToWindow(float f) {
+void MyGLWindow::addToWindow(float f)
+{
 	window[windowIndex] = f;
 	windowIndex = (windowIndex+1) % (WINDOW_SIZE-1);
 }
 
-int compare(const void * a, const void * b) {
+int compare(const void * a, const void * b)
+{
 	return( *(int *)a - *(int *)b );
 }
 
 //sliding window median average for RSSI data
-float MyGLWindow::windowAverage() {
+float MyGLWindow::windowAverage()
+{
 	 //median filter
 	float tmp[WINDOW_SIZE];
 	for(int i=0; i<WINDOW_SIZE; i++) tmp[i]=window[i];
@@ -50,7 +53,8 @@ float MyGLWindow::windowAverage() {
 	return tmp[WINDOW_SIZE/2];
 }
 
-MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config) {
+MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
+{
 	std::cout<<"My GL Window Ctor\n";
 	makeSurface();
 	m_exit=false;
@@ -58,15 +62,19 @@ MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config) {
 	windowIndex = 0;
 	for(int i=0; i<WINDOW_SIZE; i++) window[i]=0.0;
 }
-MyGLWindow::~MyGLWindow() {
+
+MyGLWindow::~MyGLWindow()
+{
 
 }
 
-float * MyGLWindow::buffer() {
+float * MyGLWindow::buffer()
+{
 	return floatbuffer;
 }
 
-void MyGLWindow::initializeGL() {
+void MyGLWindow::initializeGL()
+{
 	// Now we will create a basic Camera from the graphics library
 	// This is a static camera so it only needs to be set once
 	// First create Values for the camera position
@@ -184,7 +192,8 @@ void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx) {
 }
 
 //reads camera location and orientation from the SPI buffer
-Player MyGLWindow::readSpiData() {
+Player MyGLWindow::readSpiData()
+{
 	Player result;
 	//lock mutex
 	pthread_mutex_lock(&mut);
@@ -229,6 +238,7 @@ void MyGLWindow::paintGL()
 	final.identity();
 
 	//loop through game objects
+	pthread_mutex_lock(&mut);
 	for(int i=0; i<256; i++) {
 		object = objects[i];
 		//check if this object should be drawn
@@ -247,6 +257,7 @@ void MyGLWindow::paintGL()
 				m_transformStack.popTransform();
 		}
 	}
+	pthread_mutex_unlock(&mut);
 	
 	//setup for 2d drawing
 	ngl::Vec4 From2d(0, 0, 0);
@@ -265,13 +276,21 @@ void MyGLWindow::paintGL()
 	loadMatricesToShader(m_transformStack);
 	if(p.battery <= 20) {
 		batt1->draw();
-	} else if(p.battery <=40) {
+	} 
+	else if(p.battery <=40)
+	{
 		batt2->draw();
-	} else if(p.battery <=60) {
+	} 
+	else if(p.battery <=60) 
+	{
 		batt3->draw();
-	} else if(p.battery <=80) {
+	} 
+	else if(p.battery <=80) 
+	{
 		batt4->draw();
-	} else if(p.battery <=100) {
+	} 
+	else if(p.battery <=100)
+	{
 		batt5->draw();
 	}
 	m_transformStack.popTransform();
@@ -284,13 +303,21 @@ void MyGLWindow::paintGL()
 	loadMatricesToShader(m_transformStack);
 	if(p.rssi <= 15) {
 		rssi1->draw();
-	} else if(p.rssi <=30) {
+	} 
+	else if(p.rssi <=30)
+	{
 		rssi2->draw();
-	} else if(p.rssi <=45) {
+	} 
+	else if(p.rssi <=45)
+	{
 		rssi3->draw();
-	} else if(p.rssi <=60) {
+	} 
+	else if(p.rssi <=60)
+	{
 		rssi4->draw();
-	} else if(p.rssi <=75) {
+	} 
+	else if(p.rssi <=75)
+	{
 		rssi5->draw();
 	}
 	m_transformStack.popTransform();
@@ -369,7 +396,8 @@ SDL_Event event;
 }
 
 //loads a file describing the initial state of the 3D scene to be rendered
-void MyGLWindow::loadConfigFile(std::string filename) {
+void MyGLWindow::loadConfigFile(std::string filename)
+{
 	for(int i=0; i<256; i++) objects[i] = GameObject();
 	int index;
 	bool threed;
@@ -386,7 +414,8 @@ void MyGLWindow::loadConfigFile(std::string filename) {
 	}
 
 	//reads each game object into the objects array
-	while(file >> index) {
+	while(file >> index)
+	{
 		file >> threed >> locx >> locy >> locz >> orx >> ory >> orz >> filename >> show >> scale;
 		objects[index] = GameObject(locx, locy, locz, orx, ory, orz, show, threed, index, filename, scale);
 		std::cout << objects[index].x << " " << objects[index].y << " " << objects[index].isVisible() << "\n";

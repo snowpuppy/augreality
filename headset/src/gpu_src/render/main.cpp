@@ -20,13 +20,31 @@
 #include "MyGLWindow.h"
 #include "bcm_host.h"
 #include <SDL/SDL.h>
+#include "packets.h"
 
-#define GETHEADSETDATA 1
-#define FLUSHSPIBUFFER 2
 #define GETXBEEDATA 3
+#define FLUSHSPIBUFFER 2
+#define GETHEADSETDATA 1
+#define CHIP_SELECT 1
+#define SPI_CLK 1000000
+#define OUTFILENAME "output.tar.gz"
+#define SENSOR_SIZE 22
 
 MyGLWindow *win;
 pthread_mutex_t mut;
+objInfo_t g_objList[256];
+
+void getNewFile(uint8_t *buffer, uint8_t bytesRead);
+void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead);
+void startSimulation(uint8_t *buffer, uint8_t bytesRead);
+void endSimulation(uint8_t *buffer, uint8_t bytesRead);
+void clearSpiBuffer(void);
+void requestXbeeData(void);
+void requestHeadsetData(void);
+uint8_t getCommandResponse(void);
+uint8_t getSpiByte(void);
+void getSpiBytes(uint8_t *buf, uint8_t numBytes);
+bool running = true;
 
 void exitfunc() {
 	delete win;
@@ -52,41 +70,79 @@ void clearSpiBuffer(void) {
 	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
 }
 
-void *spiThread(void *arg) {
+void *spiThread(void *arg) 
+{
 	// Buffer for all data
 	unsigned char buf[SENSOR_SIZE] = {0};
+	unsigned char buffer[256] = {0};
+	unsigned char dataSize = 0;
+
+	// Initialize spi.
 	wiringPiSetup();
-	wiringPiSPISetup(0, 4000000);
+	wiringPiSPISetup(0, SPI_CLK);
 	sleep(5);
 	// Evict the buffer
-    clearSpiBuffer();
+  clearSpiBuffer();
 	sleep(5);
 
 	while(1) {
-		unsigned char dataSize = 0;
-
-		// Signal a byte to read.
-		buf[0] = 1;
-		wiringPiSPIDataRW(0, (unsigned char *)buf, 1);
-
-		//read sensor data from SPI
-		while (dataSize == 0) {
-			buf[0] = 0;
-			wiringPiSPIDataRW(0, (unsigned char *)buf, 1);
-			dataSize = buf[0];
-			usleep(1000);
+		// reset data size to zero.
+		dataSize = 0;
+		//printf("Requesting Xbee data...\n");
+		// Process data from XBee
+		while (dataSize == 0)
+		{
+			// Signal for xbee data.
+			requestXbeeData();
+			// Get response
+			dataSize = getCommandResponse();
+			// Get data.
+			getSpiBytes(buffer, dataSize);
+			// If the response indicated no data
+			// was ready, then quit and get headset
+			// data. (This should happen a lot).
+			if (dataSize == 1 && buffer[0] == 0)
+				break;
+			printf("Received Xbee packet of type %d\n", (uint32_t)buffer[0]);
+			// Find out what kind of packet
+			// was sent and process it
+			// appropriately.
+			switch(buffer[0])
+			{
+				case LOADSTATICDATA:
+					printf("Received file packet.\n");
+					getNewFile(buffer, dataSize);
+					win->loadConfigFile("config.txt");
+					break;
+				case UPDATEOBJINSTANCE:
+					getObjectUpdateInfo(buffer, dataSize);
+					break;
+				case STARTSIMULATION:
+					startSimulation(buffer, dataSize);
+					break;
+				case ENDSIMULATION:
+					endSimulation(buffer, dataSize);
+					break;
+				default:
+					break;
+			}
 		}
+
+		// Get headset data!
+		requestHeadsetData();
+		dataSize = getCommandResponse();
+		// verify data size
 		if (dataSize != SENSOR_SIZE) {
 			fprintf(stderr, "Data size not correct.\n");
+			clearSpiBuffer();
+			continue;
 		}
 		usleep(1000);
-		memset(buf,0,SENSOR_SIZE);
-		wiringPiSPIDataRW(0, buf, SENSOR_SIZE);
+		getSpiBytes(buf, dataSize);
 		readSensorPacket(buf);
-
-		printf("x: %.03f, y: %.03f, p: %.03f, y: %.03f, r: %.03f\n", *((float*)&buf[0]),*((float*)&buf[4]), *((float*)&buf[8]), *((float*)&buf[12]), *((float*)&buf[16]) );
+		//printf("x: %.03f, y: %.03f, p: %.03f, y: %.03f, r: %.03f\n", *((float*)&buf[0]),*((float*)&buf[4]), *((float*)&buf[8]), *((float*)&buf[12]), *((float*)&buf[16]) );
 	}
-	return NULL;
+	return;
 }
 
 void startSpiThread(void) {
@@ -121,8 +177,215 @@ int main()
 	// loop and process (escape exits)
 	while(!win->exit())
 	{
+		while(!running) {};
 		win->processEvents();
 		win->paintGL();
 	}
 }
 
+
+/**
+* @brief Send command to request xbee data.
+*
+*/
+void requestXbeeData(void)
+{
+	char data = GETXBEEDATA;
+	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
+}
+
+/**
+* @brief Send command to request xbee data.
+*
+*/
+void requestHeadsetData(void)
+{
+	char data = GETHEADSETDATA;
+	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
+}
+
+/**
+* @brief Get number of bytes to read after sending
+*				 a command. All requests will return a
+*				 response.
+*
+* @return number of bytes to read.
+*/
+uint8_t getCommandResponse(void)
+{
+	uint8_t data = 0;
+	// Wait for nonzero data.
+	while (data == 0)
+	{
+		// send command
+		wiringPiSPIDataRW(0, &data, 1);
+		// sleep
+		usleep(1000);
+	}
+	//printf("SizeOfData: %d\n", (uint32_t)data);
+	return data;
+}
+
+uint8_t getSpiByte(void)
+{
+	uint8_t data = 0;
+	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
+	return data;
+}
+
+void getSpiBytes(uint8_t *buf, uint8_t numBytes)
+{
+	// Clear out the buffer.
+	memset(buf, 0, numBytes);
+	// Fill the buffer with data.
+	wiringPiSPIDataRW(0, (unsigned char *)buf, numBytes);
+}
+
+
+void endSimulation(uint8_t *buffer, uint8_t bytesRead)
+{
+	// Set end simulation true.
+	printf("Received end simulation request.\n");
+	running = false;
+	return;
+}
+void startSimulation(uint8_t *buffer, uint8_t bytesRead)
+{
+	// Set start simulation true.
+	printf("Received start simulation request.\n");
+	running = true;
+	return;
+}
+void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
+{
+	// Object list to be updated.
+	// g_objList
+	uint8_t dataSize = bytesRead;
+	uint8_t numObjectsLeft = buffer[1];
+	uint16_t i = 0;
+
+	// Note that packetType is NOT in buffer
+	// Use buffer[2] because the first packet
+	// has 1 byte for numObj and one for updateNumber
+	objInfoUnpack(&g_objList[i], &buffer[2]);
+	printf("Object[ instId: %d, typeShow: %d, x2: %d, y2: %d]\n", (int)g_objList[i].instId, (int)g_objList[i].typeShow, g_objList[i].x2, g_objList[i].y2);
+	printf("Object[ x3: %f, y3: %f, roll: %f, pitch: %f, yaw: %f]\n", g_objList[i].x3, g_objList[i].y3, g_objList[i].roll, g_objList[i].pitch, g_objList[i].yaw);
+
+	// decrement number of objects.
+	numObjectsLeft--;
+	i++;
+	// Read the remaining objects.
+	while (numObjectsLeft > 0)
+	{
+		// Signal for xbee data.
+		requestXbeeData();
+		// Get response
+		dataSize = getCommandResponse();
+		// Get data.
+		getSpiBytes(buffer, dataSize);
+		// If the response indicated no data
+		// was ready, then keep trying
+		if (dataSize == 1 && buffer[0] == 0)
+			continue;
+
+		// pack the next update
+		objInfoUnpack(&g_objList[i], &buffer[2]);
+		printf("Object[ instId: %d, typeShow: %d, x2: %d, y2: %d]\n", (int)g_objList[i].instId, (int)g_objList[i].typeShow, g_objList[i].x2, g_objList[i].y2);
+		printf("Object[ x3: %f, y3: %f, roll: %f, pitch: %f, yaw: %f]\n", g_objList[i].x3, g_objList[i].y3, g_objList[i].roll, g_objList[i].pitch, g_objList[i].yaw);
+		// decrement number of objects.
+		numObjectsLeft--;
+		i++;
+	}
+	
+	int id;
+	pthread_mutex_lock(&mut);
+	for(i=0; i<256; i++)
+	{
+		id = g_objList[i].instId;
+		win->objects[id].x = g_objList[i].x3;
+		win->objects[id].y = g_objList[i].y3;
+		win->objects[id].roll = g_objList[i].roll;
+		win->objects[id].pitch = g_objList[i].pitch;
+		win->objects[id].yaw = g_objList[i].yaw;
+		win->objects[id].visible = g_objList[i].x3;
+	}
+	pthread_mutex_unlock(&mut);
+	return;
+}
+
+void getNewFile(uint8_t *buffer, uint8_t bytesRead)
+{
+	// File receipt variables.
+	int32_t filesize = 0;
+  FILE *filefp = NULL;
+	uint8_t dataSize = bytesRead;
+
+	// Open output filename for tarball.
+  filefp = fopen(OUTFILENAME, "wb");
+  if (filefp == NULL)
+  {
+    fprintf(stderr, "Could not open file: %s\n", OUTFILENAME);
+    exit(1);
+  }
+	// DEBUG Stuff
+  //filefp2 = fopen("out.txt", "w");
+
+	// Write initial data read.
+	// Read in type of data and then read
+	// the file size
+	filesize = *((uint32_t *)&buffer[1]);
+	printf("Bytes: %2X:%2X:%2X:%2X:%2X\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
+	printf("Read %d bytes for packet of type %d, filesize = %d\n", (int)dataSize, (uint32_t)buffer[0], filesize);
+
+	// Write first set of bytes to the file.
+	fwrite(&buffer[5], 1, (uint32_t)(dataSize-5), filefp);
+	// DEBUG Stuff.
+	/*
+	for (i = 5; i < dataSize; i++)
+	{
+		fprintf(filefp2, "%02X",buffer[i]);
+	}
+	fprintf(filefp2, "\n");
+	*/
+
+	// decrement remaining bytes
+	// to be read.
+	filesize -= ((uint32_t)dataSize-5);
+
+	// Get entire file and write
+	// to output file.
+  while (filesize > 0)
+	{
+		// Signal for xbee data.
+		requestXbeeData();
+		// Get response
+		dataSize = getCommandResponse();
+		// Get data.
+		getSpiBytes(buffer, dataSize);
+		// If the response indicated no data
+		// was ready, then keep trying
+		if (dataSize == 1 && buffer[0] == 0)
+			continue;
+
+		// Write data to file.
+		fwrite(buffer, 1, (uint32_t)dataSize, filefp);
+		fflush(filefp);
+		// DEBUG Stuff
+		/*
+			 for (i = 0; i < dataSize; i++)
+			 {
+			 fprintf(filefp2, "%02X",buffer[i]);
+			 }
+			 fprintf(filefp2, "\n");
+			 fflush(filefp2);
+		*/
+		printf("Bytes1: %2X:%2X:%2X:%2X:%2X\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
+		//printf("Bytes2: %2X:%2X:%2X:%2X\n", buffer[dataSize-4], buffer[dataSize-3], buffer[dataSize-2], buffer[dataSize-1]);
+		printf("Read %d bytes, %d left\n", (int)dataSize, filesize);
+
+		// decrement file size
+		filesize -= (uint32_t)dataSize;
+	}
+  fclose(filefp);
+  system("tar -xzf " + OUTFILENAME);
+}
