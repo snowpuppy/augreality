@@ -70,6 +70,8 @@ void setMat(matrix_t *rotX, matrix_t *rotY, matrix_t *rotZ, float pitch, float y
 class MyGLWindow : public ngl::EGLWindow
 {
 	public :
+	    GameObject objects[256];
+		GameObject object;
 		void loadConfigFile(std::string filename) ;
 		static float floatbuffer[5];
 		static uint8_t charbuffer[2];
@@ -165,8 +167,7 @@ class MyGLWindow : public ngl::EGLWindow
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Vec4 m_modelPos;
     bool m_exit;
-    GameObject objects[256];
-    GameObject object;
+
 
 };
 

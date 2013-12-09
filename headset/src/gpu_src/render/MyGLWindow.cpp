@@ -402,15 +402,14 @@ void MyGLWindow::loadConfigFile(std::string filename)
 	int index;
 	bool threed;
 	float locx, locy, locz, orx, ory, orz;
-	std::string filename;
 	bool show;
 	float scale;
 	std::string id;
 
-	std::ifstream file(filename);
+	std::ifstream file("config.txt");
 	if(!file) {
-		std::cout << "Configuration file not found!");
-		exit(EXIT_FAILURE);
+		std::cout << "Configuration file not found!";
+		exit();
 	}
 
 	//reads each game object into the objects array

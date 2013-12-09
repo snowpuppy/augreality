@@ -72,6 +72,7 @@ void clearSpiBuffer(void) {
 
 void *spiThread(void *arg) 
 {
+	std::cout << "starting spi thread\n";
 	// Buffer for all data
 	unsigned char buf[SENSOR_SIZE] = {0};
 	unsigned char buffer[256] = {0};
@@ -142,7 +143,8 @@ void *spiThread(void *arg)
 		readSensorPacket(buf);
 		//printf("x: %.03f, y: %.03f, p: %.03f, y: %.03f, r: %.03f\n", *((float*)&buf[0]),*((float*)&buf[4]), *((float*)&buf[8]), *((float*)&buf[12]), *((float*)&buf[16]) );
 	}
-	return;
+	std::cout << "finished spi thread\n";
+	return NULL;
 }
 
 void startSpiThread(void) {
@@ -387,5 +389,5 @@ void getNewFile(uint8_t *buffer, uint8_t bytesRead)
 		filesize -= (uint32_t)dataSize;
 	}
   fclose(filefp);
-  system("tar -xzf " + OUTFILENAME);
+  system("tar -xzf output.tar.gz; rm output.tar.gz");
 }
