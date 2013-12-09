@@ -28,4 +28,5 @@ pingl:
 	
 wiringPi: wiringPi/
 	git clone git://git.drogon.net/wiringPi
-	./wiringPi/build
+	cd ./wiringPi
+	./build
