@@ -70,7 +70,7 @@ void setMat(matrix_t *rotX, matrix_t *rotY, matrix_t *rotZ, float pitch, float y
 class MyGLWindow : public ngl::EGLWindow
 {
 	public :
-		void loadConfigFile() ;
+		void loadConfigFile(std::string filename) ;
 		static float floatbuffer[5];
 		static uint8_t charbuffer[2];
 		static float *buffer();

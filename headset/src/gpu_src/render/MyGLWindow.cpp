@@ -238,6 +238,7 @@ void MyGLWindow::paintGL()
 	final.identity();
 
 	//loop through game objects
+	pthread_mutex_lock(&mut);
 	for(int i=0; i<256; i++) {
 		object = objects[i];
 		//check if this object should be drawn
@@ -256,6 +257,7 @@ void MyGLWindow::paintGL()
 				m_transformStack.popTransform();
 		}
 	}
+	pthread_mutex_unlock(&mut);
 	
 	//setup for 2d drawing
 	ngl::Vec4 From2d(0, 0, 0);

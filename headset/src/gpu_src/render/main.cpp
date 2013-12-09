@@ -27,7 +27,7 @@
 #define GETHEADSETDATA 1
 #define CHIP_SELECT 1
 #define SPI_CLK 1000000
-#define OUTFILENAME "output.txt"
+#define OUTFILENAME "output.tar.gz"
 #define SENSOR_SIZE 22
 
 MyGLWindow *win;
@@ -44,6 +44,7 @@ void requestHeadsetData(void);
 uint8_t getCommandResponse(void);
 uint8_t getSpiByte(void);
 void getSpiBytes(uint8_t *buf, uint8_t numBytes);
+bool running = true;
 
 void exitfunc() {
 	delete win;
@@ -109,8 +110,9 @@ void *spiThread(void *arg)
 			switch(buffer[0])
 			{
 				case LOADSTATICDATA:
-					printf("Received file packet.]n");
+					printf("Received file packet.\n");
 					getNewFile(buffer, dataSize);
+					win->loadConfigFile("config.txt");
 					break;
 				case UPDATEOBJINSTANCE:
 					getObjectUpdateInfo(buffer, dataSize);
@@ -175,6 +177,7 @@ int main()
 	// loop and process (escape exits)
 	while(!win->exit())
 	{
+		while(!running) {};
 		win->processEvents();
 		win->paintGL();
 	}
@@ -243,12 +246,14 @@ void endSimulation(uint8_t *buffer, uint8_t bytesRead)
 {
 	// Set end simulation true.
 	printf("Received end simulation request.\n");
+	running = false;
 	return;
 }
 void startSimulation(uint8_t *buffer, uint8_t bytesRead)
 {
 	// Set start simulation true.
 	printf("Received start simulation request.\n");
+	running = true;
 	return;
 }
 void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
@@ -291,6 +296,20 @@ void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
 		numObjectsLeft--;
 		i++;
 	}
+	
+	int id;
+	pthread_mutex_lock(&mut);
+	for(i=0; i<256; i++)
+	{
+		id = g_objList[i].instId;
+		win->objects[id].x = g_objList[i].x3;
+		win->objects[id].y = g_objList[i].y3;
+		win->objects[id].roll = g_objList[i].roll;
+		win->objects[id].pitch = g_objList[i].pitch;
+		win->objects[id].yaw = g_objList[i].yaw;
+		win->objects[id].visible = g_objList[i].x3;
+	}
+	pthread_mutex_unlock(&mut);
 	return;
 }
 
@@ -368,4 +387,5 @@ void getNewFile(uint8_t *buffer, uint8_t bytesRead)
 		filesize -= (uint32_t)dataSize;
 	}
   fclose(filefp);
+  system("tar -xzf " + OUTFILENAME);
 }
