@@ -1,3 +1,9 @@
+/*
+This program generates a configuration file for the application to read 
+from a simplified format
+consisting of * for walls, o for pellets and g for ghosts.
+*/
+
 #include <stdio.h>
 
 #define WIDTH 10
@@ -10,7 +16,7 @@ void writeLine(int id, int x, int y, char *filename, FILE *ofp, float scale) {
 
 int main(void) {
 	FILE *ifp = fopen("maze", "r");
-	FILE *ofp = fopen("genconfig.txt", "w");
+	FILE *ofp = fopen("config.txt", "w");
 	int idx = 0;
 	char obj;
 	for(int i=0; i<HEIGHT; i++) {

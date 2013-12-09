@@ -1,4 +1,3 @@
-
 /*
   Copyright (C) 2012 Jon Macey
 
@@ -15,6 +14,7 @@
     You should have received m_a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include "MyGLWindow.h"
 #include <SDL/SDL.h>
 #include <ngl/Colour.h>
@@ -31,6 +31,7 @@
 float MyGLWindow::floatbuffer[5] = { 0.0f };
 uint8_t MyGLWindow::charbuffer[2] = { 0 };
 
+//add to window used for RSSI sliding window filter
 void MyGLWindow::addToWindow(float f) {
 	window[windowIndex] = f;
 	windowIndex = (windowIndex+1) % (WINDOW_SIZE-1);
@@ -40,6 +41,7 @@ int compare(const void * a, const void * b) {
 	return( *(int *)a - *(int *)b );
 }
 
+//sliding window median average for RSSI data
 float MyGLWindow::windowAverage() {
 	 //median filter
 	float tmp[WINDOW_SIZE];
@@ -48,8 +50,7 @@ float MyGLWindow::windowAverage() {
 	return tmp[WINDOW_SIZE/2];
 }
 
-MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
-{
+MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config) {
 	std::cout<<"My GL Window Ctor\n";
 	makeSurface();
 	m_exit=false;
@@ -57,8 +58,7 @@ MyGLWindow::MyGLWindow(ngl::EGLconfig *_config) : EGLWindow(_config)
 	windowIndex = 0;
 	for(int i=0; i<WINDOW_SIZE; i++) window[i]=0.0;
 }
-MyGLWindow::~MyGLWindow()
-{
+MyGLWindow::~MyGLWindow() {
 
 }
 
@@ -66,8 +66,7 @@ float * MyGLWindow::buffer() {
 	return floatbuffer;
 }
 
-void MyGLWindow::initializeGL()
-{
+void MyGLWindow::initializeGL() {
 	// Now we will create a basic Camera from the graphics library
 	// This is a static camera so it only needs to be set once
 	// First create Values for the camera position
@@ -172,12 +171,11 @@ void MyGLWindow::initializeGL()
 	batt4->createVAO();
 	batt5->createVAO();
 	
-	loadConfigFile();
+	//loads scene data
+	loadConfigFile("config.txt");
 }
 
-
-void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx)
-{
+void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx) {
 	ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 	(*shader)["Texture"]->use();
 
@@ -185,6 +183,7 @@ void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx)
 	shader->setShaderParamFromMatrix("MVP",MVP);
 }
 
+//reads camera location and orientation from the SPI buffer
 Player MyGLWindow::readSpiData() {
 	Player result;
 	//lock mutex
@@ -198,7 +197,6 @@ Player MyGLWindow::readSpiData() {
 	addToWindow((float)(unsigned int)charbuffer[0]);
 	result.rssi = (int)windowAverage();
 	result.battery = charbuffer[1];
-	//printf("RSSI: %d Battery: %d Yaw:%.3f\n", (int)result.rssi, (int)result.battery, result.yaw);
 	//unlock mutex
 	pthread_mutex_unlock(&mut);
 
@@ -213,14 +211,14 @@ void MyGLWindow::paintGL()
 	//update camera
 	Player p = readSpiData();
 	ngl::Vec4 From(p.gps_x+myX, p.gps_y+myY, myPitch);
-	ngl::Vec4 To(p.gps_x+myX,p.gps_y+myY+1,myPitch);
+	ngl::Vec4 To(p.gps_x+myX,p.gps_y+myY+5,myPitch);
 	ngl::Vec4 Up(0,0,1);
 	m_cam->set(From,To,Up);
 	m_cam->setShape(30,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
 	
-	m_cam->yaw(p.yaw+myYaw);
-	m_cam->roll(p.roll+myRoll);
-	//m_cam->pitch(p.pitch+myPitch);
+	m_cam->yaw(p.yaw + myYaw);
+	m_cam->roll(p.roll + myRoll);
+	m_cam->pitch(p.pitch + myPitch);
 	
 	ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 	(*shader)["Texture"]->use();
@@ -229,57 +227,13 @@ void MyGLWindow::paintGL()
 	ngl::Transformation trans;
 	ngl::Mat4 final;
 	final.identity();
-	final.translate(0,5,0);
-	//trans.setMatrix(final);
-	m_transformStack.setGlobal(trans);
-	m_transformStack.pushTransform();
-	//m_transformStack.setPosition(10+myX, myY, 0);
-	m_transformStack.setPosition(0, 5, 0);
-	loadMatricesToShader(m_transformStack);
-	//m_mesh->draw();
-	m_transformStack.popTransform();
 
-	for(int i=0; i-1<p.rssi/10; i++) {
-	//purple tetris model
-	final.identity();
-	m_transformStack.setGlobal(trans);
-	m_transformStack.pushTransform();
-	m_transformStack.setPosition(5,0,i);
-	loadMatricesToShader(m_transformStack);
-	//t_mesh->draw();
-	m_transformStack.popTransform();
-	}
-
-	for(int i=0; i-1<p.battery/10; i++) {
-	//yellow tetris model
-	final.rotateZ(i*10);
-	m_transformStack.setGlobal(trans);
-	m_transformStack.pushTransform();
-	m_transformStack.setPosition(-5,0,i);
-	loadMatricesToShader(m_transformStack);
-	//e_mesh->draw();
-	m_transformStack.popTransform();
-	}
-
-	//blue pacman model
-	final.identity();
-	m_transformStack.setGlobal(trans);
-	m_transformStack.pushTransform();
-	m_transformStack.setPosition(0,-5,0);
-	loadMatricesToShader(m_transformStack);
-	//s_mesh->draw();
-	m_transformStack.popTransform();
-	
-		
+	//loop through game objects
 	for(int i=0; i<256; i++) {
 		object = objects[i];
 		//check if this object should be drawn
-		//std::cout << object.isVisible() << objects[i].isVisible() << "\n";
 		if(object.isVisible()) {
 				//move and rotate object appropriately
-				//final.identity();
-				//trans.setMatrix(final);
-				//m_transformStack.setPosition(object.x, object.y, 0.0);
 				m_transformStack.setGlobal(trans);
 				m_transformStack.pushTransform();
 				m_transformStack.setPosition(object.x, object.y, 0.0);
@@ -343,10 +297,6 @@ void MyGLWindow::paintGL()
 	
 	glEnable(GL_DEPTH_TEST);
 	
-
-	
-
-	
 	//wait for next frame
 	glFlush();
 	glFinish();
@@ -354,6 +304,12 @@ void MyGLWindow::paintGL()
 	delete m_cam;
 }
 
+/*
+Uses SDL to take keyboard input.
+WASD moves the camera in X/Y,
+left and right arrow keys roll the camera,
+and up/down arrow keys moves the camera in Z
+*/
 void MyGLWindow::processEvents()
 {
 SDL_Event event;
@@ -370,9 +326,9 @@ SDL_Event event;
                     case SDLK_ESCAPE :
                         m_exit=true;
                         break;
-			case SDLK_p:
-			m_exit = true;
-			break;
+					case SDLK_p:
+						m_exit = true;
+						break;
                     case SDLK_LEFT:
                         myYaw -= 5;
                         break;
@@ -410,10 +366,10 @@ SDL_Event event;
 				break;
 		}
 	}
-
 }
 
-void MyGLWindow::loadConfigFile() {
+//loads a file describing the initial state of the 3D scene to be rendered
+void MyGLWindow::loadConfigFile(std::string filename) {
 	for(int i=0; i<256; i++) objects[i] = GameObject();
 	int index;
 	bool threed;
@@ -423,15 +379,16 @@ void MyGLWindow::loadConfigFile() {
 	float scale;
 	std::string id;
 
-	std::ifstream file("config.txt");
+	std::ifstream file(filename);
 	if(!file) {
-		//there's an error here, but i won't do anything to handle that
+		std::cout << "Configuration file not found!");
+		exit(EXIT_FAILURE);
 	}
 
+	//reads each game object into the objects array
 	while(file >> index) {
 		file >> threed >> locx >> locy >> locz >> orx >> ory >> orz >> filename >> show >> scale;
 		objects[index] = GameObject(locx, locy, locz, orx, ory, orz, show, threed, index, filename, scale);
 		std::cout << objects[index].x << " " << objects[index].y << " " << objects[index].isVisible() << "\n";
 	}
 }
-
