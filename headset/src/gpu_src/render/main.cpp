@@ -14,6 +14,7 @@
     You should have received m_a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include <iostream>
 #include <cstdlib>
 #include "MyGLWindow.h"
@@ -24,17 +25,14 @@
 #define FLUSHSPIBUFFER 2
 #define GETXBEEDATA 3
 
-
 MyGLWindow *win;
 pthread_mutex_t mut;
 
-void exitfunc()
-{
-delete win;
-SDL_Quit();
-bcm_host_deinit();
+void exitfunc() {
+	delete win;
+	SDL_Quit();
+	bcm_host_deinit();
 }
-
 
 void readSensorPacket(unsigned char *buf) {
 	#define SENSOR_OFFSET (5*sizeof(float))
@@ -49,8 +47,7 @@ void readSensorPacket(unsigned char *buf) {
 // buffer command to the headset to indicate
 // that it should remove all items from its spi
 // buffer.
-void clearSpiBuffer(void)
-{
+void clearSpiBuffer(void) {
     char data = FLUSHSPIBUFFER;
 	wiringPiSPIDataRW(0, (unsigned char *)&data, 1);
 }
@@ -102,18 +99,16 @@ int main()
   bcm_host_init();
 	atexit(exitfunc);
 
-	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
-	{
+	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
       std::cerr<<"Unable to init SDL: "<<SDL_GetError()<<"\n";
       exit(EXIT_FAILURE);
-  }
-
+	}
 
 	SDL_Surface* myVideoSurface = SDL_SetVideoMode(0,0, 32,  SDL_SWSURFACE);
 	// Print out some information about the video surface
 	if (myVideoSurface != NULL) {
        std::cout << "The current video surface bits per pixel is " << (int)myVideoSurface->format->BitsPerPixel << std::endl;
-       }
+    }
 	// here I create a config with RGB bit size 5,6,5 and no alpha
 	ngl::EGLconfig *config = new ngl::EGLconfig();
 	config->setRGBA(8,8,8,8);

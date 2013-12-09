@@ -170,6 +170,4 @@ class MyGLWindow : public ngl::EGLWindow
 
 };
 
-
-
 #endif
