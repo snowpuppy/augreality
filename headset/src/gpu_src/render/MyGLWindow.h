@@ -99,15 +99,15 @@ class MyGLWindow : public ngl::EGLWindow
 	ngl::Text *text;
 	void readSensorPacket(unsigned char *buf);
 	Player readSpiData();
-	void loadMatricesToShader(
-														 ngl::TransformStack &_tx
-													 );
+	void loadMatricesToShader( ngl::TransformStack &_tx);
+	void loadMatricesToShader2( ngl::TransformStack &_tx);
 
 
 
 
 		ngl::TransformStack m_transformStack;
 		ngl::Camera *m_cam;
+		ngl::Camera *m_cam2;
 		ngl::Camera *twod_cam;
 		ngl::Light *m_light;
 		ngl::Obj *m_mesh;
