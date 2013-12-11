@@ -1,1 +1,2 @@
-sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/pi/3d/pingl/lib ./render
+sudo gpio load spi
+sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./pingl/lib/ ./render
