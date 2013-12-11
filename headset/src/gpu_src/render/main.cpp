@@ -44,7 +44,8 @@ void requestHeadsetData(void);
 uint8_t getCommandResponse(void);
 uint8_t getSpiByte(void);
 void getSpiBytes(uint8_t *buf, uint8_t numBytes);
-bool running = true;
+bool volatile running = true;
+bool volatile loadNewFile = false;
 
 void exitfunc() {
 	delete win;
@@ -54,10 +55,12 @@ void exitfunc() {
 
 void readSensorPacket(unsigned char *buf) {
 	#define SENSOR_OFFSET (5*sizeof(float))
-	pthread_mutex_lock(&mut);
+	printf("locking mutex 1...\n");
+	//pthread_mutex_lock(&mut);
 	memcpy(MyGLWindow::buffer(), buf, SENSOR_OFFSET);
 	memcpy(MyGLWindow::charbuffer, buf + SENSOR_OFFSET, SENSOR_SIZE - SENSOR_OFFSET);
-	pthread_mutex_unlock(&mut);
+	//pthread_mutex_unlock(&mut);
+	printf("Unlocked mutex 1...\n");
 }
 
 // Function: clearSpiBuffer
@@ -113,7 +116,7 @@ void *spiThread(void *arg)
 				case LOADSTATICDATA:
 					printf("Received file packet.\n");
 					getNewFile(buffer, dataSize);
-					win->loadConfigFile("config.txt");
+					loadNewFile = true;
 					break;
 				case UPDATEOBJINSTANCE:
 					getObjectUpdateInfo(buffer, dataSize);
@@ -180,6 +183,10 @@ int main()
 	while(!win->exit())
 	{
 		while(!running) {};
+		if (loadNewFile) {
+			win->loadConfigFile("config.txt");
+			loadNewFile = false;
+		}
 		win->processEvents();
 		win->paintGL();
 	}
@@ -300,7 +307,8 @@ void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
 	}
 	
 	int id;
-	pthread_mutex_lock(&mut);
+	printf("locking mutex 2 ...\n");
+	//pthread_mutex_lock(&mut);
 	for(i=0; i<256; i++)
 	{
 		id = g_objList[i].instId;
@@ -311,7 +319,8 @@ void getObjectUpdateInfo(uint8_t *buffer, uint8_t bytesRead)
 		win->objects[id].yaw = g_objList[i].yaw;
 		win->objects[id].visible = g_objList[i].x3;
 	}
-	pthread_mutex_unlock(&mut);
+	//pthread_mutex_unlock(&mut);
+	printf("Unlocked mutex 2...\n");
 	return;
 }
 

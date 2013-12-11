@@ -83,6 +83,12 @@ void MyGLWindow::initializeGL()
 	ngl::Vec4 Up(0,0,1);
 	// now load to our new camera
 	m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
+	//setup for 2d drawing
+	ngl::Vec4 From2d(0, 0, 0);
+	ngl::Vec4 To2d(0, -1, 0);
+	ngl::Vec4 Up2d(0, 0, -1);
+	m_cam2 = new ngl::Camera(From2d,To2d,Up2d,ngl::PERSPECTIVE);
+	m_cam2->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
 	// set the shape using FOV 45 Aspect Ratio based on Width and Height
 	// The final two are near and far clipping planes of 0.5 and 10
 	m_cam->setShape(30.0,10.0/7.0,0.05,350.0,ngl::PERSPECTIVE);
@@ -191,12 +197,21 @@ void MyGLWindow::loadMatricesToShader(ngl::TransformStack &_tx) {
 	shader->setShaderParamFromMatrix("MVP",MVP);
 }
 
+void MyGLWindow::loadMatricesToShader2(ngl::TransformStack &_tx) {
+	ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+	(*shader)["Texture"]->use();
+
+	ngl::Mat4 MVP=_tx.getCurrAndGlobal().getMatrix()*m_cam2->getVPMatrix();
+	shader->setShaderParamFromMatrix("MVP",MVP);
+}
+
 //reads camera location and orientation from the SPI buffer
 Player MyGLWindow::readSpiData()
 {
 	Player result;
 	//lock mutex
-	pthread_mutex_lock(&mut);
+	printf("locking mutex 3...\n");
+	//pthread_mutex_lock(&mut);
 	//read buffer
 	result.gps_x = buffer()[1];
 	result.gps_y = buffer()[0];
@@ -207,7 +222,8 @@ Player MyGLWindow::readSpiData()
 	result.rssi = (int)windowAverage();
 	result.battery = charbuffer[1];
 	//unlock mutex
-	pthread_mutex_unlock(&mut);
+	//pthread_mutex_unlock(&mut);
+	printf("Unlocked mutex 3...\n");
 
 	return result;
 };
@@ -238,7 +254,8 @@ void MyGLWindow::paintGL()
 	final.identity();
 
 	//loop through game objects
-	pthread_mutex_lock(&mut);
+	printf("locking mutex 4...\n");
+	//pthread_mutex_lock(&mut);
 	for(int i=0; i<256; i++) {
 		object = objects[i];
 		//check if this object should be drawn
@@ -257,14 +274,9 @@ void MyGLWindow::paintGL()
 				m_transformStack.popTransform();
 		}
 	}
-	pthread_mutex_unlock(&mut);
+	//pthread_mutex_unlock(&mut);
+	printf("Unlocked mutex 4...\n");
 	
-	//setup for 2d drawing
-	ngl::Vec4 From2d(0, 0, 0);
-	ngl::Vec4 To2d(0, -1, 0);
-	ngl::Vec4 Up2d(0, 0, -1);
-	m_cam = new ngl::Camera(From2d,To2d,Up2d,ngl::PERSPECTIVE);
-	m_cam->setShape(45,(float)m_width/(float)m_height,0.05,350,ngl::PERSPECTIVE);
 	
 	glDisable(GL_DEPTH_TEST);
 	
@@ -273,7 +285,7 @@ void MyGLWindow::paintGL()
 	m_transformStack.setGlobal(trans);
 	m_transformStack.pushTransform();
 	m_transformStack.setPosition(-6,-15,-6);
-	loadMatricesToShader(m_transformStack);
+	loadMatricesToShader2(m_transformStack);
 	if(p.battery <= 20) {
 		batt1->draw();
 	} 
@@ -300,7 +312,7 @@ void MyGLWindow::paintGL()
 	m_transformStack.setGlobal(trans);
 	m_transformStack.pushTransform();
 	m_transformStack.setPosition(6,-15,-6);
-	loadMatricesToShader(m_transformStack);
+	loadMatricesToShader2(m_transformStack);
 	if(p.rssi <= 15) {
 		rssi1->draw();
 	} 
@@ -328,7 +340,7 @@ void MyGLWindow::paintGL()
 	glFlush();
 	glFinish();
 	swapBuffers();
-	delete m_cam;
+	//delete m_cam;
 }
 
 /*
@@ -357,7 +369,8 @@ SDL_Event event;
 						m_exit = true;
 						break;
                     case SDLK_LEFT:
-                        myYaw -= 5;
+                        //myYaw -= 5;
+			loadConfigFile("config.txt");
                         break;
                     case SDLK_RIGHT:
                         myYaw += 5;
@@ -398,7 +411,11 @@ SDL_Event event;
 //loads a file describing the initial state of the 3D scene to be rendered
 void MyGLWindow::loadConfigFile(std::string filename)
 {
-	for(int i=0; i<256; i++) objects[i] = GameObject();
+	for(int i=0; i<256; i++) {
+		objects[i] = GameObject();
+		//if (objects[i].mesh != NULL)
+		//	delete objects[i].mesh;
+	}
 	int index;
 	bool threed;
 	float locx, locy, locz, orx, ory, orz;

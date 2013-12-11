@@ -1,2 +1,2 @@
 sudo gpio load spi
-sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./pingl/lib/ ./render
+sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./pingl/lib/ ./render > /home/pi/log
