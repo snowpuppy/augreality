@@ -42,6 +42,11 @@ SENDACCEPTFORMAT = '=B16B'
 SENDGOBACK = '\x0c'
 SENDGOBACKFORMAT = '=B16B'
 
+##
+# @brief getBroadCastIDs() gets a list of 16 byte
+#   strings indicating the id of a headset in hex.
+#
+# @return a list of 16 byte strings
 def getBroadCastIDs():
 	# Set command
 	# Pack info
@@ -70,6 +75,11 @@ def getBroadCastIDs():
 		output.append(''.join("%c" % chr(x) for x in data[i:i+16]))
 	return output
 
+##
+# @brief getNumBroadCast() gets the number of headsets
+#					that are currently broadcasting.
+#
+# @return integer indicating number of headsets
 def getNumBroadCast():
 	# Set command
 	# Pack info
@@ -84,6 +94,15 @@ def getNumBroadCast():
 	s.close()
 	return ord(reply)
 
+##
+# @brief getBroadcastLoc() gets the gps location broadcast
+#					by a headset. This call is meant to be used to find
+#					the location of a headset before it is accepted into
+#					a simulation.
+#
+# @param nid
+#
+# @return a tuple containing x,y,pitch,yaw,roll.
 def getBroadcastLoc(nid):
 	# Set command
 	# Pack info
@@ -94,17 +113,25 @@ def getBroadcastLoc(nid):
 	s.send(command)
 	s.send(nid)
 	# receive info
-	# Get number of ids to read.
 	data = ""
+	# Get number of bytes to read.
 	numToRead = calcsize( BROADCASTLOCFORMATR )
-	print "numToRead:", numToRead
+	#print "numToRead:", numToRead
 	reply = s.recv(numToRead);
+	s.close()
 	data = unpack(BROADCASTLOCFORMATR,reply);
 	print "Position: ",data
-	s.close()
 	# returns x,y,roll,pitch,yaw
 	return data
 
+##
+# @brief getPostion() gets the position information
+#				for a specific headset. Meant to be used during
+#				simulation runtime.
+#
+# @param nid - id of headset to get info from.
+#
+# @return a tuple containing x,y,pitch,yaw,roll.
 def getPosition(nid):
 	# Set command
 	# Pack info
@@ -115,17 +142,22 @@ def getPosition(nid):
 	s.send(command)
 	s.send(nid)
 	# receive info
-	# Get number of ids to read.
 	data = ""
+	# Get number of bytes to read.
 	numToRead = calcsize( POSITIONFORMATR )
 	#print "numToRead:", numToRead
 	reply = s.recv(numToRead);
-	data = unpack(POSITIONFORMATR,reply);
-	#print "Position: ",data
 	s.close()
+	data = unpack(POSITIONFORMATR,reply);
+	print "Position: ",data
 	# returns x,y,roll,pitch,yaw
 	return data
 
+##
+# @brief getNumAlive()
+#
+# @return - integer indicating the number of headsets
+#						that are available wirelessly.
 def getNumAlive():
 	# Set command
 	# Pack info
@@ -136,10 +168,18 @@ def getNumAlive():
 	s.send(command)
 	# receive info
 	reply = s.recv(1);
-	#print "NumAlive:",ord(reply)
+	print "NumAlive:",ord(reply)
 	s.close()
 	return ord(reply)
 
+##
+# @brief getAlive() determins if a headset is
+#				 still connected wirelessly to the central
+#				 device.
+#
+# @param nid - idea of headset to probe
+#
+# @return - 1 for connected, 0 for disconnected
 def getAlive(nid):
 	# Set command
 	# Pack info
@@ -153,10 +193,18 @@ def getAlive(nid):
 	# Get number of ids to read.
 	data = ""
 	reply = s.recv(1);
-	#print "Alive: ", ord(reply)
+	print "Alive: ", ord(reply)
 	s.close()
+	# returns 1 for alive, 0 for disconnected
 	return ord(reply)
 
+##
+# @brief sendFile() sends a file that sets the simulation
+#			   environment.
+#
+# @param filename - string indicating the file to be sent.
+#
+# @return - none
 def sendFile(filename):
 	# Set command
 	# Pack info

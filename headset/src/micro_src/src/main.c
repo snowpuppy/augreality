@@ -44,6 +44,7 @@
 // Time constants
 #define ONE_SECOND 1000
 #define HALF_SECOND 500
+#define FIFTY_MSECOND 50
 
 #define LATOFFSET 0
 #define LONOFFSET 4
@@ -85,6 +86,7 @@ static float yawHist[IMU_HISTORY];
 
 // Function declarations
 static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude);
+static void sendHeartBeat(uint8_t *netAddr, float lattitude, float longitude, float pitch, float yaw, float roll);
 static void getBytes(uint8_t *data, uint32_t numBytes);
 static void processXbeeData(uint8_t *id);
 void spiReceivedByte(uint8_t data);
@@ -110,7 +112,7 @@ static void init(void) {
 	// Set up the peripherals
 	i2cInit();
 	serialInit();
-	usbVCPInit();
+	//usbVCPInit();
 	// write first byte of spi as zero.
 	// then initialize it. This is done
 	// because the gpu will interpret this
@@ -260,7 +262,7 @@ static void processXbeeData(uint8_t *id) {
 	static uint32_t xbeeState = XBEEDISCOVERYSTATE;
 	static uint32_t count = 0;
 	static uint32_t state = BROADCASTSTATE;
-	float lat = 0, lon = 0;
+	float lat = 0, lon = 0, roll = 0, pitch = 0, yaw = 0;
 
 	// Check if a broadcast packet needs to be sent.
 	// Only send when in broadcast state and send every half second.
@@ -270,6 +272,19 @@ static void processXbeeData(uint8_t *id) {
 		lon = *((float *)&headsetData[LONOFFSET]);
 		count = millis();
 		sendBroadCast(id, lat, lon);
+	}
+	// Add the heartbeat packet logic. Only send a heartbeat if
+	// in the simulation state and the timer has expired. Send
+	// every 50 milliseconds.
+	if (state == RUNSIMULATION && (millis() > count + FIFTY_MSECOND) )
+	{
+		lat = *((float *)&headsetData[LATOFFSET]);
+		lon = *((float *)&headsetData[LONOFFSET]);
+		roll = *((float *)&headsetData[ROLOFFSET]);
+		pitch = *((float *)&headsetData[PITOFFSET]);
+		yaw = *((float *)&headsetData[YAWOFFSET]);
+		count = millis();
+		sendHeartBeat(id,lat,lon,roll,pitch,yaw);
 	}
 	// If packets are available
 	// then start processing them.
@@ -706,5 +721,32 @@ static void sendBroadCast(uint8_t *netAddr, float lattitude, float longitude) {
 	broadCastPacketPack(&p, &buffer[HEADERSIZE]);
 	// Write to the buffer as a series of characters.
 	serialWriteBytes(SERIAL_PORT_XBEE, buffer, BROADCASTPACKETSIZE + HEADERSIZE);
+	return;
+}
+
+
+// Function: sendHeartBeat
+// Purpose: send a heartbeat packet of the headset indicating
+// the position and orientation of the headset.
+static void sendHeartBeat(uint8_t *netAddr, float lattitude, float longitude, float pitch, float yaw, float roll) {
+	uint8_t buffer[HEARTBEATSIZE + HEADERSIZE];
+	heartBeat_t p;
+	uint32_t i = 0;
+
+	addHeader(buffer);
+	p.packetType = HEARTBEAT;
+	// Copy address over to packet.
+	for (i = 0; i < 16; i++) {
+		p.id[i] = netAddr[i];
+	}
+	p.x = lattitude;
+	p.y = longitude;
+	p.roll = roll;
+	p.pitch = pitch;
+	p.yaw = yaw;
+	//p.crc = calcCrc((char *)&p, sizeof(p));
+	heartBeatPack(&p, &buffer[HEADERSIZE]);
+	// Write to the buffer as a series of characters.
+	serialWriteBytes(SERIAL_PORT_XBEE, buffer, HEARTBEATSIZE + HEADERSIZE);
 	return;
 }

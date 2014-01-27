@@ -400,7 +400,8 @@ void getHeartBeatPacket(void)
 		g_heartBeating[i].y = p.y;
 		g_heartBeating[i].roll = p.roll;
 		g_heartBeating[i].pitch = p.pitch;
-		g_heartBeating[i].roll = p.roll;
+		g_heartBeating[i].yaw = p.yaw;
 		g_numHeartBeating++;
 	}
+	printf("x: %0.2f, y: %0.2f, y: %0.2f, p: %0.2f, r: %0.2f\n", p.x,p.y,p.roll,p.pitch,p.yaw);
 }
