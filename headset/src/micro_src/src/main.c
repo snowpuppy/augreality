@@ -71,8 +71,8 @@ static struct {
 
 // Global Variables
 static uint8_t xbeeData[COMM_BUFFER_SIZE];
+static uint8_t __attribute__ ((aligned(4))) headsetData[HEADSETDATABYTES];
 static volatile uint8_t numXbeeDataBytes = 0;
-static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
