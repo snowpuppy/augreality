@@ -157,6 +157,7 @@ int main(void) {
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
+		ledToggle();
 
 		__WFI();
 	}
@@ -608,7 +609,6 @@ static void processIMUData(void) {
 		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
 		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
-		ledToggle();
 	}
 }
 
