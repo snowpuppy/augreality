@@ -28,9 +28,9 @@ all: include/packets.h src/packets.c $(BINDIR) $(OUT)
 
 # copy packet files from ccu
 include/packets.h:
-	../../../ccu/src/library/generatePackets.py ./include/ ./src/
+	python ../../../ccu/src/library/generatePackets.py ./include/ ./src/
 src/packets.c:
-	../../../ccu/src/library/generatePackets.py ./include/ ./src/
+	python ../../../ccu/src/library/generatePackets.py ./include/ ./src/
 
 # Remove all intermediate object files (remove the binary directory)
 clean:
