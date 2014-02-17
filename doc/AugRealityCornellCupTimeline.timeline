@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<timeline>
+  <version>1.1.0</version>
+  <timetype>gregoriantime</timetype>
+  <categories>
+    <category>
+      <name>Hardware</name>
+      <color>255,255,128</color>
+      <font_color>0,0,0</font_color>
+    </category>
+    <category>
+      <name>Cornell Cup Event</name>
+      <color>234,107,84</color>
+      <font_color>0,0,0</font_color>
+    </category>
+    <category>
+      <name>Software</name>
+      <color>128,255,255</color>
+      <font_color>0,0,0</font_color>
+    </category>
+    <category>
+      <name>Packaging</name>
+      <color>221,125,203</color>
+      <font_color>0,0,0</font_color>
+    </category>
+    <category>
+      <name>Testing</name>
+      <color>82,251,11</color>
+      <font_color>0,0,0</font_color>
+    </category>
+    <category>
+      <name>Documentation</name>
+      <color>223,80,32</color>
+      <font_color>0,0,0</font_color>
+    </category>
+  </categories>
+  <events>
+    <event>
+      <start>2014-01-20 00:00:00</start>
+      <end>2014-02-13 06:35:07</end>
+      <text>Select Parts</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Select Display, Select Battery, Select Fuel Guage, Select PSU design, Coose Wireless Technology</description>
+    </event>
+    <event>
+      <start>2013-12-16 00:00:00</start>
+      <end>2014-01-26 00:00:00</end>
+      <text>Update Block Diagram</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Update block diagram to reflect any changes to expected hardware</description>
+    </event>
+    <event>
+      <start>2014-02-15 15:26:15</start>
+      <end>2014-02-15 15:26:15</end>
+      <text>Order Parts</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Order Parts:
+Display
+Battery
+Fuel Gauge
+PSU
+Other Hardware</description>
+    </event>
+    <event>
+      <start>2014-02-17 03:04:00</start>
+      <end>2014-02-21 03:04:00</end>
+      <text>Finish Hardware Design</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Tidy up and design issues with hardware before sending the PCB off for fabrication.</description>
+    </event>
+    <event>
+      <start>2014-02-17 00:00:00</start>
+      <end>2014-02-17 00:00:00</end>
+      <text>Mid Review</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+    </event>
+    <event>
+      <start>2014-03-03 00:00:00</start>
+      <end>2014-03-08 00:00:00</end>
+      <text>Build Power Supply</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Solder the power supply to the PCB.
+Test to make sure that all connections are good.</description>
+    </event>
+    <event>
+      <start>2014-03-08 10:41:38</start>
+      <end>2014-03-14 10:41:38</end>
+      <text>Assemble Electrical Hardware Pieces</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Solder PCB
+Get Appropriate Cables and connections
+Test components and connections</description>
+    </event>
+    <event>
+      <start>2014-03-15 00:00:00</start>
+      <end>2014-03-15 00:00:00</end>
+      <text>Combine Packaging and Electrical Systems</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Mount the Electrical Systems to the augmented packaging.</description>
+    </event>
+    <event>
+      <start>2013-12-16 00:38:00</start>
+      <end>2014-02-15 00:00:00</end>
+      <text>Assess Software Changes</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Assess the magnitude of software changes required to make the Cornell Cup project a reality, given hardware changes.</description>
+    </event>
+    <event>
+      <start>2014-02-24 00:00:00</start>
+      <end>2014-03-02 00:00:00</end>
+      <text>Port Sensor</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Convert software for converting sensor data into a new format.</description>
+    </event>
+    <event>
+      <start>2014-02-16 00:00:00</start>
+      <end>2014-02-22 22:49:00</end>
+      <text>Update Network</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Eliminate the CCU and give any headset the option to host the game.</description>
+    </event>
+    <event>
+      <start>2014-02-24 00:00:00</start>
+      <end>2014-03-08 00:00:00</end>
+      <text>Port GPU</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Put the GPU software onto the Inel Atom board, get OpenGL running, and display our current maps.</description>
+    </event>
+    <event>
+      <start>2014-03-07 23:43:00</start>
+      <end>2014-03-13 23:43:00</end>
+      <text>Port Central</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Put the CCU user interface on the Intel Board and make sure that the interface is traversable.</description>
+    </event>
+    <event>
+      <start>2014-03-14 00:00:00</start>
+      <end>2014-03-20 00:00:00</end>
+      <text>Port Networking</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Put the CCU software on the Intel Board and make sure that the following works:
+- Can Send all API messages
+- Can receive HeadsetBroadcast messages
+- Can receive HeadsetHeartbeat messages</description>
+    </event>
+    <event>
+      <start>2014-03-21 00:00:00</start>
+      <end>2014-04-01 00:00:00</end>
+      <text>Port Simulation</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Software</category>
+      <description>Port the simulation from the CCU to the Cornell Cup Intel Board and enhance it's functionality.</description>
+    </event>
+    <event>
+      <start>2013-12-16 00:00:00</start>
+      <end>2014-02-01 00:00:00</end>
+      <text>Intel Board Evaluation</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Evaluate whether or not the DE2i-150 is capable of being used for our project and determine what it offers in terms of functionality.</description>
+    </event>
+    <event>
+      <start>2013-12-16 00:00:00</start>
+      <end>2014-02-15 00:00:00</end>
+      <text>Assess Headset Design Changes</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Packaging</category>
+      <description>Figure out the major design changes necessary to support the given hardware and generate a new 3d model of the design.</description>
+    </event>
+    <event>
+      <start>2014-02-15 00:00:00</start>
+      <end>2014-03-03 00:00:00</end>
+      <text>Implement New Packaging</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Packaging</category>
+      <description>Get parts for and put together the new packaging design.</description>
+    </event>
+    <event>
+      <start>2013-12-16 00:00:00</start>
+      <end>2014-01-13 00:00:00</end>
+      <text>Design System for User Feedback</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Design or pick a system for user feedback that can be used for evaluating the phase 1 project:
+- Google Form
+- Paper Survey
+- Brag Sheet</description>
+    </event>
+    <event>
+      <start>2014-01-13 00:00:00</start>
+      <end>2014-02-18 02:45:30</end>
+      <text>Gather User Feedback</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Begin testing with users to assess the issues with our current phase 1 prototype.</description>
+    </event>
+    <event>
+      <start>2014-02-19 12:21:00</start>
+      <end>2014-02-26 12:21:00</end>
+      <text>Sensor Data Collection</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Collect Sensor Data and assess that it operates adequately for our task.</description>
+    </event>
+    <event>
+      <start>2014-03-04 00:00:00</start>
+      <end>2014-03-10 00:00:00</end>
+      <text>Power Supply Test</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Put the power supply through a longevity test before mounting other components. Leave on overnight.</description>
+    </event>
+    <event>
+      <start>2014-03-04 00:00:00</start>
+      <end>2014-03-11 00:00:00</end>
+      <text>Test Geospatial Render</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Begin Testing to see if GPS sensor data can adequately render virtual objects with the Intel board.
+- When moving E,W,S,N the GPS responds correctly and visually appears as if the user is moving in those directions.</description>
+    </event>
+    <event>
+      <start>2014-03-12 00:00:00</start>
+      <end>2014-03-17 00:00:00</end>
+      <text>User Feedback</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Ask X number of users to satisfy our method of gathering user feedback. Assess possible changes to design that may address any issues brought on by the users.</description>
+    </event>
+    <event>
+      <start>2014-03-18 00:00:00</start>
+      <end>2014-03-23 00:00:00</end>
+      <text>IMU Performance</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Test whether IMU data performs properly in Phase II design:
+- When tilting head on yaw,pitch,roll axis the expected behavior is seen. Minor shaking is acceptable.</description>
+    </event>
+    <event>
+      <start>2014-03-18 00:00:00</start>
+      <end>2014-03-24 00:00:00</end>
+      <text>Test File Transfer</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Test to make sure that files may be transferred between headsets when loading a new simulation. This operation should perform seamlessly without failure.</description>
+    </event>
+    <event>
+      <start>2014-03-24 00:00:00</start>
+      <end>2014-03-30 00:00:00</end>
+      <text>Start/End Packets</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Check to make sure that a Start packet starts a simulation and that an End packet stops a simulation.</description>
+    </event>
+    <event>
+      <start>2014-03-24 00:00:00</start>
+      <end>2014-03-30 00:00:00</end>
+      <text>Wireless Connection</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Check to make sure that the headset notifies the user when he/she loses and then regains wireless connection. The user should be notified that they will be taken out of a group simulation if the user is out of range of the wireless base station.</description>
+    </event>
+    <event>
+      <start>2014-03-31 00:00:00</start>
+      <end>2014-04-05 00:00:00</end>
+      <text>Wireless Packets</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Test to make sure wireless commands seamlessly transition the headset through it's appropriate states.</description>
+    </event>
+    <event>
+      <start>2014-04-05 00:00:00</start>
+      <end>2014-04-11 00:00:00</end>
+      <text>User Feedback</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Gather user feedback for X number of users using given system. Assess problems with design and make any changes deemed applicable.</description>
+    </event>
+    <event>
+      <start>2014-04-05 00:00:00</start>
+      <end>2014-04-11 00:00:00</end>
+      <text>Multiple Headsets</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Test to make sure that multiple headsets can participate in a simulation seamlessly. There should not be lag of object position updates. Users should see objects in the "same location". Users should see objects move in the "same way".</description>
+    </event>
+    <event>
+      <start>2014-04-12 00:00:00</start>
+      <end>2014-04-18 00:00:00</end>
+      <text>User Feedback</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Testing</category>
+      <description>Gather User Feedback on current system for X number of users. Assess changes that can be made to system given user feedback.</description>
+    </event>
+    <event>
+      <start>2014-03-07 00:00:00</start>
+      <end>2014-03-07 00:00:00</end>
+      <text>Begin Finalist Info Sessions</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+      <description>More Info Sessions</description>
+    </event>
+    <event>
+      <start>2014-04-15 00:00:00</start>
+      <end>2014-04-15 00:00:00</end>
+      <text>Wild Card Submission Date</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+    </event>
+    <event>
+      <start>2014-04-21 00:00:00</start>
+      <end>2014-04-21 00:00:00</end>
+      <text>Final Reports Due</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+    </event>
+    <event>
+      <start>2014-04-25 00:00:00</start>
+      <end>2014-04-25 00:00:00</end>
+      <text>End Finalist Info Sessions</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+    </event>
+    <event>
+      <start>2014-05-02 00:00:00</start>
+      <end>2014-05-02 00:00:00</end>
+      <text>Competition in Florida</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Cornell Cup Event</category>
+    </event>
+    <event>
+      <start>2013-12-16 00:00:00</start>
+      <end>2014-02-18 02:45:30</end>
+      <text>Update Timeline</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Documentation</category>
+      <description>Update the timeline to account for changes in hardware/software.</description>
+    </event>
+    <event>
+      <start>2014-02-21 00:00:00</start>
+      <end>2014-02-21 00:00:00</end>
+      <text>Order PCB</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Submit the order to the fabrication facility to get the PCB made.</description>
+    </event>
+    <event>
+      <start>2014-04-05 00:00:00</start>
+      <end>2014-04-20 00:00:00</end>
+      <text>Finalize Final Report</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Documentation</category>
+      <description>Put all sections of Final Report together and get it reviewed by our advisor before submissoin.</description>
+    </event>
+  </events>
+  <view>
+    <displayed_period>
+      <start>2014-01-06 08:50:45</start>
+      <end>2014-02-03 18:35:26</end>
+    </displayed_period>
+    <hidden_categories>
+    </hidden_categories>
+  </view>
+</timeline>
