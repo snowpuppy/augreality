@@ -35,7 +35,7 @@ int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id)
 {
 	int16_t index = -1;
 	index = findBroadCasting(id);
-	if (index > 0)
+	if (index >= 0)
 	{
 		pos->x = g_broadCasting[index].latitude;
 		pos->y = g_broadCasting[index].longitude;
@@ -169,6 +169,24 @@ uint16_t getNumAlive()
 {
 	return g_numHeartBeating;
 }
+
+// AddAliveID
+uint16_t addAliveID(uint8_t *id)
+{
+	int16_t ret = 0;
+	uint16_t i = 0;
+	ret = findHeartBeating(id);
+	// If not already found, add it.
+	if (ret == -1)
+	{
+		i = g_numHeartBeating;
+		strncpy(g_heartBeating[i].id, id, SIZEOFID/2);
+		g_numHeartBeating++;
+		return 1;
+	}
+	return 0;
+}
+
 // getAliveIDs()
 int16_t getAliveIDs(uint8_t *ids, uint16_t size)
 {
@@ -193,7 +211,7 @@ int16_t getPos(headsetPos_t *pos, uint8_t *id)
 		return -1;
 	}
 	index = findHeartBeating(id);
-	if (index > 0)
+	if (index >= 0)
 	{
 		pos->x = g_heartBeating[index].x;
 		pos->y = g_heartBeating[index].y;
@@ -368,8 +386,6 @@ void getBroadCastPacket(void)
 	{
 		i = g_numBroadCasting;
 		strncpy(g_broadCasting[i].address, p.address, SIZEOFID);
-		g_broadCasting[i].latitude = p.lattitude;
-		g_broadCasting[i].longitude = p.longitude;
 		g_numBroadCasting++;
     printf("\nProcessed broadcast packet num: %d\n", g_numBroadCasting);
 		printf("lat: %f, lon: %f, id: ", p.lattitude, p.longitude);
@@ -378,31 +394,27 @@ void getBroadCastPacket(void)
 			printf("%2.2X ", p.address[j]);
 		}
 		printf("\n");
-	}/*
-	else
-	{
-		printf("Got packet with existing id.\n");
-	}*/
+	}
+	g_broadCasting[i].latitude = p.lattitude;
+	g_broadCasting[i].longitude = p.longitude;
 }
 void getHeartBeatPacket(void)
 {
 	heartBeat_t p;
-	uint16_t i = 0;
+	int16_t i = 0;
 	// use HEARTBEATSIZE-1 because
 	// packetType was already read
 	uint8_t buf[HEARTBEATSIZE-1];
 	readBytes(g_port, buf, HEARTBEATSIZE-1);
 	heartBeatUnpack(&p,buf);
-	if (findHeartBeating(p.id) < 0)
+	i = findHeartBeating(p.id);
+	if (i >= 0)
 	{
-		i = g_numHeartBeating;
-		strncpy(g_heartBeating[i].id, p.id, SIZEOFID/2);
 		g_heartBeating[i].x = p.x;
 		g_heartBeating[i].y = p.y;
 		g_heartBeating[i].roll = p.roll;
 		g_heartBeating[i].pitch = p.pitch;
 		g_heartBeating[i].yaw = p.yaw;
-		g_numHeartBeating++;
 	}
 	printf("x: %0.2f, y: %0.2f, y: %0.2f, p: %0.2f, r: %0.2f\n", p.x,p.y,p.roll,p.pitch,p.yaw);
 }

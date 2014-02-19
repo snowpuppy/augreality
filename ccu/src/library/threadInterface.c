@@ -341,8 +341,13 @@ void _sendStart(int fd)
 void _sendAccept(int fd)
 {
 	uint8_t buf[ACCEPTHEADSETSIZE + HEADERSIZE];
+	uint8_t id[SIZEOFID];
+	int rc = 0;
 	acceptHeadset_t p = {0};
 	p.packetType = ACCEPTHEADSET;
+	// Read in the id
+	rc = read(fd, (void *)id, SIZEOFID);
+	if (rc < SIZEOFID) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); return; }
 	//p.id = getCcuId();
 	// Id of headset needs to be passed to getOrigin
 	// so that I know which headset is being accepted
@@ -351,6 +356,8 @@ void _sendAccept(int fd)
 	addHeader(buf);
 	acceptHeadsetPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, ACCEPTHEADSETSIZE + HEADERSIZE);
+	// Add id to list of id's for heartbeat
+	addAliveID(id);
 	printf("Sent Accept command.\n");
 }
 // This needs to be sent to specific address

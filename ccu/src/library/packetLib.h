@@ -69,6 +69,7 @@ int16_t goBack(uint8_t *id);
 int16_t getPos(headsetPos_t *pos, uint8_t *id);
 uint16_t getNumAlive();
 uint16_t getAlive(uint8_t *id);
+uint16_t addAliveID(uint8_t *id);
 int16_t updateObjs(objInfo_t *objList, uint8_t numObjects);
 int16_t sendFile(char *filename);
 int16_t endSimulationID(uint8_t *destId);
