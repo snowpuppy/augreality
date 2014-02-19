@@ -41,17 +41,23 @@ while True:
 		#nid = "bad1bad1bad1bad1"
 		nid = '40A66DAE\r13A200\r'
 	if (num == 0):
-		getBroadCastIDs()
+		output = getBroadCastIDs()
+		print output
 	elif (num == 1):
-		getNumBroadCast()
+		output = getNumBroadCast()
+		print output
 	elif (num == 2):
-		getBroadcastLoc(nid)
+		output = getBroadcastLoc(nid)
+		print output
 	elif (num == 3):
-		getPosition(nid)
+		output = getPosition(nid)
+		print output
 	elif (num == 4):
-		getNumAlive()
+		output = getNumAlive()
+		print output
 	elif (num == 5):
-		getAlive(nid)
+		output = getAlive(nid)
+		print output
 	elif (num == 6):
 		sendUpdateObjs(1,1,2,0,0,1.5,2.5,90.0,10.0,10.0)
 	elif (num == 7):

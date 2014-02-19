@@ -137,6 +137,7 @@ int16_t sendFile(char *filename)
     bytesRead = fread(fileBuf,1,256,fp);
     write(g_port, fileBuf, bytesRead);
   }
+	fclose(fp);
   return 0;
 }
 // updateObjs(objInfo *objList)

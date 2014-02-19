@@ -166,41 +166,6 @@ int main(void) {
 	return 0;
 }
 
-#if 0
-// Function: lock()
-// This function creates a locking mechanism
-// that can be used to access sensative data
-// through the use of a mutex.
-static void lock(uint8_t *mutex)
-{
-    uint8_t ret = 0;
-    // Attempt to claim the mutex.
-    do
-    {
-        // Keep trying while the mutex is
-        // being held.
-        do
-        {
-            // the mutex value is 1 if in use.
-            // the mutex value is 0 if available.
-            ret = __ldrex(mutex);
-        } while (ret == 1);
-        // strex returns 0 on success.
-        // strex returns 1 on failure.
-        ret = __strex(1, mutex);
-    } while (ret == 1);
-}
-
-// Function unlock()
-// This function allows one to unlock
-// a mutex. Note that this could be done by
-// anybody... (but they shouldn't)
-static void unlock(uint8_t *mutex)
-{
-    *mutex = 0;
-}
-#endif
-
 /* Function: getBytes()
  *
  * Reads specified number of bytes into given buffer.

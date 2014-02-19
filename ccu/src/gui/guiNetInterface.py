@@ -90,7 +90,7 @@ def getNumBroadCast():
 	s.send(command)
 	# receive info
 	reply = s.recv(1);
-	print "NumIds:",ord(reply)
+	#print "NumIds:",ord(reply)
 	s.close()
 	return ord(reply)
 
@@ -120,7 +120,7 @@ def getBroadcastLoc(nid):
 	reply = s.recv(numToRead);
 	s.close()
 	data = unpack(BROADCASTLOCFORMATR,reply);
-	print "Position: ",data
+	#print "Position: ",data
 	# returns x,y,roll,pitch,yaw
 	return data
 
@@ -149,7 +149,7 @@ def getPosition(nid):
 	reply = s.recv(numToRead);
 	s.close()
 	data = unpack(POSITIONFORMATR,reply);
-	print "Position: ",data
+	#print "Position: ",data
 	# returns x,y,roll,pitch,yaw
 	return data
 
@@ -168,7 +168,7 @@ def getNumAlive():
 	s.send(command)
 	# receive info
 	reply = s.recv(1);
-	print "NumAlive:",ord(reply)
+	#print "NumAlive:",ord(reply)
 	s.close()
 	return ord(reply)
 
@@ -193,7 +193,7 @@ def getAlive(nid):
 	# Get number of ids to read.
 	data = ""
 	reply = s.recv(1);
-	print "Alive: ", ord(reply)
+	#print "Alive: ", ord(reply)
 	s.close()
 	# returns 1 for alive, 0 for disconnected
 	return ord(reply)
