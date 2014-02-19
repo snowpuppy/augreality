@@ -38,7 +38,7 @@ SENDENDFORMAT = '=B16B'
 SENDSTART = '\x0a'
 SENDSTARTFORMAT = '=B'
 SENDACCEPT = '\x0b'
-SENDACCEPTFORMAT = '=B16B'
+SENDACCEPTFORMAT = '=2f'
 SENDGOBACK = '\x0c'
 SENDGOBACKFORMAT = '=B16B'
 
@@ -251,7 +251,7 @@ def sendStart():
 	# send info
 	s.send(command)
 
-def sendAccept(nid):
+def sendAccept(nid,lat,lon):
 	# Set command
 	# Pack info
 	command = SENDACCEPT
@@ -260,6 +260,9 @@ def sendAccept(nid):
 	# send info
 	s.send(command)
 	s.send(nid)
+	# pack and send gps coordinates of origin
+	data = pack(SENDACCEPTFORMAT, lat, lon)
+	s.send(data)
 
 def sendGoBack(nid):
 	# Set command

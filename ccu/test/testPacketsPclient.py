@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Filename: pclient.py
+# Filename: testPacketsPclient.py
 # Author: Thor Smith
 # Purpose: Create a python client to retrieve content
 #          and send commands
@@ -35,6 +35,7 @@ while True:
 	inpu = raw_input(helpStr)
 	args = inpu.split()
 	num = int(args[0])
+	lat, lon = 0,0
 	if (len(args) > 1):
 		nid = args[1]
 	else:
@@ -48,6 +49,8 @@ while True:
 		print output
 	elif (num == 2):
 		output = getBroadcastLoc(nid)
+		lat = output[0]
+		lon = output[1]
 		print output
 	elif (num == 3):
 		output = getPosition(nid)
@@ -67,7 +70,7 @@ while True:
 	elif (num == 10):
 		sendStart()
 	elif (num == 11):
-		sendAccept(nid)
+		sendAccept(nid,lat,lon)
 	elif (num == 12):
 		sendGoBack(nid)
 	elif (num == 13):

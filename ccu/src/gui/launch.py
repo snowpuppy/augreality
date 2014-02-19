@@ -92,7 +92,10 @@ class AugRealObj:
       self.state = SELECTSIMU
       self.teardownSelectHead()
       self.setupSelectSimu()
-      sendAccept('40A66DAE\r3A200\r')
+			# will need to properly get location
+			# of first headset accepted and use as
+			# origin.
+      sendAccept('40A66DAE\r3A200\r',0.0,0.0)
     elif (self.state == SELECTSIMU):
       self.state = RUNSIMULAT
       self.teardownSelectSimu()

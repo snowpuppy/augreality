@@ -342,12 +342,18 @@ void _sendAccept(int fd)
 {
 	uint8_t buf[ACCEPTHEADSETSIZE + HEADERSIZE];
 	uint8_t id[SIZEOFID];
+	float coord[2];
 	int rc = 0;
 	acceptHeadset_t p = {0};
 	p.packetType = ACCEPTHEADSET;
 	// Read in the id
 	rc = read(fd, (void *)id, SIZEOFID);
 	if (rc < SIZEOFID) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); return; }
+	// Read in lat/lon coordinates
+	rc = read(fd, (void *)coord, 2*sizeof(float));
+	if (rc < 2*sizeof(float)) {perror("Error:_getBroadcastLoc: read less than size 2*float!\n"); return;}
+	p.x = coord[0];
+	p.y = coord[1];
 	//p.id = getCcuId();
 	// Id of headset needs to be passed to getOrigin
 	// so that I know which headset is being accepted
