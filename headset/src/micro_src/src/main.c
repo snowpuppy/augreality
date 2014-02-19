@@ -72,8 +72,8 @@ static struct {
 
 // Global Variables
 static uint8_t xbeeData[COMM_BUFFER_SIZE];
+static uint8_t __attribute__ ((aligned(4))) headsetData[HEADSETDATABYTES];
 static volatile uint8_t numXbeeDataBytes = 0;
-static uint8_t headsetData[HEADSETDATABYTES];
 static float originLat = 0, originLon = 0;
 
 // IMU processing variables
@@ -159,6 +159,7 @@ int main(void) {
 		processGPSData();
 		processIMUData();
 		processFuelGuage();
+		ledToggle();
 
 		__WFI();
 	}
@@ -623,7 +624,6 @@ static void processIMUData(void) {
 		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
 		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
 		headsetData[20] = (char) gpioGetRSSI(); // rssi
-		ledToggle();
 	}
 }
 
