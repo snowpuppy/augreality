@@ -1,32 +1,43 @@
-CC=g++
-CFLAGS=-c -Wall -Werror=implicit-function-declaration -Wno-strict-aliasing -O3 -I/usr/local/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include -Ipingl/include -I/usr/include/ImageMagick  -DNGL_DEBUG -I/opt/vc/include/interface/vmcs_host/linux/
-LDFLAGS=-L/opt/vc/lib -lEGL -lGLESv2 -lbcm_host -Lpingl/lib -lNGL -lMagickCore -lMagick++ -lSDL -lSDLmain -L/usr/local/include -lwiringPi
-SOURCES=MyGLWindow.cpp gameobject.cpp main.cpp packets.c
-OBJECTS=$(SOURCES:%.cpp=%.o)
-EXECUTABLE=render
 
-all: $(SOURCES) $(EXECUTABLE)
+Target := render
+Sources := GameObject.cpp SensorReader.cpp main.cpp
+IrrlichtInclude := /usr/include/irrlicht
+IrrlichtLib := /usr/lib/irrlicht
+BinPath = ./
 
-$(EXECUTABLE): $(OBJECTS) packets.h packets.c pingl/ wiringPi/
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+USERCPPFLAGS =
+USERCXXFLAGS = -O3 -ffast-math
+#USERCXXFLAGS = -g -Wall
+USERLDFLAGS =
 
-.cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+CPPFLAGS = -I$(IrrlichtInclude) -I/usr/X11R6/include $(USERCPPFLAGS)
+CXXFLAGS = $(USERCXXFLAGS)
+LDFLAGS = $(USERLDFLAGS)
 
-clean :
-	rm -f *.o $(EXECUTABLE) packets.h packets.c
+#default target is Linux
+all: all_linux
 
-packets.h: ../../../../ccu/src/library/generatePackets.py ../../../../ccu/src/library/packetStrings.py
-	../../../../ccu/src/library/generatePackets.py ./ ./
-packets.c: ../../../../ccu/src/library/generatePackets.py ../../../../ccu/src/library/packetStrings.py
-	../../../../ccu/src/library/generatePackets.py ./ ./
+# target specific settings
+all_linux all_win32 static_win32: LDFLAGS += -L$(IrrlichtLib)/$(SYSTEM) -lIrrlicht
+all_linux: LDFLAGS += -L/usr/X11R6/lib$(LIBSELECT) -lGL -lXxf86vm -lXext -lX11 -lXcursor
+all_linux clean_linux: SYSTEM=Linux
 
-pingl:
-	wget http://pingl.googlecode.com/files/pingl.tgz
-	tar -xzf pingl.tgz
-	rm pingl.tgz
+DESTPATH = $(BinPath)/$(Target)$(SUF)
+
+all_linux :
+	$(warning Building...)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(Sources) -o $(DESTPATH) $(LDFLAGS)
+
+clean:
+	$(warning Cleaning...)
+	@$(RM) $(DESTPATH)
 	
-wiringPi: wiringPi/
-	git clone git://git.drogon.net/wiringPi
-	cd ./wiringPi
-	./build
+format:
+	astyle --style=attach --indent=spaces=4 *.cpp *.h
+
+.PHONY: all  clean  
+
+#multilib handling
+ifeq ($(HOSTTYPE), x86_64)
+LIBSELECT=64
+endif
