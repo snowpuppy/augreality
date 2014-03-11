@@ -15,7 +15,7 @@ void writeLine(int id, int x, int y, char *filename, FILE *ofp, float scale) {
 }
 
 int main(int argc, char *argv[]) {
-	int i=0; int j=0;
+	int i=1; int j=0;
 	FILE *ifp = fopen(argv[1], "r");
 	FILE *ofp = fopen("config.txt", "w");
 	int idx = 0;
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 					writeLine(idx, j, i, "tree", ofp, 1.0);
 					break;
 				case 'p':
-					writeLine(idx, j, i, "pikachu", ofp, 0.05);
+					writeLine(idx, j, i, "pika2", ofp, 0.03);
 					break;
 				case '\n':
 					j++;
