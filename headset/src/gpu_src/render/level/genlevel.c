@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 					writeLine(idx, j, i, "tree", ofp, 1.0);
 					break;
 				case 'p':
-					writeLine(idx, j, i, "pika2", ofp, 0.03);
+					writeLine(idx, j, i, "pikachu", ofp, 1.0);
 					break;
 				case '\n':
 					j++;
