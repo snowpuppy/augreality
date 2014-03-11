@@ -18,7 +18,7 @@ using namespace gui;
 #define MOVEMENT_SPEED 3.0f
 #define CAMERA_SPEED 30.0f
 
-int main() {
+int main(int argc, char *argv[]) {
     bool quit = false;
 
     //interfaces to other modules
@@ -27,7 +27,7 @@ int main() {
 
     //create the window
     InputReceiver receiver;
-    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, true, false, true, &receiver);
+    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, false, false, true, &receiver);
 
     //check for successful initialization of irrlicht
     if (!device) {
@@ -52,6 +52,7 @@ int main() {
     device->getCursorControl()->setVisible(false);
     vector3df camerapos = camera->getPosition();
     vector3df camerarot = vector3df(0, 0, 0);
+		IImage screenshot;
 
     //main render loop
     while(device->run() && !quit) {
@@ -66,14 +67,14 @@ int main() {
 
         //move camera
         if(receiver.IsKeyDown(irr::KEY_KEY_A))
-            camerapos.X -= MOVEMENT_SPEED / 60.0f;
+            camerapos -= camera->getUpVector().crossProduct((camera->getTarget() - camera->getPosition())) * MOVEMENT_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_KEY_D))
-            camerapos.X += MOVEMENT_SPEED / 60.0f;
+            camerapos += camera->getUpVector().crossProduct((camera->getTarget() - camera->getPosition())) * MOVEMENT_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_KEY_W))
-            camerapos.Y += MOVEMENT_SPEED / 60.0f;
+            camerapos += (camera->getTarget() - camera->getPosition()) * MOVEMENT_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_KEY_S))
-            camerapos.Y -= MOVEMENT_SPEED / 60.0f;
-		if(receiver.IsKeyDown(irr::KEY_KEY_R))
+            camerapos -= (camera->getTarget() - camera->getPosition()) * MOVEMENT_SPEED / 60.0f;
+				if(receiver.IsKeyDown(irr::KEY_KEY_R))
             camerapos.Z += MOVEMENT_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_KEY_F))
             camerapos.Z -= MOVEMENT_SPEED / 60.0f;
@@ -95,6 +96,11 @@ int main() {
             camerarot.Z -= CAMERA_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_RIGHT))
             camerarot.Z += CAMERA_SPEED / 60.0f;
+
+				if(receiver.IsKeyDown(irr::KEY_KEY_P)) {
+						screenshot = driver->createScreenShot();
+						driver->WriteImageIntoFile(screenshot, "screen.jpg");	
+         }
 
         //update the actual camera
         camera->setPosition(camerapos);
