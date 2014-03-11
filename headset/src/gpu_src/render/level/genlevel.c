@@ -14,14 +14,13 @@ void writeLine(int id, int x, int y, char *filename, FILE *ofp, float scale) {
 	fprintf(ofp, "%d\n 1 %d %d 0 0 0 0 %s 1 %f\n", id, x*SCALE-(WIDTH*SCALE/2), y*SCALE-(HEIGHT*SCALE/2), filename, scale);
 }
 
-int main(void) {
-	FILE *ifp = fopen("maze", "r");
+int main(int argc, char *argv[]) {
+	int i=0; int j=0;
+	FILE *ifp = fopen(argv[1], "r");
 	FILE *ofp = fopen("config.txt", "w");
 	int idx = 0;
 	char obj;
-	for(int i=0; i<HEIGHT; i++) {
-		for(int j=0; j<WIDTH; j++) {
-			obj = fgetc(ifp);
+	for(obj = fgetc(ifp); !feof(ifp); obj = fgetc(ifp), i++) {
 			switch(obj) {
 				case '*':
 					writeLine(idx, j, i, "cube", ofp, 1.0);
@@ -32,11 +31,17 @@ int main(void) {
 				case 'g':
 					writeLine(idx, j, i, "ghost", ofp, 0.5);
 					break;
+				case 't':
+					writeLine(idx, j, i, "tree", ofp, 1.0);
+					break;
+				case 'p':
+					writeLine(idx, j, i, "pikachu", ofp, 0.05);
+					break;
+				case '\n':
+					j++;
+					i=0;
+					break;
 			}
 			if(obj!='\n') idx++;
 		}
-		fgetc(ifp);
-	}
-
-	
 }

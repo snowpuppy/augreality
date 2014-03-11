@@ -15,7 +15,7 @@ using namespace gui;
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 480
 #define SCREEN_FOV 3.14f/2.5f
-#define MOVEMENT_SPEED 1.0f
+#define MOVEMENT_SPEED 3.0f
 #define CAMERA_SPEED 30.0f
 
 int main() {
@@ -27,7 +27,7 @@ int main() {
 
     //create the window
     InputReceiver receiver;
-    IrrlichtDevice *device = createDevice( video::EDT_BURNINGSVIDEO, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, false, false, false, &receiver);
+    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, true, false, true, &receiver);
 
     //check for successful initialization of irrlicht
     if (!device) {
@@ -39,7 +39,7 @@ int main() {
     GameObject::setSceneManager(smgr);
 
     //load level file
-    GameObject *objects = new GameObject[256];
+    GameObject *objects = new GameObject[2096];
     GameObject::loadConfigFile("config.txt", objects);
 
     //add camera
@@ -57,6 +57,10 @@ int main() {
     while(device->run() && !quit) {
         driver->beginScene(true,true, SColor(0,0,0,0));
         quit = receiver.IsKeyDown(irr::KEY_ESCAPE);
+        
+        stringw str = L"FPS: ";
+        str += driver->getFPS();
+        device->setWindowCaption(str.c_str());
 
         //keyboard camera control
 
@@ -69,6 +73,10 @@ int main() {
             camerapos.Y += MOVEMENT_SPEED / 60.0f;
         if(receiver.IsKeyDown(irr::KEY_KEY_S))
             camerapos.Y -= MOVEMENT_SPEED / 60.0f;
+		if(receiver.IsKeyDown(irr::KEY_KEY_R))
+            camerapos.Z += MOVEMENT_SPEED / 60.0f;
+        if(receiver.IsKeyDown(irr::KEY_KEY_F))
+            camerapos.Z -= MOVEMENT_SPEED / 60.0f;
 
         //set camera roll
         if(receiver.IsKeyDown(irr::KEY_KEY_Q))
