@@ -24,19 +24,12 @@ OUT:=$(BINDIR)/$(OUTNAME)
 .PHONY: all clean upload _force_look
 
 # By default, compile program
-all: include/packets.h src/packets.c $(BINDIR) $(OUT)
-
-# copy packet files from ccu
-include/packets.h:
-	python ../../../ccu/src/library/generatePackets.py ./include/ ./src/
-src/packets.c:
-	python ../../../ccu/src/library/generatePackets.py ./include/ ./src/
+all: $(BINDIR) $(OUT)
 
 # Remove all intermediate object files (remove the binary directory)
 clean:
 	-rm -f $(OUT)
 	-rm -rf $(BINDIR)
-	-rm -f include/packets.h src/packets.c
 
 # Uploads program to device
 upload: all

@@ -1,4 +1,0 @@
-Test project used to get the USB-to-Serial drivers working over the device USB port
-
-You will need to have dfu-util 0.5 or later (http://dfu-util.gnumonks.org/releases/) installed
-on your PATH (put it in the yagarto bin directory to make sure).

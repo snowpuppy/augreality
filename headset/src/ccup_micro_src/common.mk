@@ -1,9 +1,7 @@
 # Universal C Makefile for MCU targets
 # Top-level template file to configure build
 
--include stlink.mk
-
-# Makefile for STM32F4 series via STM32F4 Discovery board
+# Makefile for STM32F4 series
 DEVICE=STM32F4
 # Libraries to include in the link (use -L and -l) e.g. -lm, -lmyLib
 LIBRARIES=-lm -L$(ROOT) -lSTMUSB -lSTMCore -lSTMMath
@@ -34,7 +32,7 @@ OUTNAME=output.elf
 AFLAGS:=$(MCUCFLAGS) $(MCUAFLAGS)
 ARFLAGS:=$(MCUCFLAGS)
 CCFLAGS:=-g -c -Wall -Wno-strict-aliasing $(MCUCFLAGS) -Os -ffunction-sections -fdata-sections \
--DARM_MATH_CM4 -DUSE_STM32F4_DISCOVERY -DUSE_STDPERIPH_DRIVER -DSTM32F4XX -D__FPU_PRESENT=1 \
+-DARM_MATH_CM4 -DUSE_STDPERIPH_DRIVER -DSTM32F4XX -D__FPU_PRESENT=1 \
 -Werror=implicit-function-declaration
 CFLAGS:=$(CCFLAGS) -std=gnu99
 CPPFLAGS:=$(CCFLAGS) -fno-exceptions -fno-rtti -felide-constructors

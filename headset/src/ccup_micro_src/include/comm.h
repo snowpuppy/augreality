@@ -12,9 +12,8 @@
 
 // Constants for the serial function to specify the port to use
 #define SERIAL_PORT_GPS 0x00
-#define SERIAL_PORT_XBEE 0x01
-#define SERIAL_PORT_SPARE 0x02
-#define SERIAL_PORT_USB 0x03
+#define SERIAL_PORT_SPARE 0x01
+#define SERIAL_PORT_USB 0x02
 
 // Size of buffer, in bytes, for the communication ring buffers
 // Can be at most 256 before overflowing the space in a byte; must be a power of two
@@ -64,37 +63,5 @@ void serialWriteByte(uint32_t port, uint8_t data);
  * @param count the number of data values to write
  */
 void serialWriteBytes(uint32_t port, uint8_t *data, uint32_t count);
-/**
- * Initializes the SPI peripheral as slave mode.
- */
-void spiInit();
-/**
- * Pushes a byte to the SPI ring buffer, which will be shifted out to the master device on the
- * NEXT (not the current!) SPI transaction.
- *
- * @param data the data byte to queue for writing
- */
-void spiWriteByte(uint8_t data);
-/**
- * Pushes multiple bytes to the SPI ring buffer, which will be shifted out to the master device
- * one by one on subsequent (not the current!) SPI transactions.
- *
- * @param data a pointer to the data byte(s) to queue for writing
- * @param count the number of data values to queue for writing
- */
-void spiWriteBytes(uint8_t *data, uint32_t count);
-
-/**
- * User callback invoked whenever a byte is RXed over SPI.
- *
- * @param data the data byte received over SPI
- */
-extern void spiReceivedByte(uint8_t data);
-
-/**
-* @brief Empties the spi buffer of characters by setting the
-*       head equal to the tail and writing the first bit to zero.
-*/
-void emptySpiBuffer(void);
 
 #endif
