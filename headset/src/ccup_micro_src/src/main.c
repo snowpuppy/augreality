@@ -9,7 +9,7 @@
 
 // Define number of bytes for
 // headset updates to gpu.
-#define HEADSETDATABYTES 22
+#define HEADSETDATABYTES 20
 #define NUMXBEEDATABYTES 256
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
@@ -59,6 +59,7 @@ static float yawHist[IMU_HISTORY];
 static uint32_t gpsReadLine(char start, uint16_t length);
 static void processGPSData(void);
 static void processIMUData(void);
+static void transmitData(void);
 
 /**
  * System initialization
@@ -107,10 +108,22 @@ int main(void) {
 		processGPSData();
 		processIMUData();
 		ledToggle();
-		// TODO Xmit the headsetData over USB periodically
+		transmitData();
 		__WFI();
 	}
 	return 0;
+}
+
+/**
+* @brief Send the gps and imu data every 50 milliseconds over usb.
+*/
+static void transmitData(void) {
+	static uint32_t count = 0;
+	if (millis() > count + FIFTY_MSECOND)
+	{
+		count = millis();
+		usbVCPWrite(headsetData, HEADSETDATABYTES);
+	}
 }
 
 // Reads a line from the GPS
@@ -224,6 +237,5 @@ static void processIMUData(void) {
 		*((float *) &headsetData[PITOFFSET]) = pitch * (180. / PI); // pitch
 		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
 		*((float *) &headsetData[YAWOFFSET]) = yaw * (180. / PI); // yaw
-		headsetData[20] = (char) 0; // rssi
 	}
 }
