@@ -8,7 +8,8 @@ using a headset and the Intel DE2-i150 development board for the Cornell Cup
 Competition. The headset is a custom design which has 3d graphics,
 head tracking, gps positioning, and a wide field of view.
 This is phase2 of the project. Documentation for phase1 and phase2 can be found
-in our doc/ folder. 
+in our doc/ folder. The headset src/ folder is subdivided into all of the software
+modules for this project.
 
 DIRECTORY STRUCTURE =
 =====================
@@ -24,18 +25,6 @@ $$ headset/test
 
 $$ headset/doc
     This directory contains specific documentation related to the headset.
-
-## ccu  -- This is a legacy directory. It will be removed soon.
-#######
-
-$$ ccu/src
-  This directory contains all source code for the Central Control Unit.
-
-$$ ccu/test
-  This directory contains all test code for the CCU (usually proof of concept or simulation code.)
-
-$$ ccu/doc
-  This directory contains specific documentation related to the Central Control Unit.
 
 ## doc
 ######
