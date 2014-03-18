@@ -1,6 +1,0 @@
-This project contains the Cornell Cup headset power PCB code. It uses the STM32L100 series
-microcontroller to establish an ultra-low-power method of correcting and reporting fuel gauge
-data to the Intel Atom board.
-
-You will need to have dfu-util 0.5 or later (http://dfu-util.gnumonks.org/releases/) installed
-on your PATH (put it in the yagarto bin directory to make sure).
