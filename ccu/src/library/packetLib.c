@@ -108,7 +108,7 @@ int16_t sendFile(char *filename)
 	loadStaticData_t p = {0};
   uint8_t buf[LOADSTATICDATASIZE + HEADERSIZE + CRCSIZE];
   uint8_t fileBuf[256];
-  uint16_t bytesRead = 0;
+  uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
   FILE *fp = NULL;
 
   fp = fopen(filename,"rb");
@@ -135,7 +135,18 @@ int16_t sendFile(char *filename)
   while ( !feof(fp))
   {
     bytesRead = fread(fileBuf,1,256,fp);
-    write(g_port, fileBuf, bytesRead);
+		bytesRemaining = bytesRead;
+		bytesSent = 0;
+		// While bytes remaining to be sent
+		while (bytesRemaining > 0)
+		{
+			// Write remaining bytes to output.
+			bytesSent += write(g_port, &fileBuf[bytesRead - bytesRemaining], bytesRemaining);
+			printf("Sent %d bytes, %d bytes total...\n", bytesSent, totalBytesSent+bytesSent);
+			// Decrement bytes remaining by bytes sent.
+			bytesRemaining = bytesRead - bytesSent;
+		}
+		totalBytesSent += bytesSent;
   }
 	fclose(fp);
   return 0;
