@@ -1,8 +1,14 @@
-Aug Reality Senior Design Project ==
-====================================
+Aug Reality Cornell Cup Project ==
+==================================
 
 INTRODUCTION =
 ==============
+This project aims to build an augmented reality simulator device
+using a headset and the Intel DE2-i150 development board for the Cornell Cup
+Competition. The headset is a custom design which has 3d graphics,
+head tracking, gps positioning, and a wide field of view.
+This is phase2 of the project. Documentation for phase1 and phase2 can be found
+in our doc/ folder. 
 
 DIRECTORY STRUCTURE =
 =====================
@@ -19,7 +25,7 @@ $$ headset/test
 $$ headset/doc
     This directory contains specific documentation related to the headset.
 
-## ccu
+## ccu  -- This is a legacy directory. It will be removed soon.
 #######
 
 $$ ccu/src
