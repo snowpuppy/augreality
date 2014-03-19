@@ -9,10 +9,7 @@
 
 // Define number of bytes for
 // headset updates to gpu.
-#define HEADSETDATABYTES 20
-#define NUMXBEEDATABYTES 256
-#define DECIMALSPERDEGLAT 111320
-#define DECIMALSPERDEGLON 78710
+#define HEADSETDATABYTES 24
 
 // Time constants
 #define ONE_SECOND 1000
@@ -24,6 +21,7 @@
 #define PITOFFSET 8
 #define ROLOFFSET 12
 #define YAWOFFSET 16
+#define SATOFFSET 20
 
 // Spi shared data.
 // Data ready indicator.
@@ -45,7 +43,6 @@ static struct {
 
 // Global Variables
 static uint8_t __attribute__ ((aligned(4))) headsetData[HEADSETDATABYTES];
-static float originLat = 0, originLon = 0;
 
 // IMU processing variables
 #define IMU_HISTORY 5
@@ -123,6 +120,17 @@ static void transmitData(void) {
 	{
 		count = millis();
 		usbVCPWrite(headsetData, HEADSETDATABYTES);
+	/*
+	size = snprintf((char *)buffer, 256, "%0.2f %0.2f %0.2f %0.2f %0.2f %0.2f",
+		*((float *)&headsetData[0]),
+		*((float *)&headsetData[4]),
+		*((float *)&headsetData[8]),
+		*((float *)&headsetData[12]),
+		*((float *)&headsetData[16]),
+		*((float *)&headsetData[20])
+		);
+	usbVCPWrite(buffer, size);
+	*/
 	}
 }
 
@@ -161,19 +169,12 @@ static void processGPSData(void) {
 	// Try to parse the GPS
 	if (gpsReadLine('$', sizeof(gpsState.line)) && gpsParse(gpsState.line)) {
 		int lat = (int)gpsGetLatitude(), lon = (int)gpsGetLongitude();
-		// Find origin as first lat/lon coordinate.
 		latf = (float)lat * 0.000001f;
 		lonf = (float)lon * 0.000001f;
-		if (originLat == 0.f && originLon == 0.f && gpsGetSatellites() > 2) {
-			originLat = latf;
-			originLon = lonf;
-		}
-		// Find difference bet. locations.
-		latf = latf - originLat;
-		lonf = lonf - originLon;
 		// Stuff the buffer.
-		*((float *)&headsetData[LATOFFSET]) = latf * DECIMALSPERDEGLAT; // x pos
-		*((float *)&headsetData[LONOFFSET]) = lonf * DECIMALSPERDEGLON; // y pos
+		*((float *)&headsetData[LATOFFSET]) = latf; // x pos
+		*((float *)&headsetData[LONOFFSET]) = lonf; // y pos
+		*((float *)&headsetData[SATOFFSET]) = 0.0; //(float)gpsGetSatellites(); // num satellites as a float.
 	}
 }
 

@@ -8,8 +8,9 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "packets.h"
-#include "packetLib.h"
-#include "threadInterface.h"
+//#include "packetLib.h"
+//#include "threadInterface.h"
+#include "gpsIMUDataThread.h"
 
 // Other functions.
 void printFloatBytes(char *buf);
@@ -21,14 +22,26 @@ int main(void)
 	int ret = 0;
 	uint8_t pac[3];
 	uint8_t packetType = 0;
-	broadCastPacket_t packet;
-
+	//broadCastPacket_t packet;
+/*
   // Create a separate thread which will launch server functions
 	ret = initServer();
 	if (ret < 0)
 	{
 		perror("Problem starting thread...\n"); return 1;
 	}
+*/
+	// Create a thread to handle imu and gps data
+	ret = initGPSIMUServer();
+	if (ret < 0)
+	{
+		perror("Problem starting GPS/IMU thread...\n"); return 1;
+	}
+	while(1)
+	{
+		// do stuff
+	}
+/*
 	// Open the serial port for communication.
 	fd = openComPort();
 	// Wait forever
@@ -51,6 +64,7 @@ int main(void)
 				break;
 		}
 	}
+	*/
 	return 0;
 }
 

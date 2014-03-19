@@ -7,7 +7,7 @@ if (len(sys.argv) != 3):
 	raise Exception("Usage: %s [path/to/h/] [path/to/c/]\n" % (sys.argv[0]))
 
 fdh = open(sys.argv[1] + "packets.h","w")
-fdc = open(sys.argv[2] + "packets.c","w")
+fdc = open(sys.argv[2] + "packets.cpp","w")
 
 fdh.write("#ifndef APACKETS_H"
 				 "\n#define APACKETS_H"

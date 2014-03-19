@@ -1,6 +1,6 @@
-all: packets.c packet_daemon.c packetLib.c packetLib.h packets.h threadInterface.c threadInterface.h
-	gcc -o sim packetLib.c packet_daemon.c packets.c threadInterface.c -lpthread
+all: packets.cpp networking_daemon.cpp packets.h gpsIMUDataThread.cpp gpsIMUDataThread.h
+	g++ -o netDaemon networking_daemon.cpp gpsIMUDataThread.cpp -lpthread
 packets.h: generatePackets.py packetStrings.py
 	./generatePackets.py ./ ./
-packets.c: generatePackets.py packetStrings.py
+packets.cpp: generatePackets.py packetStrings.py
 	./generatePackets.py ./ ./
