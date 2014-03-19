@@ -4157,8 +4157,8 @@ These are standard SMD and PTH capacitors. Normally 10uF, 47uF, and 100uF in ele
 <part name="R1" library="ECE477" deviceset="RES" device="1206" value="10k"/>
 <part name="GND6" library="supply1" deviceset="GND" device=""/>
 <part name="Y1" library="SparkFun-FreqCtrl" deviceset="CRYSTAL" device="HC49US" value="8MHz"/>
-<part name="C14" library="ECE477" deviceset="CAP" device="1206" value="22p"/>
-<part name="C15" library="ECE477" deviceset="CAP" device="1206" value="22p"/>
+<part name="C14" library="ECE477" deviceset="CAP" device="1206" value="39p"/>
+<part name="C15" library="ECE477" deviceset="CAP" device="1206" value="39p"/>
 <part name="GND7" library="supply1" deviceset="GND" device=""/>
 <part name="R2" library="ECE477" deviceset="RES" device="1206" value="10k"/>
 <part name="S1" library="SparkFun-Electromechanical" deviceset="SWITCH-MOMENTARY-2" device="PTH" value="RESET"/>
