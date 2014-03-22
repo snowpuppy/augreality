@@ -4,7 +4,7 @@
 # Makefile for STM32L1 series
 DEVICE=STM32F4
 # Libraries to include in the link (use -L and -l) e.g. -lm, -lmyLib
-LIBRARIES=-lm -L$(ROOT) -lSTMUSB -lSTMCore -lSTMMath
+LIBRARIES=-lm -L$(ROOT) -lSTMUSB -lSTMCore
 # Prefix for ARM tools (must be on the path)
 MCUPREFIX=arm-none-eabi-
 # Flags for the assembler
