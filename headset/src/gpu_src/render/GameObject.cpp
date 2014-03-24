@@ -32,6 +32,7 @@ GameObject::GameObject(std::string name,
     //disable lighting on the node
     if(node != NULL) {
         node->setMaterialFlag(irr::video::EMF_LIGHTING, false);
+				//node->setMaterialFlag(irr::video::EMF_WIREFRAME, true);
     }
 
     setPosition(position);
