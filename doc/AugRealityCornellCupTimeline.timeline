@@ -33,6 +33,11 @@
       <color>223,80,32</color>
       <font_color>0,0,0</font_color>
     </category>
+    <category>
+      <name>Milestone</name>
+      <color>127,127,127</color>
+      <font_color>0,0,0</font_color>
+    </category>
   </categories>
   <events>
     <event>
@@ -90,8 +95,8 @@ Other Hardware</description>
       <category>Cornell Cup Event</category>
     </event>
     <event>
-      <start>2014-03-03 00:00:00</start>
-      <end>2014-03-08 00:00:00</end>
+      <start>2014-03-24 00:00:00</start>
+      <end>2014-03-29 00:00:00</end>
       <text>Build Power Supply</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -101,8 +106,8 @@ Other Hardware</description>
 Test to make sure that all connections are good.</description>
     </event>
     <event>
-      <start>2014-03-08 10:41:38</start>
-      <end>2014-03-14 10:41:38</end>
+      <start>2014-03-15 00:00:00</start>
+      <end>2014-03-31 00:00:00</end>
       <text>Assemble Electrical Hardware Pieces</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -163,8 +168,8 @@ Test components and connections</description>
       <description>Put the GPU software onto the Inel Atom board, get OpenGL running, and display our current maps.</description>
     </event>
     <event>
-      <start>2014-03-07 23:43:00</start>
-      <end>2014-03-13 23:43:00</end>
+      <start>2014-03-15 00:00:00</start>
+      <end>2014-03-21 00:00:00</end>
       <text>Port Central</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -173,8 +178,8 @@ Test components and connections</description>
       <description>Put the CCU user interface on the Intel Board and make sure that the interface is traversable.</description>
     </event>
     <event>
-      <start>2014-03-14 00:00:00</start>
-      <end>2014-03-20 00:00:00</end>
+      <start>2014-03-21 00:00:00</start>
+      <end>2014-03-28 00:00:00</end>
       <text>Port Networking</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -186,8 +191,8 @@ Test components and connections</description>
 - Can receive HeadsetHeartbeat messages</description>
     </event>
     <event>
-      <start>2014-03-21 00:00:00</start>
-      <end>2014-04-01 00:00:00</end>
+      <start>2014-03-28 00:00:00</start>
+      <end>2014-04-08 00:00:00</end>
       <text>Port Simulation</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -301,8 +306,8 @@ Test components and connections</description>
 - When tilting head on yaw,pitch,roll axis the expected behavior is seen. Minor shaking is acceptable.</description>
     </event>
     <event>
-      <start>2014-03-18 00:00:00</start>
-      <end>2014-03-24 00:00:00</end>
+      <start>2014-03-26 00:00:00</start>
+      <end>2014-04-01 00:00:00</end>
       <text>Test File Transfer</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -311,8 +316,8 @@ Test components and connections</description>
       <description>Test to make sure that files may be transferred between headsets when loading a new simulation. This operation should perform seamlessly without failure.</description>
     </event>
     <event>
-      <start>2014-03-24 00:00:00</start>
-      <end>2014-03-30 00:00:00</end>
+      <start>2014-03-26 00:00:00</start>
+      <end>2014-04-01 00:00:00</end>
       <text>Start/End Packets</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -321,8 +326,8 @@ Test components and connections</description>
       <description>Check to make sure that a Start packet starts a simulation and that an End packet stops a simulation.</description>
     </event>
     <event>
-      <start>2014-03-24 00:00:00</start>
-      <end>2014-03-30 00:00:00</end>
+      <start>2014-03-26 00:00:00</start>
+      <end>2014-04-01 00:00:00</end>
       <text>Wireless Connection</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -446,11 +451,21 @@ Test components and connections</description>
       <category>Documentation</category>
       <description>Put all sections of Final Report together and get it reviewed by our advisor before submissoin.</description>
     </event>
+    <event>
+      <start>2014-04-01 12:00:00</start>
+      <end>2014-04-01 12:00:00</end>
+      <text>Alpha Demonstration</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Milestone</category>
+      <description>The current project will be demonstrated to Dr. Johnson.</description>
+    </event>
   </events>
   <view>
     <displayed_period>
-      <start>2014-02-16 01:12:31</start>
-      <end>2014-04-06 03:15:46</end>
+      <start>2014-03-02 02:58:28</start>
+      <end>2014-04-26 10:50:39</end>
     </displayed_period>
     <hidden_categories>
     </hidden_categories>
