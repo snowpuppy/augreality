@@ -1,5 +1,5 @@
 #include "gpuPyThreadInterface.h"
-
+#include <iostream>
 // CONSTANTS
 #define PORT 7778
 #define LISTENQ 100
@@ -12,11 +12,12 @@
 // Function: initServer()
 // Purpose: starts the server that will
 // communicate with the gui and simulation.
-int GpuPyThreadInterface::initServer(void)
+int GpuPyThreadInterface::initServer(volatile bool *quitflag)
 {
 	tidp = 0;
 	threadInterfaceQuit = 0;
 	int ret = 0;
+	quit = quitflag;
 	ret = pthread_create(&tidp, NULL, GpuPyThreadInterface::_threadServer, this);
 	return ret;
 }
@@ -180,6 +181,8 @@ void GpuPyThreadInterface::_gpuQuit(int fd)
 {
 	// Send GPUQUIT signal somehow
 	// Don't need to send anything back.
+	*quit = true;
+	std::cout << "GPU quit signal\n";
 	return;
 }
 

@@ -24,13 +24,14 @@ class GpuPyThreadInterface
 	// Function: initServer()
 	// Purpose: starts the server that will
 	// communicate with the gui and simulation.
-	int initServer(void);
+	int initServer(volatile bool *);
 	// Function: stopServer()
 	// Purpose: stops the server that will
 	// communicate with the gui and simulation.
 	void stopServer(void);
 
 	private:
+	volatile bool *quit;
 	int bindServer(uint16_t port);
 	void serviceConnections(int fd);
 	static void *_threadServer(void *This);
