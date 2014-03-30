@@ -18,8 +18,8 @@
 #define DEBUG 1
 
 // GLOBAL VARIABLES
-pthread_t tidp;
-int quit = 0;
+pthread_t threadInterfaceTidp;
+int threadInterfaceQuit = 0;
 
 // LOCAL FUNCTIONS
 int bindServer(uint16_t port);
@@ -45,7 +45,7 @@ void _getBroadCastIDs(int fd);
 int initServer(void)
 {
 	int ret = 0;
-	ret = pthread_create(&tidp, NULL, threadServer, NULL);
+	ret = pthread_create(&threadInterfaceTidp, NULL, threadServer, NULL);
 	return ret;
 }
 
@@ -54,10 +54,10 @@ int initServer(void)
 // communicate with the gui and simulation.
 void stopServer(void)
 {
-	// Assert quit signal
+	// Assert threadInterfaceQuit signal
 	// and join the thread.
-	quit = 1;
-	pthread_join(tidp, NULL);
+	threadInterfaceQuit = 1;
+	pthread_join(threadInterfaceTidp, NULL);
 }
 
 // Function: threadServer()
@@ -123,16 +123,16 @@ int bindServer(uint16_t port)
 void serviceConnections(int fd)
 {
   int rc = 0;
-  int clientlen = 0, connfd;
+  uint32_t clientlen = 0, connfd;
   struct sockaddr_in clientaddr = {0};
   struct hostent *host = NULL;
   // Select variables
   //fd_set rfds;
   //struct timeval tv;
 
-	// While the application has not quit, continue
+	// While the application has not threadInterfaceQuit, continue
 	// to service client requests.
-  while(!quit)
+  while(!threadInterfaceQuit)
   {
     uint8_t packetType = 0;
     clientlen = sizeof(clientaddr);
@@ -196,6 +196,7 @@ void serviceConnections(int fd)
 
 void _getBroadCastIDs(int fd)
 {
+	/*
 	int rc = 0;
 	uint8_t ids[MAXNUMHEADSETS*SIZEOFID];
 	uint8_t num = (uint8_t)getNumBroadCasting();
@@ -204,15 +205,21 @@ void _getBroadCastIDs(int fd)
 	// send the return message.
 	rc = write(fd, (void *)&num, sizeof(num));
 	rc = write(fd, (void *)ids, num*SIZEOFID);
+	*/
+	return;
 }
 void _getNumBroadcast(int fd)
 {
+	/*
 	int rc = 0;
 	uint8_t num = (uint8_t) getNumBroadCasting();
 	rc = write(fd, (void *)&num, sizeof(num));
+	*/
+	return;
 }
 void _getBroadcastLoc(int fd)
 {
+	/*
 	int rc = 0;
 	uint8_t id[SIZEOFID];
 	headsetPos_t pos = {0};
@@ -223,9 +230,12 @@ void _getBroadcastLoc(int fd)
 	getBroadCastingLoc(&pos, id);
 	// Send the position information out.
 	rc = write(fd, (void *)&pos, sizeof(pos));
+	*/
+	return;
 }
 void _getPosition(int fd)
 {
+	/*
 	int rc = 0;
 	uint8_t id[SIZEOFID];
 	headsetPos_t pos = {0};
@@ -236,16 +246,22 @@ void _getPosition(int fd)
 	getPos(&pos, id);
 	// Send the position information out.
 	rc = write(fd, (void *)&pos, sizeof(pos));
+	*/
+	return;
 }
 void _getNumAlive(int fd)
 {
+	/*
 	int rc = 0;
 	int num = 0;
 	num = getNumAlive();
 	rc = write(fd, (void *)&num, sizeof(num));
+	*/
+	return;
 }
 void _getAlive(int fd)
 {
+	/*
 	int rc = 0;
 	uint8_t id[SIZEOFID];
 	uint16_t alive = 0;
@@ -256,6 +272,8 @@ void _getAlive(int fd)
 	alive = getAlive(id);
 	// Send the position information out.
 	rc = write(fd, (void *)&alive, sizeof(alive));
+	*/
+	return;
 }
 // This function needs to be
 // tested thoroughly. It is probably
@@ -263,6 +281,7 @@ void _getAlive(int fd)
 // only to file transfers.
 void _sendUpdateObjs(int fd)
 {
+	/*
 	static uint8_t updateNumber = 0;
 	int rc = 0;
 	uint8_t numObjs = 0;
@@ -290,6 +309,8 @@ void _sendUpdateObjs(int fd)
 	}
 	// Now that the bytestream has been populated, it is time to send out wireless.
 	rc = writeByteStream(buf, i*OBJINFOSIZE + UPDATEOBJINSTANCESIZE + HEADERSIZE);
+	*/
+	return;
 }
 void _sendFile(int fd)
 {
@@ -312,7 +333,7 @@ void _sendFile(int fd)
 	if (rc < filenameSize) { perror("Error:_sendFile: read less than filenameSize!\n"); return;}
 	filename[filenameSize] = '\0';
 	// Send the file on its way!
-	sendFile(filename);
+	sendFile((char *)filename);
 }
 // The functions below need to be sent to a
 // specific headset. Therefore the id of the
@@ -340,6 +361,7 @@ void _sendStart(int fd)
 }
 void _sendAccept(int fd)
 {
+	/*
 	uint8_t buf[ACCEPTHEADSETSIZE + HEADERSIZE];
 	uint8_t id[SIZEOFID];
 	float coord[2];
@@ -358,18 +380,21 @@ void _sendAccept(int fd)
 	// Id of headset needs to be passed to getOrigin
 	// so that I know which headset is being accepted
 	// and so I can update the origin correctly. :)
-	//getOrigin(&p.x, &p.y, /*id of headset */);
+	//getOrigin(&p.x, &p.y, );
 	addHeader(buf);
 	acceptHeadsetPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, ACCEPTHEADSETSIZE + HEADERSIZE);
 	// Add id to list of id's for heartbeat
 	addAliveID(id);
 	printf("Sent Accept command.\n");
+	*/
+	return;
 }
 // This needs to be sent to specific address
 // or broadcast as needed...
 void _sendGoBack(int fd)
 {
+	/*
 	uint8_t buf[GOBACKSIZE + HEADERSIZE];
 	goBack_t p = {0};
 	p.packetType = GOBACK;
@@ -377,4 +402,6 @@ void _sendGoBack(int fd)
 	goBackPack(&p, &buf[HEADERSIZE]);
 	writeByteStream(buf, GOBACKSIZE + HEADERSIZE);
 	printf("Sent GoBack command.\n");
+	*/
+	return;
 }

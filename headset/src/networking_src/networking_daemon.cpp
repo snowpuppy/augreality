@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include "packets.h"
 //#include "packetLib.h"
-//#include "threadInterface.h"
+#include "threadInterface.h"
 #include "gpsIMUDataThread.h"
 
 // Other functions.
@@ -23,30 +23,37 @@ int main(void)
 	uint8_t pac[3];
 	uint8_t packetType = 0;
 	//broadCastPacket_t packet;
-/*
   // Create a separate thread which will launch server functions
 	ret = initServer();
 	if (ret < 0)
 	{
 		perror("Problem starting thread...\n"); return 1;
 	}
-*/
+
 	// Create a thread to handle imu and gps data
 	ret = initGPSIMUServer();
 	if (ret < 0)
 	{
 		perror("Problem starting GPS/IMU thread...\n"); return 1;
 	}
-	while(1)
-	{
-		// do stuff
-	}
-/*
-	// Open the serial port for communication.
-	fd = openComPort();
+
+	// Open the server port and listen for connections.
 	// Wait forever
 	while(1)
 	{
+		/* TODO: This will become relevant
+		 *			when the networking code is
+		 *			finished. There will be a tcp
+		 *			and a udp port used for
+		 *			communication. There will be
+		 *			a distinction between the operation
+		 *			of the networking for a client headset
+		 *			vs a server headset.
+		 *			I will want to peek the first byte to
+		 *			find out what kind of packet was sent.
+		 */
+
+		/*
 		// detect packet header
 		packetType = detectHeader(pac);
 		// Process the type of packet.
@@ -63,8 +70,8 @@ int main(void)
 			default:
 				break;
 		}
+		*/
 	}
-	*/
 	return 0;
 }
 

@@ -7,7 +7,7 @@
 #include "packets.h"
 
 // Constants
-#define SIZEOFID 16
+#define MAXSIZEOFID 16
 
 // Api requests made from gui
 // and from the simulation to
@@ -32,12 +32,13 @@ enum apiRequest
 /**
 * @brief broadCastInfo used to keep track of
 *		 broadCast packet info from headsets.
+*		 all it needs is the id of the headset
+*		 and the ip address of the headset.
 */
 typedef struct broadCastInfo
 {
-  uint8_t address[16]; // network address of xbee
-  float latitude;      // latitude of headset
-  float longitude;     // longitude of headset
+  uint8_t name[MAXSIZEOFID]; // Name of headset (default to HEAD<mac>)
+	uint32_t ip_addr; // Ip address of headset
 } broadCastInfo_t;
 
 /**
@@ -47,7 +48,7 @@ typedef struct broadCastInfo
 */
 typedef struct heartBeatInfo
 {
-	uint8_t id[16];         // id of the player (same as xbee address)
+	uint8_t name[MAXSIZEOFID];  			// name of headset
 	float x,y;              // coordinates of player
 	float roll,pitch,yaw;   // orientation of player
 } heartBeatInfo_t;
@@ -57,12 +58,12 @@ typedef struct heartBeatInfo
 // for a headset's position.
 typedef struct headsetPos
 {
+		float lat,lon;
     float x,y;              // coordinates of player
     float roll,pitch,yaw;   // orientation of player
 } headsetPos_t;
 
 // Functions
-int openComPort();
 int16_t findHeartBeating(uint8_t *id);
 int16_t findBroadCasting(uint8_t *id);
 int16_t goBack(uint8_t *id);

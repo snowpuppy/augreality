@@ -7,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <map>
+#include <string>
 #include "packets.h"
 #include "packetLib.h"
 #include "threadInterface.h"
@@ -19,11 +21,13 @@
 int readBytes(int fd, char *data, int numBytes);
 
 // Global Variables.
-uint16_t g_numBroadCasting = 0;
-broadCastInfo_t g_broadCasting[MAXNUMHEADSETS];
-uint16_t g_numHeartBeating = 0;
-heartBeatInfo_t g_heartBeating[MAXNUMHEADSETS];
-int32_t g_port;
+std::map<std::string, broadCastInfo_t> broadCastList;
+std::map<std::string, heartBeatInfo_t> heartBeatList;
+// 
+int32_t g_packetLibPort;
+int32_t g_udpPortSend = 0;
+int32_t g_udpPortRecv = 0;
+int32_t g_tcpPortRecv = 0;
 
 
 // API FUNCTIONS
@@ -33,13 +37,15 @@ int32_t g_port;
 // the location information for that object.
 int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id)
 {
-	int16_t index = -1;
-	index = findBroadCasting(id);
-	if (index >= 0)
+	/*
+	std::map<std::string, broadCastInfo_t>::iterator mapIt;
+	// Assume incoming string id is NULL terminated!
+	mapIt = broadCastList.find(std::string(id,MAXNUMHEADSETS));
+	if (mapIt != broadCastList.end())
 	{
-		pos->x = g_broadCasting[index].latitude;
-		pos->y = g_broadCasting[index].longitude;
+		*pos = mapIt->second;
 	}
+	*/
   return 0;
 }
 
@@ -48,7 +54,10 @@ int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id)
 // currently broadcasting.
 uint16_t getNumBroadCasting()
 {
+	/*
 	return g_numBroadCasting;
+	*/
+	return 0;
 }
 
 // Function: getBroadCastingIDs()
@@ -57,17 +66,21 @@ uint16_t getNumBroadCasting()
 // Returns the number of IDs in the array, -1 on error.
 int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds)
 {
+	/*
 	int16_t i = 0;
 	for (i = 0; i < numIds && i < g_numBroadCasting; i++)
 	{
 		strncpy(&ids[i*SIZEOFID], g_broadCasting[i].address, SIZEOFID);
 	}
 	return i;
+	*/
+	return 0;
 }
 
 // Function: acceptID(id)
 int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originLon )
 {
+	/*
 	uint16_t i = 0;
 	// Create a packet and stuff it.
 	acceptHeadset_t p = {0};
@@ -81,26 +94,32 @@ int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originL
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+	*/
   return 0;
 }
 // startSimulation()
 int16_t startSimulation()
 {
+	/*
 	startSimulation_t p = {0};
 	p.packetType = STARTSIMULATION;
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+	*/
   return 0;
 }
 // endSimulationID(id)
 int16_t endSimulationID(uint8_t *destId)
 {
+	/*
 	endSimulation_t p = {0};
 	p.packetType = ENDSIMULATION;
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+	*/
+	return 0;
 }
 // sendFile(filename)
 int16_t sendFile(char *filename)
@@ -130,7 +149,7 @@ int16_t sendFile(char *filename)
 	// Add header info and crc.
   addHeader(buf);
 	// Write the packet to the serial port.
-  write(g_port, buf, LOADSTATICDATASIZE + HEADERSIZE);
+  write(g_packetLibPort, buf, LOADSTATICDATASIZE + HEADERSIZE);
   // Write the file to the serial port
   while ( !feof(fp))
   {
@@ -141,7 +160,7 @@ int16_t sendFile(char *filename)
 		while (bytesRemaining > 0)
 		{
 			// Write remaining bytes to output.
-			bytesSent += write(g_port, &fileBuf[bytesRead - bytesRemaining], bytesRemaining);
+			bytesSent += write(g_packetLibPort, &fileBuf[bytesRead - bytesRemaining], bytesRemaining);
 			printf("Sent %d bytes, %d bytes total...\n", bytesSent, totalBytesSent+bytesSent);
 			// Decrement bytes remaining by bytes sent.
 			bytesRemaining = bytesRead - bytesSent;
@@ -151,9 +170,11 @@ int16_t sendFile(char *filename)
 	fclose(fp);
   return 0;
 }
+
 // updateObjs(objInfo *objList)
 int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 {
+	/*
 	// Static update number increments for each
 	// packet sent.
 	static uint8_t updateNumber = 0;
@@ -166,24 +187,32 @@ int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+	*/
   return 0;
 }
 // getAlive(id)
 uint16_t getAlive(uint8_t *id)
 {
+	/*
 	int16_t ret = 0;
 	ret = findHeartBeating(id);
 	return (ret > 0 ? 1 : 0);
+	*/
+	return 0;
 }
 // getNumAlive()
 uint16_t getNumAlive()
 {
+	/*
 	return g_numHeartBeating;
+	*/
+	return 0;
 }
 
 // AddAliveID
 uint16_t addAliveID(uint8_t *id)
 {
+	/*
 	int16_t ret = 0;
 	uint16_t i = 0;
 	ret = findHeartBeating(id);
@@ -195,12 +224,14 @@ uint16_t addAliveID(uint8_t *id)
 		g_numHeartBeating++;
 		return 1;
 	}
+	*/
 	return 0;
 }
 
 // getAliveIDs()
 int16_t getAliveIDs(uint8_t *ids, uint16_t size)
 {
+	/*
 	int16_t i = 0, j = 0;
 	for (i = 0; i < g_numHeartBeating && i < size; i++)
 	{
@@ -210,12 +241,15 @@ int16_t getAliveIDs(uint8_t *ids, uint16_t size)
 		}
 	}
 	return i;
+	*/
+	return 0;
 }
 // Function: getPos(id)
 // Sets position information for headset with id.
 // Returns -1 on error.
 int16_t getPos(headsetPos_t *pos, uint8_t *id)
 {
+	/*
 	int16_t index = 0;
 	if (pos == NULL)
 	{
@@ -231,6 +265,8 @@ int16_t getPos(headsetPos_t *pos, uint8_t *id)
 		pos->yaw = g_heartBeating[index].yaw;
 	}
 	return index;
+	*/
+	return 0;
 }
 // Function: goBack(id)
 // Send a goBack message to the headset
@@ -238,11 +274,13 @@ int16_t getPos(headsetPos_t *pos, uint8_t *id)
 // an earlier state.
 int16_t goBack(uint8_t *id)
 {
+	/*
 	goBack_t p = {0};
 	p.packetType = GOBACK;
 	// Pack the packet to a byte stream.
 	// Add header info and crc.
 	// Write the packet to the serial port.
+	*/
   return 0;
 }
 
@@ -255,15 +293,18 @@ int16_t goBack(uint8_t *id)
 // Returns -1 on error
 int16_t findBroadCasting(uint8_t *id)
 {
+	/*
 	int16_t i = 0;
 	for (i = 0; i < MAXNUMHEADSETS; i++)
 	{
-		if (strncmp(g_broadCasting[i].address, id, 16) == 0)
+		if (strncmp(g_broadCasting[i].address, id, MAXSIZEOFID) == 0)
 		{
 			return i;
 		}
 	}
 	return -1;
+	*/
+	return 0;
 }
 
 // Function: findHeartBeating
@@ -272,6 +313,7 @@ int16_t findBroadCasting(uint8_t *id)
 // Returns -1 on error
 int16_t findHeartBeating(uint8_t *id)
 {
+	/*
 	int16_t i = 0;
 	for (i = 0; i < MAXNUMHEADSETS; i++)
 	{
@@ -281,16 +323,19 @@ int16_t findHeartBeating(uint8_t *id)
 		}
 	}
 	return -1;
+	*/
+	return 0;
 }
 
-int openComPort()
+int openUdpPort()
 {
+	/*
 	int res;
 	struct termios tio;
 
 	// Open serial port for reading/writing
-	g_port = open(XBEEPORT, O_RDWR|O_NOCTTY); 
-	if (g_port < 0)
+	g_packetLibPort = open(XBEEPORT, O_RDWR|O_NOCTTY); 
+	if (g_packetLibPort < 0)
 	{
 		perror(XBEEPORT);
 		exit(1);
@@ -308,16 +353,21 @@ int openComPort()
 	tio.c_cc[VMIN]     = 1;
 
 	// Flush the serial port
-	tcflush(g_port, TCIFLUSH);
+	tcflush(g_packetLibPort, TCIFLUSH);
 	// Configure the serial port
-	tcsetattr(g_port,TCSANOW,&tio);
+	tcsetattr(g_packetLibPort,TCSANOW,&tio);
 
-	return g_port;
+	return g_packetLibPort;
+	*/
+	return 0;
 }
 
 int16_t writeByteStream(uint8_t *buf, uint16_t size)
 {
-	return write(g_port, (void *)buf, size);
+	/*
+	return write(g_packetLibPort, (void *)buf, size);
+	*/
+	return 0;
 }
 
 
@@ -327,6 +377,7 @@ int16_t writeByteStream(uint8_t *buf, uint16_t size)
 // User is responsible for pointer size.
 int readBytes(int fd, char *data, int numBytes)
 {
+	/*
   int bytesRead = 0;
   int res = 0;
   //printf("Reading %d bytes.\n", numBytes);
@@ -346,6 +397,8 @@ int readBytes(int fd, char *data, int numBytes)
       bytesRead += res;
     }
   }
+	*/
+	return 0;
 }
 
 // Function: printFloatBytes
@@ -366,32 +419,36 @@ void printFloatBytes(char *buf)
 
 uint8_t detectHeader(uint8_t *pac)
 {
+	/*
 	uint8_t quit = 0;
 	uint8_t ret = 0;
 	while (!quit)
 	{
 		pac[2] = pac[1];
 		pac[1] = pac[0];
-		readBytes(g_port,pac,1);
+		readBytes(g_packetLibPort,pac,1);
 		if (pac[2] == 'P' && pac[1] == 'A' && pac[0] == 'C')
 		{
-			readBytes(g_port,&ret,1);
+			readBytes(g_packetLibPort,&ret,1);
 			pac[0] = pac[1] = pac[2] = 0;
 			return ret;
 		}
 		printf("\r%2.2X %2.2X %2.2X", pac[2], pac[1], pac[0]);
 		usleep(20000);
 	}
+	*/
+	return 0;
 }
 
 void getBroadCastPacket(void)
 {
+	/*
 	broadCastPacket_t p;
 	uint16_t i = 0, j = 0;
 	// use BROADCASTPACKETSIZE-1 because
 	// packetType was already read
 	uint8_t buf[BROADCASTPACKETSIZE-1];
-	readBytes(g_port, buf, BROADCASTPACKETSIZE-1);
+	readBytes(g_packetLibPort, buf, BROADCASTPACKETSIZE-1);
 	broadCastPacketUnpack(&p,buf);
 	if (findBroadCasting(p.address) < 0)
 	{
@@ -400,7 +457,7 @@ void getBroadCastPacket(void)
 		g_numBroadCasting++;
     printf("\nProcessed broadcast packet num: %d\n", g_numBroadCasting);
 		printf("lat: %f, lon: %f, id: ", p.lattitude, p.longitude);
-		for (j = 0; j < 16; j++)
+		for (j = 0; j < MAXSIZEOFID; j++)
 		{
 			printf("%2.2X ", p.address[j]);
 		}
@@ -408,15 +465,19 @@ void getBroadCastPacket(void)
 	}
 	g_broadCasting[i].latitude = p.lattitude;
 	g_broadCasting[i].longitude = p.longitude;
+	*/
+	return;
 }
+
 void getHeartBeatPacket(void)
 {
+	/*
 	heartBeat_t p;
 	int16_t i = 0;
 	// use HEARTBEATSIZE-1 because
 	// packetType was already read
 	uint8_t buf[HEARTBEATSIZE-1];
-	readBytes(g_port, buf, HEARTBEATSIZE-1);
+	readBytes(g_packetLibPort, buf, HEARTBEATSIZE-1);
 	heartBeatUnpack(&p,buf);
 	i = findHeartBeating(p.id);
 	if (i >= 0)
@@ -428,4 +489,6 @@ void getHeartBeatPacket(void)
 		g_heartBeating[i].yaw = p.yaw;
 	}
 	printf("x: %0.2f, y: %0.2f, y: %0.2f, p: %0.2f, r: %0.2f\n", p.x,p.y,p.roll,p.pitch,p.yaw);
+	*/
+	return;
 }

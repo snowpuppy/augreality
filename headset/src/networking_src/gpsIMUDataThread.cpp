@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "gpsIMUDataThread.h"
+#include <time.h>
 
 // Constants
 #define BAUDRATE B57600
@@ -21,19 +22,22 @@
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
+// if no gps/imu, then fake the data.
+#define NOGPSIMU 1
+
 // Local Function prototypes.
 int readBytes(int32_t fd, char *data, int numBytes);
 void updatePosition(char *data);
 
 // Global Variables.
 // position of this headset
-headsetPos_t g_pos;
+localHeadsetPos_t g_pos;
 float originlat = 0;
 float originlon = 0;
 // port open for gps and imu communication.
 int32_t g_port;
-pthread_t tidp;
-int quit = 0;
+pthread_t gpsIMUInterfaceTidp;
+int gpsIMUInterfaceQuit = 0;
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -41,7 +45,7 @@ int quit = 0;
 int initGPSIMUServer(void)
 {
 	int ret = 0;
-	ret = pthread_create(&tidp, NULL, gpsImuThread, NULL);
+	ret = pthread_create(&gpsIMUInterfaceTidp, NULL, gpsImuThread, NULL);
 	return ret;
 }
 
@@ -50,10 +54,10 @@ int initGPSIMUServer(void)
 // collect gps and imu data.
 void stopGPSIMUServer(void)
 {
-	// Assert quit signal
+	// Assert gpsIMUInterfaceQuit signal
 	// and join the thread.
-	quit = 1;
-	pthread_join(tidp, NULL);
+	gpsIMUInterfaceQuit = 1;
+	pthread_join(gpsIMUInterfaceTidp, NULL);
 }
 
 /**
@@ -69,22 +73,25 @@ void stopGPSIMUServer(void)
 void *gpsImuThread(void *args)
 {
 	char data[64];
+#ifndef NOGPSIMU
 	openComPort();
-	while (!quit)
+#endif
+	while (!gpsIMUInterfaceQuit)
 	{
-		printf("size of float*6: %d\n", sizeof(float)*6);
+#ifndef NOGPSIMU
+		//printf("size of float*6: %d\n", sizeof(float)*6);
 		readBytes(g_port, data, sizeof(float)*6);
+#endif
 		updatePosition(data);
 	}
 }
 
 
-int getHeadsetPosData(headsetPos_t *pos)
+int getHeadsetPosData(localHeadsetPos_t *pos)
 {
 	// yay for structure copying!
 	*pos = g_pos;
-}
-
+} 
 /**
 * @brief update the current position information.
 *
@@ -93,18 +100,38 @@ int getHeadsetPosData(headsetPos_t *pos)
 void updatePosition(char *data)
 {
 	int i = 0;
+	/*
 	for (i = 0; i < 24; i++)
 	{
 		printf("%0.8X",(int)data[i]);
 	}
 	printf("\n");
+	*/
 	i = 0;
+#ifndef NOGPSIMU
 	g_pos.lat = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.lon = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.pitch = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.roll = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.yaw = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.numSat = (uint32_t) *((float *)&data[i]); i+=sizeof(float);
+#else
+	// Hardcode values for now. Will make them update
+	// on regular intervals later.
+	// From: 40.42864, -86.92947
+	// To: 40.43019, -86.92995
+	if (originlat == 0 && originlon == 0)
+	{
+		originlat = 40.43019;
+		originlon = -86.92995;
+	}
+	g_pos.lat = 40.42864;
+	g_pos.lon = -86.92947;
+	g_pos.pitch = 40.0;
+	g_pos.roll = 22.0;
+	g_pos.yaw = -121.0;
+	g_pos.numSat = 2;
+#endif
 
 	// Set x and y based on origin
 	g_pos.x = (g_pos.lat - originlat)*DECIMALSPERDEGLAT;
@@ -179,6 +206,7 @@ int openComPort()
 	return g_port;
 }
 
+/*
 // Function to read in a fixed number
 // of bytes from the serial stream.
 // User is responsible for pointer size.
@@ -222,3 +250,4 @@ void printFloatBytes(char *buf)
   }
   printf("\n");
 }
+*/
