@@ -12,9 +12,13 @@ import socket
 import time
 sys.path.append(os.path.realpath('../gui_src/'))
 from guiNetInterface import *
+from gpuPyInterface import *
 
 # hardcoded id of headset.
 nid = '40A66DAE\r13A200\r'
+
+output = getRunning();
+print "Running", output
 
 while (1):
 	output = getUserPosition()
