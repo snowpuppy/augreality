@@ -12,11 +12,11 @@ using namespace video;
 using namespace io;
 using namespace gui;
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 1600
+#define SCREEN_HEIGHT 900
 #define SCREEN_FOV 3.14f/2.5f
-#define MOVEMENT_SPEED 3.0f
-#define CAMERA_SPEED 30.0f
+#define MOVEMENT_SPEED 5.0f
+#define CAMERA_SPEED 40.0f
 
 int main(int argc, char *argv[]) {
     bool quit = false;
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     //create the window
     InputReceiver receiver;
-    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, false, false, true, &receiver);
+    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, true, false, true, &receiver);
 
     //check for successful initialization of irrlicht
     if (!device) {
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     device->getCursorControl()->setVisible(false);
     vector3df camerapos = camera->getPosition();
     vector3df camerarot = vector3df(0, 0, 0);
-		IImage screenshot;
+		//IImage screenshot;
 
     //main render loop
     while(device->run() && !quit) {
@@ -87,9 +87,9 @@ int main(int argc, char *argv[]) {
 
         //set camera pitch
         if(receiver.IsKeyDown(irr::KEY_UP))
-            camerarot.Y += CAMERA_SPEED / 60.0f;
-        if(receiver.IsKeyDown(irr::KEY_DOWN))
             camerarot.Y -= CAMERA_SPEED / 60.0f;
+        if(receiver.IsKeyDown(irr::KEY_DOWN))
+            camerarot.Y += CAMERA_SPEED / 60.0f;
 
         //set camera yaw
         if(receiver.IsKeyDown(irr::KEY_LEFT))
@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
             camerarot.Z += CAMERA_SPEED / 60.0f;
 
 				if(receiver.IsKeyDown(irr::KEY_KEY_P)) {
-						screenshot = driver->createScreenShot();
-						driver->WriteImageIntoFile(screenshot, "screen.jpg");	
+						//screenshot = driver->createScreenShot();
+						//driver->WriteImageIntoFile(screenshot, "screen.jpg");	
          }
 
         //update the actual camera
