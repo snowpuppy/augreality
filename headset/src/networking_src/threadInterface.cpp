@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "threadInterface.h"
+#include "gpsIMUDataThread.h"
 #include "packetLib.h"
 #include "packets.h"
 
@@ -38,6 +39,9 @@ void _getPosition(int fd);
 void _getBroadcastLoc(int fd);
 void _getNumBroadcast(int fd);
 void _getBroadCastIDs(int fd);
+void _getUserPos(int fd);
+void _getWifiStatus(int fd);
+void _getBatteryStatus(int fd);
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -147,6 +151,15 @@ void serviceConnections(int fd)
 		// Find out what type of request was sent
     switch(packetType)
     {
+			case GETUSERPOS:
+				_getUserPos(connfd);
+        break;
+			case GETWIFISTATUS:
+				_getWifiStatus(connfd);
+        break;
+			case GETBATTERYSTATUS:
+				_getBatteryStatus(connfd);
+        break;
       case GETBROADCASTIDS:
 				_getBroadCastIDs(connfd);
         break;
@@ -192,6 +205,52 @@ void serviceConnections(int fd)
 		// inefficient, but it works.)
     close(connfd);
   }
+}
+
+/**
+* @brief getUserPos - returns the current position
+*					of the user by calling into the code
+*					that updates the user's position.
+*
+* @param fd
+*/
+void _getUserPos(int fd)
+{
+	int32_t rc = 0;
+	localHeadsetPos_t pos = {0};
+	getHeadsetPosData(&pos);
+	rc = write(fd,(void *)&pos, sizeof(pos));
+}
+
+/**
+* @brief getWifiStatus - requests the status of
+*				wifi and returns a value that can be used
+*				to represent the rssi of the wifi for the
+*				currently connected network.
+*
+* @param fd
+*/
+void _getWifiStatus(int fd)
+{
+	int32_t rc = 0;
+	uint8_t data = 255;
+	rc = write(fd, (void *)&data, sizeof(data));
+}
+
+/**
+* @brief getBatteryStatus - indicates how
+*				full the battery is. This will call
+*				into a seperate thread later. For
+*				now we'll return a fixed value of
+*				255.
+*
+* @param fd
+*/
+void _getBatteryStatus(int fd)
+{
+	int32_t rc = 0;
+	uint8_t data = 255;
+	rc = write(fd, (void *)&data, sizeof(data));
 }
 
 void _getBroadCastIDs(int fd)

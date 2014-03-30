@@ -10,7 +10,7 @@ import socket
 import sys
 import os
 
-sys.path.append(os.path.realpath('../src/gui/'))
+sys.path.append(os.path.realpath('../../src/gui_src/'))
 from guiNetInterface import *
 
 GETBROADCAST = 1

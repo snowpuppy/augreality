@@ -10,36 +10,39 @@ PORT = 7777 # Arbitrary non-privileged port
 from struct import *
 import socket
 
-GETBROADCASTIDS = '\x01'
+GETUSERPOSITION = '\x01'
+GETUSERPOSITIONFORMATS = '=B'
+GETUSERPOSITIONFORMATR = '=I7f'
+GETBROADCASTIDS = '\x04'
 BROADCASTIDSFORMATS = '=B'
 BROADCASTIDSFORMATR = '=%sB'
-GETNUMBROADCAST = '\x02'
+GETNUMBROADCAST = '\x05'
 NUMBROADCASTFORMATS = '=B'
 NUMBROADCASTFORMATR = '=B'
-GETBROADCASTLOC = '\x03'
+GETBROADCASTLOC = '\x06'
 BROADCASTLOCFORMATS = '=B16B'
 BROADCASTLOCFORMATR = '2f3f' # x,y,roll,pitch,yaw
-GETPOSITION = '\x04'
+GETPOSITION = '\x07'
 POSITIONFORMATS = '=B16B'
 POSITIONFORMATR = '2f3f'
-GETNUMALIVE = '\x05'
+GETNUMALIVE = '\x08'
 NUMALIVEFORMATS = '=B'
 NUMALIVEFORMATR = '=B'
-GETALIVE = '\x06'
+GETALIVE = '\x09'
 ALIVEFORMATS = '=B16B'
 ALIVEFORMATR = '=B'
-SENDUPDATEOBJS = '\x07'
+SENDUPDATEOBJS = '\x0a'
 SENDUPDATEOBJSFORMAT = '=BB'
 OBJSFORMAT = 'BBHH5f'			# objInfo struct
-SENDFILE = '\x08'
+SENDFILE = '\x0b'
 SENDFILEFORMAT = '=B'		# also need to send filename
-SENDEND = '\x09'
+SENDEND = '\x0c'
 SENDENDFORMAT = '=B16B'
-SENDSTART = '\x0a'
+SENDSTART = '\x0d'
 SENDSTARTFORMAT = '=B'
-SENDACCEPT = '\x0b'
+SENDACCEPT = '\x0e'
 SENDACCEPTFORMAT = '=2f'
-SENDGOBACK = '\x0c'
+SENDGOBACK = '\x0f'
 SENDGOBACKFORMAT = '=B16B'
 
 ##
@@ -150,6 +153,32 @@ def getPosition(nid):
 	s.close()
 	data = unpack(POSITIONFORMATR,reply);
 	#print "Position: ",data
+	# returns x,y,roll,pitch,yaw
+	return data
+
+##
+# @brief getUserPostion() gets the position information
+#				for this headset . Meant to be used during
+#				simulation runtime.
+#
+# @return a tuple containing x,y,pitch,yaw,roll.
+def getUserPosition():
+	# Set command
+	# Pack info
+	command = GETUSERPOSITION
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	# receive info
+	data = ""
+	# Get number of bytes to read.
+	numToRead = calcsize( GETUSERPOSITIONFORMATR )
+	#print "numToRead:", numToRead
+	reply = s.recv(numToRead);
+	s.close()
+	data = unpack(GETUSERPOSITIONFORMATR,reply);
+	print "Position: ",data
 	# returns x,y,roll,pitch,yaw
 	return data
 

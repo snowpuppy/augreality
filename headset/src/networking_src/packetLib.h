@@ -15,7 +15,12 @@
 // about the headsets.
 enum apiRequest
 {
-	GETBROADCASTIDS = 1,
+	// Sensor requests
+	GETUSERPOS = 1,
+	GETWIFISTATUS,
+	GETBATTERYSTATUS,
+	// Network requests
+	GETBROADCASTIDS,
 	GETNUMBROADCAST,
 	GETBROADCASTLOC,
 	GETPOSITION,

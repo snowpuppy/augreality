@@ -10,14 +10,14 @@ import sys
 import os
 import socket
 import time
-sys.path.append(os.path.realpath('../src/gui/'))
+sys.path.append(os.path.realpath('../../src/gui_src/'))
 from guiNetInterface import *
 
 # hardcoded id of headset.
 nid = '40A66DAE\r13A200\r'
 
 while (1):
-	output = getPosition(nid)
+	output = getUserPosition()
 	x = output[0]
 	y = output[1]
 	pitch = output[2]

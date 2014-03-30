@@ -91,6 +91,7 @@ int getHeadsetPosData(localHeadsetPos_t *pos)
 {
 	// yay for structure copying!
 	*pos = g_pos;
+	return 0;
 } 
 /**
 * @brief update the current position information.
@@ -143,6 +144,7 @@ void updatePosition(char *data)
 		originlat = g_pos.lat;
 		originlon = g_pos.lon;
 	}
+	/*
 	printf("lat: %0.2f ", g_pos.lat);
 	printf("lon: %0.2f ", g_pos.lon);
 	printf("pitch: %0.2f ", g_pos.pitch);
@@ -151,6 +153,7 @@ void updatePosition(char *data)
 	printf("numSat: %d ", g_pos.numSat);
 	printf("x: %0.2f ", g_pos.x);
 	printf("y: %0.2f \n", g_pos.y);
+	*/
 }
 
 /**
