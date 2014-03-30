@@ -161,7 +161,7 @@ def getPosition(nid):
 #				for this headset . Meant to be used during
 #				simulation runtime.
 #
-# @return a tuple containing x,y,pitch,yaw,roll.
+# @return a tuple containing numSat,lat,lon,x,y,roll,pitch,yaw
 def getUserPosition():
 	# Set command
 	# Pack info
@@ -178,8 +178,8 @@ def getUserPosition():
 	reply = s.recv(numToRead);
 	s.close()
 	data = unpack(GETUSERPOSITIONFORMATR,reply);
-	print "Position: ",data
-	# returns x,y,roll,pitch,yaw
+	#print "Position: ",data
+	# returns numSat,lat,lon,x,y,roll,pitch,yaw
 	return data
 
 ##
