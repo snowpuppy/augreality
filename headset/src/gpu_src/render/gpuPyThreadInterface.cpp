@@ -1,4 +1,4 @@
-#include "gpuThreadInterface.h"
+#include "gpuPyThreadInterface.h"
 
 // CONSTANTS
 #define PORT 7778
@@ -12,19 +12,19 @@
 // Function: initServer()
 // Purpose: starts the server that will
 // communicate with the gui and simulation.
-int GpuThreadInterface::initServer(void)
+int GpuPyThreadInterface::initServer(void)
 {
 	tidp = 0;
 	threadInterfaceQuit = 0;
 	int ret = 0;
-	ret = pthread_create(&tidp, NULL, GpuThreadInterface::_threadServer, this);
+	ret = pthread_create(&tidp, NULL, GpuPyThreadInterface::_threadServer, this);
 	return ret;
 }
 
 // Function: stopServer()
 // Purpose: stops the server that will
 // communicate with the gui and simulation.
-void GpuThreadInterface::stopServer(void)
+void GpuPyThreadInterface::stopServer(void)
 {
 	// Assert threadInterfaceQuit signal
 	// and join the thread.
@@ -39,15 +39,15 @@ void GpuThreadInterface::stopServer(void)
 *
 * @return nothing.
 */
-void *GpuThreadInterface::_threadServer(void *This)
+void *GpuPyThreadInterface::_threadServer(void *This)
 {
-	((GpuThreadInterface *)This)->threadServer();
+	((GpuPyThreadInterface *)This)->threadServer();
 }
 
 // Function: threadServer()
 // Purpose: starting function for the
 // thread.
-void GpuThreadInterface::threadServer()
+void GpuPyThreadInterface::threadServer()
 {
   int inetfd = 0;
   // Establish TCP port connection.
@@ -62,7 +62,7 @@ void GpuThreadInterface::threadServer()
   close(inetfd);
 }
 
-int GpuThreadInterface::bindServer(uint16_t port)
+int GpuPyThreadInterface::bindServer(uint16_t port)
 {
   int ret = 0;
   // connection variables
@@ -103,7 +103,7 @@ int GpuThreadInterface::bindServer(uint16_t port)
   return listenfd;
 }
 
-void GpuThreadInterface::serviceConnections(int fd)
+void GpuPyThreadInterface::serviceConnections(int fd)
 {
   int rc = 0;
   uint32_t clientlen = 0, connfd;
@@ -160,7 +160,7 @@ void GpuThreadInterface::serviceConnections(int fd)
 *
 * @param fd
 */
-void GpuThreadInterface::_getRunning(int fd)
+void GpuPyThreadInterface::_getRunning(int fd)
 {
 	int32_t rc = 0;
 	// Send a 1 to indicate it is running.
@@ -176,7 +176,7 @@ void GpuThreadInterface::_getRunning(int fd)
 *
 * @param fd
 */
-void GpuThreadInterface::_gpuQuit(int fd)
+void GpuPyThreadInterface::_gpuQuit(int fd)
 {
 	// Send GPUQUIT signal somehow
 	// Don't need to send anything back.
@@ -191,7 +191,7 @@ void GpuThreadInterface::_gpuQuit(int fd)
 *
 * @param fd
 */
-void GpuThreadInterface::_updateObjects(int fd)
+void GpuPyThreadInterface::_updateObjects(int fd)
 {
 	int32_t rc = 0, i = 0;
 	uint8_t numObjs = 0;

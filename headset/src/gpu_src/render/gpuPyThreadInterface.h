@@ -1,5 +1,5 @@
-#ifndef GPUTHREADINTERFACE_H
-#define GPUTHREADINTERFACE_H
+#ifndef GPUPYTHREADINTERFACE_H
+#define GPUPYTHREADINTERFACE_H
 
 #include <pthread.h>
 #include <unistd.h>
@@ -18,7 +18,7 @@ enum gpuApiRequest {
 	UPDATEOBJECTS
 };
 
-class GpuThreadInterface
+class GpuPyThreadInterface
 {
 	public:
 	// Function: initServer()
