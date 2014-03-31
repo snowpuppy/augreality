@@ -1,5 +1,6 @@
 #include "GameObject.h"
 #include <irrlicht/irrlicht.h>
+#include <unistd.h>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -23,7 +24,8 @@ GameObject::GameObject(std::string name,
         mesh = Meshes[name];
     } else {
         //load mesh from file
-        mesh = smgr->getMesh(("models/" + name + ".obj").c_str());
+        if(access((name + ".obj").c_str(), R_OK) != -1)
+			mesh = smgr->getMesh((name + ".obj").c_str());
     }
 
     //create scene node from the mesh
@@ -32,7 +34,6 @@ GameObject::GameObject(std::string name,
     //disable lighting on the node
     if(node != NULL) {
         node->setMaterialFlag(irr::video::EMF_LIGHTING, false);
-				//node->setMaterialFlag(irr::video::EMF_WIREFRAME, true);
     }
 
     setPosition(position);
@@ -80,4 +81,6 @@ void GameObject::loadConfigFile(std::string filename, GameObject *objects) {
                                     irr::core::vector3df(scale, scale,scale),
                                     show);
     }
+    
+    
 }

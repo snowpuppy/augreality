@@ -1,10 +1,11 @@
 #include <stdio.h>
-#include "gpuThreadInterface.h"
+#include "gpuPyThreadInterface.h"
 
 int main(void)
 {
-	GpuThreadInterface inter;
-	inter.initServer();
+	GpuPyThreadInterface inter;
+	bool quit = false;
+	inter.initServer(&quit);
 	while(1)
 	{
 	}
