@@ -20,6 +20,7 @@ using namespace gui;
 #define MOVEMENT_SPEED 5.0f
 #define CAMERA_SPEED 40.0f
 #define PROCESS 1
+#define HEADSET_VERSION
 
 #ifdef PROCESS
 int main(int argc, char *argv[]) {
@@ -39,9 +40,10 @@ int render(int argc, char *argv[]) {
 	int battery = 100;
 	int signal = 0;
 	int sats = 0;
-
+	stringw orientString = "y: 0.0 p: 0.0 r 0.0";
     //interfaces to other modules
-    SensorReader *sensor = new SensorReader();
+    SensorReader sensor;
+    sensor.initServer();
 
     //create the window
     InputReceiver receiver;
@@ -124,9 +126,10 @@ int render(int argc, char *argv[]) {
         
         #ifdef HEADSET_VERSION
         //sensor camera control
-        sensor->poll();
-        camera->setPosition(sensor->getLocation());
-        camera->setRotation(sensor->getOrientation());
+        camerarot = sensor.getOrientation();
+        camerapos = sensor.getLocation();
+        camera->setPosition(camerapos);
+        camera->setRotation(camerarot);
         #else
         camera->setPosition(camerapos);
         camera->setRotation(camerarot);
@@ -136,10 +139,16 @@ int render(int argc, char *argv[]) {
         camera->setUpVector(upTarget->getAbsolutePosition() - camerapos);
         smgr->drawAll();
         //hud stuff
+        battery = sensor.getBatteryStatus();
+        signal = sensor.getWifiStatus();
+        sats = sensor.getNumSatellites();
+        orientString = stringw("r:") + stringw(camerarot.X) + stringw(" p:") + stringw(camerarot.Y) + stringw(" y:") + stringw(camerarot.Z);
+        //sprintf(orientString, "r:%f p:%f y:%f", camerarot.X, camerarot.Y, camerarot.Z);
         font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
-        font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery*2),battery*2,0));
-        font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal*2),signal*2,0));
-
+        font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
+        font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
+        font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255-(signal),signal,0));
+		
         driver->endScene();
     }
     std::cout << "Rendering exit\n";
