@@ -45,7 +45,7 @@ class GpuPyThreadInterface
 
 	private:
 	pthread_t tidp;
-	int threadInterfaceQuit;
+	int quit;
 };
 
 #endif

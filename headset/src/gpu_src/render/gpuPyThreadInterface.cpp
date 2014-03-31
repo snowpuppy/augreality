@@ -15,7 +15,7 @@
 int GpuPyThreadInterface::initServer(void)
 {
 	tidp = 0;
-	threadInterfaceQuit = 0;
+	quit = 0;
 	int ret = 0;
 	ret = pthread_create(&tidp, NULL, GpuPyThreadInterface::_threadServer, this);
 	return ret;
@@ -26,9 +26,9 @@ int GpuPyThreadInterface::initServer(void)
 // communicate with the gui and simulation.
 void GpuPyThreadInterface::stopServer(void)
 {
-	// Assert threadInterfaceQuit signal
+	// Assert quit signal
 	// and join the thread.
-	threadInterfaceQuit = 1;
+	quit = 1;
 	pthread_join(tidp, NULL);
 }
 
@@ -113,9 +113,9 @@ void GpuPyThreadInterface::serviceConnections(int fd)
   //fd_set rfds;
   //struct timeval tv;
 
-	// While the application has not threadInterfaceQuit, continue
+	// While the application has not quit, continue
 	// to service client requests.
-  while(!threadInterfaceQuit)
+  while(!quit)
   {
     uint8_t packetType = 0;
     clientlen = sizeof(clientaddr);

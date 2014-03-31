@@ -9,30 +9,6 @@
 // Constants
 #define MAXSIZEOFID 16
 
-// Api requests made from gui
-// and from the simulation to
-// get updated information
-// about the headsets.
-enum apiRequest
-{
-	// Sensor requests
-	GETUSERPOS = 1,
-	GETWIFISTATUS,
-	GETBATTERYSTATUS,
-	// Network requests
-	GETBROADCASTIDS,
-	GETNUMBROADCAST,
-	GETBROADCASTLOC,
-	GETPOSITION,
-	GETNUMALIVE,
-	GETALIVE,
-	SENDUPDATEOBJS,
-	SENDFILE,
-	SENDEND,
-	SENDSTART,
-	SENDACCEPT,
-	SENDGOBACK
-};
 
 /**
 * @brief broadCastInfo used to keep track of

@@ -1,47 +1,235 @@
-#include "SensorReader.h"
-#include <irrlicht.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <fcntl.h>
+/*
+ * Filename: SensorReader.cpp
+ * Author: Thor Smith
+ * Purpose: Create an interface to retrieve 
+ *          sensor information from a central location.
+ */
 
-#define SHM_SIZE 1024
+// CONSTANTS
+#define PORT 7778
 
-SensorReader::SensorReader() {
-    //set up shared memory
-    shm_key = ftok("sensorData", 'R');
-    shmid = shmget(shm_key, SHM_SIZE, O_RDONLY);
-    data = (char *)shmat(shmid, (void *)0, 0);
-
-    //set up semaphore
-    sem_key = ftok("sensorDataSem", 'R');
-    semid = semget(sem_key, 1, O_RDWR);
-    sb.sem_num = 0;
-    sb.sem_op = 0;
-    sb.sem_flg = 0;
+// Function: initServer()
+// Purpose: starts the server that will
+// communicate with the gui and simulation.
+int SensorReader::initServer(void)
+{
+	int ret = 0;
+	tidp = 0;
+	quit = 0;
+	// Clear the pos structure
+	memset(&pos,0,sizeof(pos));
+	// create mutex w/ default attrs
+	ret = pthread_mutex_init(&mutex, NULL);
+	if (ret < 0)
+	{
+		perror("Error: Could not create mutex!\n");
+		return ret;
+	}
+	ret = pthread_create(&tidp, NULL, GpuPyThreadInterface::_threadServer, this);
+	return ret;
 }
 
-void SensorReader::poll() {
-    //wait for semaphore to be freed
-    semop(semid, &sb, 1);
-    //lock semaphore
-    sb.sem_op = 1;
-    semop(semid, &sb, 1);
-    //read data from shared memory
-    sscanf(data, "%f %f %f %f %f", &pitch, &roll, &yaw, &pos_x, &pos_y);
-    //unlock semaphore
-    sb.sem_op = -1;
-    semop(semid, &sb, 1);
+// Function: stopServer()
+// Purpose: stops the server that will
+// communicate with the gui and simulation.
+void SensorReader::stopServer(void)
+{
+	// Assert quit signal
+	// and join the thread.
+	quit = 1;
+	// destroy mutex w/ default attrs
+	pthread_mutex_destroy(&mutex);
+	pthread_join(tidp, NULL);
 }
 
-irr::core::vector3df SensorReader::getLocation() {
-    return irr::core::vector3df(pos_x, pos_y, 0);
+/**
+* @brief Dummy function to start actual thread.
+*
+* @param This - pointer to class running thread.
+*
+* @return nothing.
+*/
+void *SensorReader::_threadServer(void *This)
+{
+	((GpuPyThreadInterface *)This)->threadServer();
 }
 
-irr::core::vector3df SensorReader::getOrientation() {
-    return irr::core::vector3df(roll, pitch, yaw);
+// Function: threadServer()
+// Purpose: starting function for the
+// thread.
+void SensorReader::threadServer()
+{
+  // Establish TCP port connection.
+	setUserPos();
+	setWifiStatus();
+	setBatteryStatus();
+	// sleep for 1 millisecond
+	usleep(1000);
+
+}
+
+void SensorReader::setUserPos(void)
+{
+	int32_t fd = 0, rc = 0;
+	char command = GETUSERPOS;
+	localHeadsetPos_t _pos;
+	// Open connection.
+  fd = connectToServer(PORT);
+  if (fd < 0)
+  {
+    perror("setUserPos:Error setting up server.\n"); exit(1);
+  }
+	rc = write(fd, (void *)command, sizeof(command));
+	if (rc < 0)
+	{
+    perror("setUserPos:Error writing to socket.\n"); exit(1);
+	}
+	rc = read(fd, (void *)_pos, sizeof(_pos));
+	if (rc < 0)
+	{
+    perror("setUserPos:Error reading from socket.\n"); exit(1);
+	}
+	// copy the structure
+	pthread_mutex_lock(&mutex);
+	pos = _pos;
+	pthread_mutex_unlock(&mutex);
+	// Close socket.
+  close(fd);
+}
+
+void SensorReader::setWifiStatus(void)
+{
+	int32_t fd = 0, rc = 0;
+	char command = GETWIFISTATUS;
+	uint8_t _wifi = 0;
+	// Open connection.
+  fd = connectToServer(PORT);
+  if (fd < 0)
+  {
+    perror("setWifiStatus:Error setting up server.\n"); exit(1);
+  }
+	rc = write(fd, (void *)command, sizeof(command));
+	if (rc < 0)
+	{
+    perror("setWifiStatus:Error: writing to socket.\n"); exit(1);
+	}
+	rc = read(fd, (void *)_wifi, sizeof(_wifi));
+	if (rc < 0)
+	{
+    perror("setWifiStatus:Error reading from socket.\n"); exit(1);
+	}
+	// copy the structure
+	pthread_mutex_lock(&mutex);
+	wifiStatus = _wifi;
+	pthread_mutex_unlock(&mutex);
+	// Close socket.
+  close(fd);
+}
+
+void SensorReader::setBatteryStatus(void)
+{
+	int32_t fd = 0, rc = 0;
+	char command = GETBATTERYSTATUS;
+	uint8_t _battery = 0;
+	// Open connection.
+  fd = connectToServer(PORT);
+  if (fd < 0)
+  {
+    perror("setBatteryStatus:Error setting up server.\n"); exit(1);
+  }
+	rc = write(fd, (void *)command, sizeof(command));
+	if (rc < 0)
+	{
+    perror("setBatteryStatus:Error: writing to socket.\n"); exit(1);
+	}
+	rc = read(fd, (void *)_wifi, sizeof(_wifi));
+	if (rc < 0)
+	{
+    perror("setBatteryStatus:Error reading from socket.\n"); exit(1);
+	}
+	// copy the structure
+	pthread_mutex_lock(&mutex);
+	batteryStatus = _battery;
+	pthread_mutex_unlock(&mutex);
+	// Close socket.
+  close(fd);
+}
+
+irr::core::vector3df getLocation()
+{
+	float x, y;
+	pthread_mutex_lock(&mutex);
+	x = pos.x;
+	y = pos.y;
+	pthread_mutex_unlock(&mutex);
+	return irr::core::vector3df(pos_x, pos_y, 0);
+}
+
+irr::core::vector3df getOrientation()
+{
+	float roll,pitch,yaw;
+	pthread_mutex_lock(&mutex);
+	roll = pos.roll;
+	pitch = pos.pitch;
+	yaw = pos.yaw;
+	pthread_mutex_unlock(&mutex);
+	return irr::core::vector3df(roll, pitch, yaw);
+}
+
+uint8_t getWifiStatus(void)
+{
+	uint8_t _wifi = 0;
+	pthread_mutex_lock(&mutex);
+	_wifi = wifiStatus;
+	pthread_mutex_unlock(&mutex);
+	return _wifi;
+}
+
+uint8_t getBatteryStatus(void)
+{
+	uint8_t _battery = 0;
+	pthread_mutex_lock(&mutex);
+	_battery = batteryStatus;
+	pthread_mutex_unlock(&mutex);
+	return _battery;
+}
+
+uint32_t getNumSatellites(void)
+{
+	uint32_t sats = 0;
+	pthread_mutex_lock(&mutex);
+	sats = pos.numSat;
+	pthread_mutex_unlock(&mutex);
+	return _sats;
+}
+
+// Connects to INADDR_LOOPBACK
+int SensorReader::connectToServer(int port)
+{
+  int fd = 0;
+	int rc = 0;
+  struct sockaddr_in sockAddr = {0};
+
+  // Fill out connection structure.
+  sockAddr.sin_port = htons(port);
+  sockAddr.sin_family = AF_INET;
+  
+  sockAddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+  // Create a socket.
+  fd = socket(AF_INET, SOCK_STREAM, 0);
+  if ( fd < 0 )
+  {
+		printf("Error creating socket!\n");
+    return -1;
+  }
+
+  //Connect to server
+  rc = connect(fd, (const struct sockaddr *) &sockAddr, sizeof(sockAddr) );
+  if ( rc < 0 )
+  {
+		printf("Error connecting to port %d!\n", port);
+    return -1;
+  }
+	return fd;
 }
