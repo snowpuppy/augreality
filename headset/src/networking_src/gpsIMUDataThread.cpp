@@ -255,7 +255,7 @@ int readBytes(int fd, char *data, int numBytes)
       bytesRead += res;
     }
   }
-	printf("bytesRead: %d\n", bytesRead);
+	//printf("bytesRead: %d\n", bytesRead);
 	return bytesRead;
 }
 
