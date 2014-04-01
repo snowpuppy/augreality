@@ -7,8 +7,8 @@
 #ifndef SENSOR_READER_H
 #define SENSOR_READER_H
 
-#include "../../src/networking_src/threadInterface.h"
-#include "../../src/networking_src/gpsIMUDataThread.h"
+#include "../../networking_src/threadInterface.h"
+#include "../../networking_src/gpsIMUDataThread.h"
 #include <irrlicht.h>
 #include <stdio.h>
 #include <sys/types.h>

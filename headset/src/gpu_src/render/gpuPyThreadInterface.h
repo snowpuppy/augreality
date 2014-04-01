@@ -31,7 +31,6 @@ class GpuPyThreadInterface
 	void stopServer(void);
 
 	private:
-	volatile bool *quit;
 	int bindServer(uint16_t port);
 	void serviceConnections(int fd);
 	static void *_threadServer(void *This);
@@ -45,6 +44,7 @@ class GpuPyThreadInterface
 	void _updateObjects(int fd);
 
 	private:
+	volatile bool *realQuit;
 	pthread_t tidp;
 	int quit;
 };
