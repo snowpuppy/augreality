@@ -157,7 +157,7 @@ void SensorReader::setBatteryStatus(void)
 	// Close socket.
   close(fd);
 }
-
+/*
 irr::core::vector3df SensorReader::getLocation()
 {
 	float x, y;
@@ -178,6 +178,7 @@ irr::core::vector3df SensorReader::getOrientation()
 	pthread_mutex_unlock(&mutex);
 	return irr::core::vector3df(roll, pitch, yaw);
 }
+*/
 
 headsetLocation_t SensorReader::_getLocation()
 {

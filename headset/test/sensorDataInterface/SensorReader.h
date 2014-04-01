@@ -9,7 +9,7 @@
 
 #include "../../src/networking_src/threadInterface.h"
 #include "../../src/networking_src/gpsIMUDataThread.h"
-#include <irrlicht.h>
+//#include <irrlicht.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -46,12 +46,12 @@ class SensorReader
 	// Function: getLocation()
 	// Purpose: returns a vector of the location
 	// of the current headset.
-	irr::core::vector3df getLocation();
+	//irr::core::vector3df getLocation();
 	headsetLocation_t _getLocation();
 	// Function: getOrientation()
 	// Purpose: returns a vector of the orientation 
 	// of the current heaset.
-	irr::core::vector3df getOrientation();
+	//irr::core::vector3df getOrientation();
 	headsetOrientation_t _getOrientation();
 	uint8_t getWifiStatus(void);
 	uint8_t getBatteryStatus(void);

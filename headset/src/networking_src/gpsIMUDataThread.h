@@ -4,6 +4,8 @@
 #ifndef GPSIMUDATATHREAD_H
 #define GPSIMUDATATHREAD_H
 
+#include <stdint.h>
+
 /**
 * @brief localHeadsetPos used to keep track of
 *		 location info from this headset.
