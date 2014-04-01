@@ -101,6 +101,8 @@ int getHeadsetPosData(localHeadsetPos_t *pos)
 void updatePosition(char *data)
 {
 	int i = 0;
+	float lat = 0, lon = 0;
+	float roll = 0, pitch = 0, yaw = 0;
 	/*
 	for (i = 0; i < 24; i++)
 	{
@@ -110,12 +112,32 @@ void updatePosition(char *data)
 	*/
 	i = 0;
 #ifndef NOGPSIMU
-	g_pos.lat = *((float *)&data[i]); i+=sizeof(float);
-	g_pos.lon = *((float *)&data[i]); i+=sizeof(float);
-	g_pos.pitch = *((float *)&data[i]); i+=sizeof(float);
-	g_pos.roll = *((float *)&data[i]); i+=sizeof(float);
-	g_pos.yaw = *((float *)&data[i]); i+=sizeof(float);
+	lat = *((float *)&data[i]); i+=sizeof(float);
+	lon = *((float *)&data[i]); i+=sizeof(float);
+	pitch = *((float *)&data[i]); i+=sizeof(float);
+	roll = *((float *)&data[i]); i+=sizeof(float);
+	yaw = *((float *)&data[i]); i+=sizeof(float);
 	g_pos.numSat = (uint32_t) *((float *)&data[i]); i+=sizeof(float);
+	if (lat < 800.0 & lat > -800.0)
+	{
+		g_pos.lat = lat;
+	}
+	if (lon < 800.0 & lon > -800.0)
+	{
+		g_pos.lon = lon;
+	}
+	if (roll < 180.0 & roll > -180.0)
+	{
+		g_pos.roll = roll;
+	}
+	if (pitch < 180.0 & pitch > -180.0)
+	{
+		g_pos.pitch = pitch;
+	}
+	if (yaw < 180.0 & yaw > -180.0)
+	{
+		g_pos.yaw = yaw;
+	}
 #else
 	// Hardcode values for now. Will make them update
 	// on regular intervals later.
@@ -209,7 +231,6 @@ int openComPort()
 	return g_port;
 }
 
-/*
 // Function to read in a fixed number
 // of bytes from the serial stream.
 // User is responsible for pointer size.
@@ -238,6 +259,7 @@ int readBytes(int fd, char *data, int numBytes)
 	return bytesRead;
 }
 
+/*
 // Function: printFloatBytes
 // Purpose: Used to print the hex
 // values of a floating point number

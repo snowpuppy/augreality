@@ -18,7 +18,7 @@
 #define XBEEPORT "/dev/ttyUSB0"
 
 // Local Function prototypes.
-int readBytes(int fd, char *data, int numBytes);
+//int readBytes(int fd, char *data, int numBytes);
 
 // Global Variables.
 std::map<std::string, broadCastInfo_t> broadCastList;
@@ -375,9 +375,9 @@ int16_t writeByteStream(uint8_t *buf, uint16_t size)
 // Function to read in a fixed number
 // of bytes from the serial stream.
 // User is responsible for pointer size.
+/*
 int readBytes(int fd, char *data, int numBytes)
 {
-	/*
   int bytesRead = 0;
   int res = 0;
   //printf("Reading %d bytes.\n", numBytes);
@@ -397,9 +397,9 @@ int readBytes(int fd, char *data, int numBytes)
       bytesRead += res;
     }
   }
-	*/
 	return 0;
 }
+*/
 
 // Function: printFloatBytes
 // Purpose: Used to print the hex
