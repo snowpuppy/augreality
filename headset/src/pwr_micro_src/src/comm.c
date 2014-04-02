@@ -1,10 +1,8 @@
 /*
- * comm.c - SPI slave driver and USART communication drivers for STM32F4xx chip
- *
- * Used for Raspberry PI communication and the GPS/XBee/Spare headers.
+ * comm.c - USART communication drivers for STM32L1xx chip
  */
 
-#include "usb.h"
+#include "usb_cdcacm.h"
 #include "main.h"
 #include "comm.h"
 #include "printf.h"
@@ -14,7 +12,6 @@
 #define COMM_BUFFER_SIZE 0x40
 // Maximum value that the size can have before filling
 #define _COMM_MAX (COMM_BUFFER_SIZE - 1)
-#define _USB_MAX (APP_RX_DATA_SIZE - 1)
 
 // Structure containing a ring buffer
 typedef struct {
@@ -23,33 +20,9 @@ typedef struct {
 	char buffer[COMM_BUFFER_SIZE];
 } RingBuffer_TypeDef;
 
-// Data to be sent over USB IN endpoint (ring buffer)
-extern uint8_t usbCdcRxBuffer[APP_RX_DATA_SIZE];
-extern volatile uint32_t usbCdcRxBufferIn;
-extern volatile uint32_t usbCdcRxBufferOut;
-
-/**
- * Queues a character onto the VCP buffer.
- * This library is not a true high-performance system; sending lots of data to the USB port
- * will cause excess bytes to be dropped if the bytes cannot be emptied from the USB ring buffer
- * (128 bytes) as fast as they are put in. The USB output buffer is somewhat bigger, as defined
- * in usb.h, but can still be filled at maximum baud rate before the TX hits.
- *
- * @param c the character to append
- */
-static void usbVCPTx(uint8_t c) {
-	uint32_t ptr = usbCdcRxBufferIn;
-	// Wait for space
-	if (usbVCPConnected() && ((ptr - usbCdcRxBufferOut) & _USB_MAX) != _USB_MAX) {
-		// Queue the byte
-		usbCdcRxBuffer[ptr] = c;
-		usbCdcRxBufferIn = (ptr + 1) & _USB_MAX;
-	}
-}
-
 // Serial buffers
-static RingBuffer_TypeDef serialBufferRX[2];
-static RingBuffer_TypeDef serialBufferTX[1];
+static RingBuffer_TypeDef serialBufferRX;
+static RingBuffer_TypeDef serialBufferTX;
 
 // Checks to see if the ring buffer is full (tail + 1 = head)
 static inline uint8_t _isBufferFull(volatile RingBuffer_TypeDef* buffer) {
@@ -84,12 +57,15 @@ static void _queueByte(volatile RingBuffer_TypeDef* buffer, char value) {
  */
 uint32_t serialBufferCount(uint32_t port) {
 	uint32_t head, tail;
-	if (port > SERIAL_PORT_USB) return 0;
+	if (port == SERIAL_PORT_USB)
+		return usbAcmCount();
+	if (port > SERIAL_PORT_DEBUG)
+		return 0U;
 	// Disable interrupts to read
 	__disable_irq();
 	// Pull the head and tail pointers
-	head = (uint32_t)serialBufferRX[port].head;
-	tail = (uint32_t)serialBufferRX[port].tail;
+	head = (uint32_t)serialBufferRX.head;
+	tail = (uint32_t)serialBufferRX.tail;
 	__enable_irq();
 	// Calculate difference modulo size
 	return (tail - head) & (uint32_t)_COMM_MAX;
@@ -102,14 +78,18 @@ void serialInit() {
 	USART_InitTypeDef uart;
 	GPIO_InitTypeDef gpio;
 	// Prime the buffers to empty
-	serialBufferTX[0].head = 0;
-	serialBufferTX[0].tail = 0;
-	serialBufferRX[0].head = 0;
-	serialBufferRX[0].tail = 0;
+	serialBufferTX.head = 0;
+	serialBufferTX.tail = 0;
+	serialBufferRX.head = 0;
+	serialBufferRX.tail = 0;
 	// Enable all peripheral clocks required
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 	// Set up the pins for USART
 	gpio.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+	gpio.GPIO_Mode = GPIO_Mode_AF;
+	gpio.GPIO_OType = GPIO_OType_PP;
+	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	gpio.GPIO_Speed = GPIO_Speed_40MHz;
 	GPIO_Init(GPIOA, &gpio);
 	// Set up pin sources
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
@@ -138,13 +118,14 @@ void serialInit() {
  * @return the byte read
  */
 uint8_t serialReadByte(uint32_t port) {
-	RingBuffer_TypeDef *buf;
-	if (port > SERIAL_PORT_USB) return 0U;
-	buf = &serialBufferRX[port];
+	if (port == SERIAL_PORT_USB)
+		return usbAcmGet();
+	if (port > SERIAL_PORT_DEBUG)
+		return 0U;
 	// Wait for data
-	while (_isBufferEmpty(buf)) __WFI();
+	while (_isBufferEmpty(&serialBufferRX)) __WFI();
 	// Return what we got
-	return (uint8_t)_pullByte(buf);
+	return (uint8_t)_pullByte(&serialBufferRX);
 }
 
 /**
@@ -154,26 +135,16 @@ uint8_t serialReadByte(uint32_t port) {
  * @param data the data byte to write
  */
 void serialWriteByte(uint32_t port, uint8_t data) {
-	USART_TypeDef *usart;
-	RingBuffer_TypeDef *buf;
-	switch (port) {
-	case SERIAL_PORT_DEBUG:
-		// Stuff Debug
-		usart = USART1;
-		break;
-	case SERIAL_PORT_USB:
+	if (port == SERIAL_PORT_USB)
 		// Stuff OS
-		usbVCPTx(data);
-		return;
-	default:
-		return;
+		usbAcmPut(data);
+	else if (port == SERIAL_PORT_DEBUG) {
+		// Wait for buffer space
+		while (_isBufferFull(&serialBufferTX)) __WFI();
+		_queueByte(&serialBufferTX, (char)data);
+		// Enable transmit interrupts and start transmitting if not already doing so
+		USART1->CR1 |= USART_CR1_TXEIE;
 	}
-	// Wait for buffer space
-	buf = &serialBufferTX[port];
-	while (_isBufferFull(buf)) __WFI();
-	_queueByte(buf, (char)data);
-	// Enable transmit interrupts and start transmitting if not already doing so
-	usart->CR1 |= USART_CR1_TXEIE;
 }
 
 // Stub to redirect outputs from printf()
@@ -207,74 +178,18 @@ void serialWriteBytes(uint32_t port, uint8_t *data, uint32_t count) {
  * USART 1 interrupt handler for TXE and RXNE interrupts [DEBUG]
  */
 void __attribute__ ((interrupt("IRQ"))) USART1_IRQHandler() {
-	RingBuffer_TypeDef *buf;
 	if (USART1->SR & USART_SR_RXNE) {
 		// Shut off the alarm clock
 		char data = (char)(uint8_t)USART1->DR;
-		buf = &serialBufferRX[SERIAL_PORT_DEBUG];
 		// If space, put in the RX buffer
-		if (!_isBufferFull(buf))
-			_queueByte(buf, data);
+		if (!_isBufferFull(&serialBufferRX))
+			_queueByte(&serialBufferRX, data);
 	} else if (USART1->SR & USART_SR_TXE) {
-		buf = &serialBufferTX[SERIAL_PORT_DEBUG];
 		// TX empty, stuff the byte if possible
-		if (_isBufferEmpty(buf))
+		if (_isBufferEmpty(&serialBufferTX))
 			USART1->CR1 &= ~USART_CR1_TXEIE;
 		else
 			// AVOID SIGN EXTENSION
-			USART1->DR = (uint16_t)(uint8_t)_pullByte(buf);
+			USART1->DR = (uint16_t)(uint8_t)_pullByte(&serialBufferTX);
 	}
-}
-
-/**
- * Receives up to size bytes into buffer. This function is direct and much, much faster than
- * looping on fgetc(), therefore should be used when receiving lots of data over USB VCP.
- *
- * @param buffer the buffer to store collected bytes
- * @param size the maximum number of bytes to store
- * @return the number of bytes actually stored
- */
-uint32_t usbVCPRead(uint8_t *buffer, uint32_t size) {
-	RingBuffer_TypeDef *rb = &serialBufferRX[SERIAL_PORT_USB];
-	uint32_t count = 0;
-	// This is basically a fast loop on buffer empty without the switch-case and indirection
-	while (count < size && !_isBufferEmpty(rb)) {
-		*buffer++ = (uint8_t)_pullByte(rb);
-		count++;
-	}
-	return count;
-}
-
-/**
- * Writes up to size bytes of data from buffer. This function is direct and much, much faster
- * than looping on fputc(), therefore should be used when sending lots of data over USB VCP.
- *
- * @param buffer the buffer to send
- * @param size the number of bytes to send
- * @return the number of bytes actually sent
- */
-uint32_t usbVCPWrite(uint8_t *buffer, uint32_t size) {
-	uint32_t ptr = usbCdcRxBufferIn, count = 0;
-	// Check for space
-	while (count < size && ((ptr - usbCdcRxBufferOut) & _USB_MAX) != _USB_MAX) {
-		// Queue the byte
-		usbCdcRxBuffer[ptr] = *buffer++;
-		usbCdcRxBufferIn = ptr = (ptr + 1) & _USB_MAX;
-		count++;
-	}
-	return count;
-}
-
-/**
- * Queue bytes until no more can be queued.
- *
- * @param buf the bytes to be queued
- * @param len how many bytes to queue
- * @return always true, since there is nothing better to do with the trashed bytes
- */
-bool usbVCPRx(uint8_t* buf, uint32_t len) {
-	RingBuffer_TypeDef *rb = &serialBufferRX[SERIAL_PORT_USB];
-	while (len-- && !_isBufferFull(rb))
-		_queueByte(rb, (char)*buf++);
-	return true;
 }

@@ -18,7 +18,7 @@ MCUPREPARE=$(OBJCOPY) $(OUT) -O binary $(BINDIR)/output.bin
 # Advanced sizing flags
 SIZEFLAGS=
 # Uploads program using flash utility
-UPLOAD=cd $(BINDIR) && dfu-util -a 0 -s 0x08000000:leave -D output.bin
+UPLOAD=cd $(BINDIR) && stm32flash -b 115200 -w output.bin -g 0x0 COM4
 
 # Advanced options
 ASMEXT=s
