@@ -14,6 +14,7 @@ static void init(void) {
 	serialInit();
 	// Power up USB
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USB, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	// Set up the pins for USB
 	gpio.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12;
 	gpio.GPIO_Mode = GPIO_Mode_AF;
@@ -27,6 +28,10 @@ static void init(void) {
 	// Turn on USB pull-up resistor
 	usbInit();
 	SYSCFG->PMC |= SYSCFG_PMC_USB_PU;
+	// Priority group #3 configuration
+	NVIC_SetPriorityGrouping(SCB_AIRCR_PRIGROUP3);
+	NVIC_SetPriority(USB_LP_IRQn, 1);
+	NVIC_EnableIRQ(USB_LP_IRQn);
 	// Enable interrupts for all peripherals
 	__enable_fault_irq();
 	__enable_irq();

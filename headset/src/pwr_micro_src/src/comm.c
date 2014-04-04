@@ -83,6 +83,7 @@ void serialInit() {
 	serialBufferRX.head = 0;
 	serialBufferRX.tail = 0;
 	// Enable all peripheral clocks required
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 	// Set up the pins for USART
 	gpio.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
