@@ -1,6 +1,8 @@
 # Universal C Makefile for MCU targets
 # Top-level template file to configure build
 
+-include stlink.mk
+
 # Makefile for STM32L1 series
 DEVICE=STM32F4
 # Libraries to include in the link (use -L and -l) e.g. -lm, -lmyLib
@@ -18,7 +20,7 @@ MCUPREPARE=$(OBJCOPY) $(OUT) -O binary $(BINDIR)/output.bin
 # Advanced sizing flags
 SIZEFLAGS=
 # Uploads program using flash utility
-UPLOAD=cd $(BINDIR) && stm32flash -b 115200 -w output.bin -g 0x0 COM4
+UPLOAD=cd $(BINDIR) && $(STLINK)/ST-LINK_CLI.exe -c SWD -P output.bin 0x08000000 -V -Rst
 
 # Advanced options
 ASMEXT=s

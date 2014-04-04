@@ -83,14 +83,17 @@ void serialInit() {
 	serialBufferRX.head = 0;
 	serialBufferRX.tail = 0;
 	// Enable all peripheral clocks required
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 	// Set up the pins for USART
-	gpio.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+	gpio.GPIO_Pin = GPIO_Pin_9;
 	gpio.GPIO_Mode = GPIO_Mode_AF;
 	gpio.GPIO_OType = GPIO_OType_PP;
 	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	gpio.GPIO_Speed = GPIO_Speed_40MHz;
+	GPIO_Init(GPIOA, &gpio);
+	gpio.GPIO_Pin = GPIO_Pin_10;
+	gpio.GPIO_Mode = GPIO_Mode_IN;
+	gpio.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(GPIOA, &gpio);
 	// Set up pin sources
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
@@ -106,10 +109,10 @@ void serialInit() {
 	// Enable all RXNE interrupts
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	// NVIC interrupts enable
-	NVIC_SetPriority(USART1_IRQn, 5);
+	NVIC_SetPriority(USART1_IRQn, 3);
 	NVIC_EnableIRQ(USART1_IRQn);
 	// USARTs on
-	USART_Cmd(USART1, ENABLE);
+	USART1->CR1 |= USART_CR1_UE;
 }
 
 /**
@@ -124,7 +127,7 @@ uint8_t serialReadByte(uint32_t port) {
 	if (port > SERIAL_PORT_DEBUG)
 		return 0U;
 	// Wait for data
-	while (_isBufferEmpty(&serialBufferRX)) __WFI();
+	while (_isBufferEmpty(&serialBufferRX)) SLEEP();
 	// Return what we got
 	return (uint8_t)_pullByte(&serialBufferRX);
 }
@@ -141,7 +144,7 @@ void serialWriteByte(uint32_t port, uint8_t data) {
 		usbAcmPut(data);
 	else if (port == SERIAL_PORT_DEBUG) {
 		// Wait for buffer space
-		while (_isBufferFull(&serialBufferTX)) __WFI();
+		while (_isBufferFull(&serialBufferTX)) SLEEP();
 		_queueByte(&serialBufferTX, (char)data);
 		// Enable transmit interrupts and start transmitting if not already doing so
 		USART1->CR1 |= USART_CR1_TXEIE;

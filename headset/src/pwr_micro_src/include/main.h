@@ -5,24 +5,18 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-/*
- * Required C includes
- */
+// Required C includes
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-/*
- * Pull in required include files for all peripherals
- */
+// Pull in required include files for all peripherals
 #include "stm32l1xx.h"
 #include "stm32l1xx_rcc.h"
 
-/**
- * msleep - Delay in low-power mode for the given number of milliseconds.
- *
- * @param howLong the delay period in milliseconds
- */
-void msleep(unsigned long howLong);
+// Goes into Sleep mode, peripherals continue to run
+#define SLEEP() do { __WFI(); asm volatile ("nop\n\t"); } while (0)
+// Goes into STOP mode, peripherals are stopped but SRAM is retained
+#define STOP() do { SCB->SCR |= SCB_SCR_SLEEPDEEP; __WFI(); asm volatile ("nop\n\t"); SCB->SCR &= ~SCB_SCR_SLEEPDEEP; } while (0)
 
 #endif
