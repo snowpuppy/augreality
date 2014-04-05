@@ -22,13 +22,13 @@ int openComPort();
 int main(void)
 {
 	float roll = 0,pitch = 0,yaw = 0,x = 0,y = 0;
-	char data[20];
+	char data[24];
 	int fd = 0, i = 0;
 	fd = openComPort();
 	while(1)
 	{
 		i = 0;
-		readBytes(fd, data, sizeof(float)*5);
+		readBytes(fd, data, sizeof(float)*6);
 		//printf("sizeoffloat*4 = %d\n", sizeof(float)*5);
 		//printf("i = %d\n", i);
 		x = *((float *)&data[i]); i+=4;
@@ -40,7 +40,7 @@ int main(void)
 		roll = *((float *)&data[i]); i+=4;
 		//printf("i = %d\n", i);
 		yaw = *((float *)&data[i]); i+=4;
-		//printf("roll: %0.2f, pitch: %0.2f, yaw: %0.2f, x: %0.2f, y: %0.2f\n", roll, pitch, yaw, x, y);
+		printf("roll: %0.2f, pitch: %0.2f, yaw: %0.2f, x: %0.2f, y: %0.2f\n", roll, pitch, yaw, x, y);
 	}
 }
 
@@ -83,6 +83,8 @@ int readBytes(int fd, char *data, int numBytes)
 {
   int bytesRead = 0;
   int res = 0;
+	int i = 0;
+	static int j = 0;
   //printf("Reading %d bytes.\n", numBytes);
   while (bytesRead < numBytes)
   {
@@ -100,4 +102,11 @@ int readBytes(int fd, char *data, int numBytes)
       bytesRead += res;
     }
   }
+	printf("\n%6d ", j++);
+	for (i = 0; i < bytesRead; i++)
+	{
+		printf("%02X ", (unsigned int)(unsigned char)data[i]);
+	}
+	printf("\n");
+	return bytesRead;
 }
