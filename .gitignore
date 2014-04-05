@@ -6,6 +6,7 @@
 *.sym
 *.pyc
 *.swp
+*.bak
 a.out
 tags
 
