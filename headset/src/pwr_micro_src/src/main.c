@@ -10,8 +10,6 @@
  */
 
 #include "main.h"
-#include "printf.h"
-#include "usb_cdcacm.h"
 
 /**
  * USB initialization
@@ -39,7 +37,7 @@ static void initUSB(void) {
 	SYSCFG->PMC |= SYSCFG_PMC_USB_PU;
 	usbInit();
 	// Enable USB IRQ
-	NVIC_SetPriority(USB_LP_IRQn, 1);
+	NVIC_SetPriority(USB_LP_IRQn, 2);
 	NVIC_EnableIRQ(USB_LP_IRQn);
 }
 
@@ -51,16 +49,16 @@ static void initUSB(void) {
 static void init(void) {
 	// Priority group #3 configuration
 	NVIC_SetPriorityGrouping(3);
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN;
 	// Set up the peripherals
-	//i2cInit();
+	i2cInit();
 	serialInit();
 	initUSB();
 	// Enable interrupts for all peripherals
 	__enable_fault_irq();
 	__enable_irq();
 	// XXX Remove me for lower power usage when working
-	DBGMCU->CR |= DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_DBG_STOP;
+	DBGMCU->CR |= DBGMCU_CR_DBG_SLEEP;
 	SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
 }
 
@@ -72,10 +70,12 @@ int main(void) {
 	init();
 	while (1) {
 		// Loop bytes back
-		if (usbIsConnected()) {
-			while (usbAcmCount() > 0)
-				// Send them back
-				usbAcmPut(usbAcmGet());
+		if (usbIsConnected() && usbAcmCount() > 0) {
+			uint16_t value;
+			usbAcmPut(usbAcmGet());
+			// TEST: Get voltage registers (wrong endian order!) from the fuel gauge
+			if (i2cReadRegister(0x34, 0x0C, (uint8_t *)&value, 2))
+				printf("%04X\r\n", value);
 		}
 		SLEEP();
 	}

@@ -2,10 +2,7 @@
  * comm.c - USART communication drivers for STM32L1xx chip
  */
 
-#include "usb_cdcacm.h"
 #include "main.h"
-#include "comm.h"
-#include "printf.h"
 
 // Size of buffer, in bytes, for the communication ring buffers
 // Can be at most 256 before overflowing the space in a byte; must be a power of two
