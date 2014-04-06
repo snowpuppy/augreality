@@ -1,5 +1,5 @@
 #include "GameObject.h"
-#include <irrlicht/irrlicht.h>
+#include <irrlicht.h>
 #include <unistd.h>
 #include <string>
 #include <iostream>

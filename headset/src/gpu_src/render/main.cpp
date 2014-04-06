@@ -14,8 +14,8 @@ using namespace video;
 using namespace io;
 using namespace gui;
 
-#define SCREEN_WIDTH 1600
-#define SCREEN_HEIGHT 900
+#define SCREEN_WIDTH 1024
+#define SCREEN_HEIGHT 768
 #define SCREEN_FOV 3.14f/2.5f
 #define MOVEMENT_SPEED 5.0f
 #define CAMERA_SPEED 40.0f
@@ -41,13 +41,16 @@ int render(int argc, char *argv[]) {
 	int signal = 0;
 	int sats = 0;
 	stringw orientString = "y: 0.0 p: 0.0 r 0.0";
+	stringw fpsString = "FPS: ???";
     //interfaces to other modules
+#ifdef HEADSET_VERSION
     SensorReader sensor;
     sensor.initServer();
+#endif
 
     //create the window
     InputReceiver receiver;
-    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 16, true, false, true, &receiver);
+    IrrlichtDevice *device = createDevice( video::EDT_OPENGL, dimension2d<u32>(SCREEN_WIDTH, SCREEN_HEIGHT), 32, true, false, true, &receiver);
 
     //check for successful initialization of irrlicht
     if (!device) {
@@ -87,6 +90,10 @@ int render(int argc, char *argv[]) {
         stringw str = L"FPS: ";
         str += driver->getFPS();
         device->setWindowCaption(str.c_str());
+#ifndef HEADSET_VERSION
+	if (receiver.IsKeyDown(irr::KEY_KEY_F))
+		printf("FPS: %d\n", driver->getFPS());
+#endif
 
         //keyboard camera control
 
@@ -139,16 +146,19 @@ int render(int argc, char *argv[]) {
         camera->setUpVector(upTarget->getAbsolutePosition() - camerapos);
         smgr->drawAll();
         //hud stuff
+#ifdef HEADSET_VERSION
         battery = sensor.getBatteryStatus();
         signal = sensor.getWifiStatus();
         sats = sensor.getNumSatellites();
+#endif
         orientString = stringw("r:") + stringw(camerarot.X) + stringw(" p:") + stringw(camerarot.Y) + stringw(" y:") + stringw(camerarot.Z);
         //sprintf(orientString, "r:%f p:%f y:%f", camerarot.X, camerarot.Y, camerarot.Z);
-        font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
+        fpsString = stringw("FPS: ") + stringw(driver->getFPS());
+	font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
         font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
         font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
         font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255-(signal),signal,0));
-		
+	font->draw(fpsString, rect<s32>(20,50,300,50), SColor(255,255,255,255));
         driver->endScene();
     }
     std::cout << "Rendering exit\n";

@@ -1,8 +1,8 @@
 
 Target := render
 Sources := GameObject.cpp SensorReader.cpp gpuPyThreadInterface.cpp main.cpp
-IrrlichtInclude := /usr/include/irrlicht
-IrrlichtLib := /usr/lib/irrlicht
+IrrlichtInclude := /usr/local/include/
+IrrlichtLib := /usr/local/lib/
 BinPath = ./
 
 USERCPPFLAGS =
@@ -18,7 +18,7 @@ LDFLAGS = $(USERLDFLAGS)
 all: all_linux
 
 # target specific settings
-all_linux all_win32 static_win32: LDFLAGS += -L$(IrrlichtLib)/$(SYSTEM) -lIrrlicht
+all_linux all_win32 static_win32: LDFLAGS += -L$(IrrlichtLib) -lIrrlicht
 all_linux: LDFLAGS += -L/usr/X11R6/lib$(LIBSELECT) -lGL -lXxf86vm -lXext -lX11 -lXcursor -lpthread
 all_linux clean_linux: SYSTEM=Linux
 
