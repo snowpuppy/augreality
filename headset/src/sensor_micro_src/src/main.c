@@ -116,10 +116,14 @@ int main(void) {
 */
 static void transmitData(void) {
 	static uint32_t count = 0;
+	uint32_t bytesWritten = 0;
 	if (millis() > count + FIFTY_MSECOND)
 	{
 		count = millis();
-		usbVCPWrite(headsetData, HEADSETDATABYTES);
+		do
+		{
+			bytesWritten += usbVCPWrite(headsetData+bytesWritten, HEADSETDATABYTES-bytesWritten);
+		} while (bytesWritten < HEADSETDATABYTES);
 	/*
 	size = snprintf((char *)buffer, 256, "%0.2f %0.2f %0.2f %0.2f %0.2f %0.2f",
 		*((float *)&headsetData[0]),
@@ -234,6 +238,12 @@ static void processIMUData(void) {
 		} else if (yawTmp < -PI) {
 			yawTmp += 2*PI;
 		}
+		// Fix the pitch and roll parameters because
+		// for some reason they are wrong when they come out.
+		yawTmp = roll;
+		roll = -pitch;
+		pitch = -yawTmp;
+		yaw = -yaw;
 		// Convert to degrees
 		*((float *) &headsetData[PITOFFSET]) = pitch * (180. / PI); // pitch
 		*((float *) &headsetData[ROLOFFSET]) = roll * (180. / PI); // roll
