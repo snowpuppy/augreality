@@ -17,7 +17,7 @@
 #include <time.h>
 
 // Constants
-#define BAUDRATE B57600
+#define BAUDRATE B115200
 #define GPSIMUPORT "/dev/ttyACM0"
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
@@ -90,6 +90,7 @@ void *gpsImuThread(void *args)
 int getHeadsetPosData(localHeadsetPos_t *pos)
 {
 	// yay for structure copying!
+	// Needs to be synchronized!
 	*pos = g_pos;
 	return 0;
 } 

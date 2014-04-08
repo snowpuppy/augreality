@@ -403,9 +403,9 @@ void _sendEnd(int fd)
 	uint8_t buf[ENDSIMULATIONSIZE + HEADERSIZE];
 	endSimulation_t p = {0};
 	p.packetType = ENDSIMULATION;
-	addHeader(buf);
-	endSimulationPack(&p, &buf[HEADERSIZE]);
-	writeByteStream(buf, ENDSIMULATIONSIZE + HEADERSIZE);
+	//addHeader(buf);
+	//endSimulationPack(&p, &buf[HEADERSIZE]);
+	//writeByteStream(buf, ENDSIMULATIONSIZE + HEADERSIZE);
 	printf("Sent end command.\n");
 }
 void _sendStart(int fd)
@@ -413,9 +413,9 @@ void _sendStart(int fd)
 	uint8_t buf[STARTSIMULATIONSIZE + HEADERSIZE];
 	startSimulation_t p = {0};
 	p.packetType = STARTSIMULATION;
-	addHeader(buf);
-	startSimulationPack(&p, &buf[HEADERSIZE]);
-	writeByteStream(buf, STARTSIMULATIONSIZE + HEADERSIZE);
+	//addHeader(buf);
+	//startSimulationPack(&p, &buf[HEADERSIZE]);
+	//writeByteStream(buf, STARTSIMULATIONSIZE + HEADERSIZE);
 	printf("Sent start command.\n");
 }
 void _sendAccept(int fd)

@@ -7,8 +7,18 @@
 #include "packets.h"
 
 // Constants
-#define MAXSIZEOFID 16
+#define DEFAULT_TCP_PORT 7788
+#define DEFAULT_UDP_PORT 7789
+#define HEADSETNAMESIZE 32
 
+enum headsetState
+{
+	INIT = 0, 		// Transition to BROADCAST on setting client or HOSTSIMULATION on server start.
+	BROADCAST, 		// Transition to ACCEPTED on receipt of Accept packet
+	ACCEPTED, 		// Transition to SIMULATION on receipt of Start Packet
+	SIMULATION, 	// Transition to INIT on receipt of End Packet
+	HOSTSIMULTION
+};
 
 /**
 * @brief broadCastInfo used to keep track of
@@ -18,7 +28,7 @@
 */
 typedef struct broadCastInfo
 {
-  uint8_t name[MAXSIZEOFID]; // Name of headset (default to HEAD<mac>)
+  uint8_t name[HEADSETNAMESIZE]; // Name of headset (default to HEAD<mac>)
 	uint32_t ip_addr; // Ip address of headset
 } broadCastInfo_t;
 
@@ -29,7 +39,8 @@ typedef struct broadCastInfo
 */
 typedef struct heartBeatInfo
 {
-	uint8_t name[MAXSIZEOFID];  			// name of headset
+	uint8_t name[HEADSETNAMESIZE];  			// name of headset
+	uint32_t ip_addr; 			// Ip address of headset
 	float x,y;              // coordinates of player
 	float roll,pitch,yaw;   // orientation of player
 } heartBeatInfo_t;
@@ -45,8 +56,6 @@ typedef struct headsetPos
 } headsetPos_t;
 
 // Functions
-int16_t findHeartBeating(uint8_t *id);
-int16_t findBroadCasting(uint8_t *id);
 int16_t goBack(uint8_t *id);
 int16_t getPos(headsetPos_t *pos, uint8_t *id);
 uint16_t getNumAlive();
@@ -60,9 +69,20 @@ int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originL
 int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds);
 uint16_t getNumBroadCasting();
 int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id);
-int16_t writeByteStream(uint8_t *buf, uint16_t size);
-uint8_t detectHeader(uint8_t *pac);
 void getHeartBeatPacket(void);
+int checkForNewPackets(int fd1, int fd2);
+int wirelessConnection();
+int bindToTcpServer(uint16_t port);
+int bindToUdpPort(int port);
+void sendUpdatePacket(int udpFd, int *state);
+void sendBroadcast(int udpFd);
+void processPacket(int udpFd, int tcpFd, int ret, int pType, int *state);
+int16_t writeTcpByteStream(void *buf, uint16_t size);
+int16_t writeUdpByteStream(void *msg, uint16_t size, uint32_t dest);
+int16_t readTcpByteStream(void *buf, uint16_t size);
+int16_t readUdpByteStream(void *buf, uint16_t size, uint16_t peek = 0);
+uint8_t detectUdpType(int fd);
+uint8_t detectTcpType(int fd);
 void getBroadCastPacket(void);
 
 #endif

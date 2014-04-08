@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "packets.h"
-//#include "packetLib.h"
+#include "packetLib.h"
 #include "threadInterface.h"
 #include "gpsIMUDataThread.h"
 
@@ -18,11 +18,30 @@ void printFloatBytes(char *buf);
 // Main Function.
 int main(void)
 {
-  int fd = 0;
+  int udpFd = 0, tcpFd = 0;
 	int ret = 0;
 	uint8_t pac[3];
 	uint8_t packetType = 0;
-	//broadCastPacket_t packet;
+	int32_t state = INIT;
+
+	// Initialize networking stuff.
+	ret = wirelessConnection();
+	if (ret < 0)
+	{
+		perror("Problem aquiring wireless network ip!\n");
+	}
+	udpFd = bindToUdpPort(DEFAULT_UDP_PORT);
+	if (udpFd < 0)
+	{
+		perror("Problem binding to udp port!\n");
+	}
+	tcpFd = bindToTcpServer(DEFAULT_TCP_PORT);
+	if (tcpFd < 0)
+	{
+		perror("Problem binding to tcp port!\n");
+	}
+
+	// broadCastPacket_t packet;
   // Create a separate thread which will launch server functions
 	ret = initServer();
 	if (ret < 0)
@@ -53,25 +72,33 @@ int main(void)
 		 *			find out what kind of packet was sent.
 		 */
 
-		/*
-		// detect packet header
-		packetType = detectHeader(pac);
-		// Process the type of packet.
-		switch(packetType)
+		// Wait for packet.
+		ret = checkForNewPackets(udpFd, tcpFd);
+		// Find out what packet was received.
+		switch (ret)
 		{
-			case BROADCASTPACKET:
-				getBroadCastPacket();
-				break;
-			case HEARTBEAT:
-				getHeartBeatPacket();
-				break;
-			case CONFIRMUPDATE:
-				break;
-			default:
+		case 1: // UDP Packet received.
+			// detect packet header
+			packetType = detectUdpType(udpFd);
+			break;
+		case 2: // TCP Packet received
+							// If headsets send messages
+							// to each other at the same time
+							// then this program will hang.
+			packetType = detectTcpType(tcpFd);
+			break;
+		case 0: // We timed out.
+							// An update will be sent.
+							// Sending an update doesn't
+							// change state.
+			sendUpdatePacket(udpFd, &state);
+			break;
+		default:
 				break;
 		}
-		*/
+		// Processing a packet may change
+		// state.
+		processPacket(udpFd, tcpFd, ret, packetType, &state);
 	}
 	return 0;
 }
-
