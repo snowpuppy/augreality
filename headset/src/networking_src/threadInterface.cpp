@@ -400,6 +400,7 @@ void _sendFile(int fd)
 // and used to send the information.
 void _sendEnd(int fd)
 {
+	/*
 	uint8_t buf[ENDSIMULATIONSIZE + HEADERSIZE];
 	endSimulation_t p = {0};
 	p.packetType = ENDSIMULATION;
@@ -407,9 +408,12 @@ void _sendEnd(int fd)
 	//endSimulationPack(&p, &buf[HEADERSIZE]);
 	//writeByteStream(buf, ENDSIMULATIONSIZE + HEADERSIZE);
 	printf("Sent end command.\n");
+	*/
+	return;
 }
 void _sendStart(int fd)
 {
+	/*
 	uint8_t buf[STARTSIMULATIONSIZE + HEADERSIZE];
 	startSimulation_t p = {0};
 	p.packetType = STARTSIMULATION;
@@ -417,6 +421,8 @@ void _sendStart(int fd)
 	//startSimulationPack(&p, &buf[HEADERSIZE]);
 	//writeByteStream(buf, STARTSIMULATIONSIZE + HEADERSIZE);
 	printf("Sent start command.\n");
+	*/
+	return;
 }
 void _sendAccept(int fd)
 {

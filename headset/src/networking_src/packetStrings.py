@@ -3,6 +3,12 @@
 # update multiple files and it allows me to create
 # functions to get the "actual" size of the structure
 # without padding. No duplicate files to update.
+
+# Define constants to specify which
+# c function to use for converting bytes.
+NONE = 0;
+LONG = 1;
+SHORT = 2;
 class Struct:
 	def __init__(self, name, comment):
 		self.size = 0
@@ -13,7 +19,7 @@ class Struct:
 		# [ ("uint8_t", "packetType", "0") ]
 		self.members = []
 		self.validTypes = ["uint8_t", "uint16_t", "uint32_t", "uint64_t", "float"]
-	def addMember(self,mtype, mname, msize, arrSize):
+	def addMember(self,mtype, mname, msize, convFunc):
 		# Tell user if there is an error in their type
 		# Need better way to do this...., user could
 		# define their own type and I assume pointers
@@ -21,8 +27,14 @@ class Struct:
 		# Nested structures aren't very well supported.
 		#if (mtype not in self.validTypes):
 		#	raise Exception("Invalid type: %s" % (mtype, ) )
+		if (convFunc == LONG):
+			convFunc = ["htonl", "ntohl"]
+		elif (convFunc == SHORT):
+			convFunc = ["htons", "ntohs"]
+		else:
+			convFunc = ["",""]
 		self.size = self.size + msize
-		self.members.append((mtype, mname, arrSize))
+		self.members.append((mtype, mname, convFunc))
 
 	def __str__(self):
 		retStr = self.comment
@@ -31,44 +43,27 @@ class Struct:
 			retStr = retStr + "\t%s\t%s;\n" % (i[0], i[1])
 		retStr += "} %s_t;\n" % ( self.name, )
 		return retStr
-	def printSize(self):
-		retStr = "\n#define %s %s" % (self.name.upper() + "SIZE", self.size)
+	def htonFunctionPrototype(self):
+		retStr = "\nvoid\t%sHton(%s_t *p);" % (self.name, self.name )
 		return retStr
-	def packFunctionPrototype(self):
-		retStr = "\nvoid\t%sPack(%s_t *p, uint8_t *buf);" % (self.name, self.name )
+	def ntohFunctionPrototype(self):
+		retStr = "\nvoid\t%sNtoh(%s_t *p);" % (self.name, self.name )
 		return retStr
-	def unpackFunctionPrototype(self):
-		retStr = "\nvoid\t%sUnpack(%s_t *p, uint8_t *buf);" % (self.name, self.name )
-		return retStr
-	def packFunction(self):
-		retStr = "\nvoid\t%sPack(%s_t *p, uint8_t *buf)\n{" % (self.name, self.name )
-		retStr += "\n\tuint32_t i = 0;\n"
+	def htonFunction(self):
+		retStr = "\nvoid\t%sHton(%s_t *p)\n{" % (self.name, self.name )
 		for i in self.members:
 			if (i[0] in self.validTypes):
-				if (i[2] == 0):
-					retStr += "\n\t*((%s *)&buf[i]) = p->%s;" % (i[0], i[1].split('[')[0])
-					retStr += "\n\ti += sizeof(%s);" % (i[0], )
-				else:
-					for j in range(i[2]):
-						retStr += "\n\t*((%s *)&buf[i]) = p->%s[%d];" % (i[0], i[1].split('[')[0], j)
-						retStr += "\n\ti += sizeof(%s);" % (i[0], )
+				retStr += "\n\tp->%s = %s(p->%s);" % (i[1], i[2][0], i[1])
 
 		retStr += "\n}\n"
 		return retStr
-	def unpackFunction(self):
-		retStr = "\nvoid\t%sUnpack(%s_t *p, uint8_t *buf)\n{" % (self.name, self.name )
-		retStr += "\n\tuint32_t i = 0;\n"
+	def ntohFunction(self):
+		retStr = "\nvoid\t%sNtoh(%s_t *p)\n{" % (self.name, self.name )
 		for i in self.members:
 			# Updated to exclude packetType from unpacking...
 			# packetType is usually already read when I want to unpack.
-			if (i[0] in self.validTypes and i[1] != "packetType"):
-				if (i[2] == 0):
-					retStr += "\n\tp->%s = *((%s *)&buf[i]);" % (i[1].split('[')[0], i[0])
-					retStr += "\n\ti += sizeof(%s);" % (i[0], )
-				else:
-					for j in range(i[2]):
-						retStr += "\n\t p->%s[%d] = *((%s *)&buf[i]);" % (i[1].split('[')[0],j, i[0])
-						retStr += "\n\ti += sizeof(%s);" % (i[0], )
+			if (i[0] in self.validTypes):
+				retStr += "\n\tp->%s = %s(p->%s);" % (i[1], i[2][1], i[1])
 
 		retStr += "\n\treturn;\n}\n"
 		return retStr
@@ -77,38 +72,16 @@ class Struct:
 # between headset and ccu
 addDefines = """
 #define MAXNUMHEADSETS 10
-#define HEADERSIZE 3
-#define CRCSIZE 2
 """
+
 # Shared functions between headset and ccu
+# These are miscelaneous functions.
 addFuncProtStr = """
-void addHeader(uint8_t *buf);
-uint16_t calcCrc(char *packet, int size);"""
+
+"""
 
 addFuncDefStr = """
-void addHeader(uint8_t *buf)
-{
-  buf[0] = 'P';
-  buf[1] = 'A';
-  buf[2] = 'C';
-  return;
-}
 
-// Function: calcCrc
-// This function takes a list of characters
-// which has probably been cast that way from a
-// structure and performs a crc calculation.
-uint16_t calcCrc(char *packet, int size)
-{
-  uint16_t ret = 0;
-  // Make sure min size is one byte plus the 16bit crc
-  if (packet != 0 /*NULL*/ && size > 1+sizeof(short))
-  {
-    ret = ( ((short)packet[0]) << 8) + packet[size-sizeof(short)];
-    return ret;
-  }
-  return 0;
-}
 """
 
 # Packet definitions
@@ -130,16 +103,16 @@ enum packetType
 objInfoStr = """
 // Information for an object."""
 objInfo = Struct("objInfo", objInfoStr)
-objInfo.addMember("uint8_t", "instId", 1, 0) 	  # instance id of the object.
-objInfo.addMember("uint8_t", "typeShow", 1, 0)  # 0 (3d object hidden) 2 (3d object shown)
+objInfo.addMember("uint8_t", "instId", 1, NONE) 	  # instance id of the object.
+objInfo.addMember("uint8_t", "typeShow", 1, NONE)  # 0 (3d object hidden) 2 (3d object shown)
 																								# 1 (2d object hidden) 3 (2d object shown)
-objInfo.addMember("uint16_t", "x2", 2, 0)       # 2d coordinates of object.
-objInfo.addMember("uint16_t", "y2", 2, 0)			
-objInfo.addMember("float", "x3", 4, 0)       		# 3d coordinates of object.
-objInfo.addMember("float", "y3", 4, 0)
-objInfo.addMember("float", "roll", 4, 0)  			# orientation of object.
-objInfo.addMember("float", "pitch", 4, 0)
-objInfo.addMember("float", "yaw", 4, 0)
+objInfo.addMember("uint16_t", "x2", 2, SHORT)       # 2d coordinates of object.
+objInfo.addMember("uint16_t", "y2", 2, SHORT)			
+objInfo.addMember("float", "x3", 4, LONG)       		# 3d coordinates of object.
+objInfo.addMember("float", "y3", 4, LONG)
+objInfo.addMember("float", "roll", 4, LONG)  			# orientation of object.
+objInfo.addMember("float", "pitch", 4, LONG)
+objInfo.addMember("float", "yaw", 4, LONG)
 
 broadCastPacketStr = """
 // broadCastPacket: This is the packet
@@ -148,10 +121,9 @@ broadCastPacketStr = """
 // packets to know how many headsets are
 // available."""
 broadCastPacket = Struct("broadCastPacket",broadCastPacketStr)
-broadCastPacket.addMember("uint8_t", "packetType", 1, 0)
-broadCastPacket.addMember("uint8_t", "address[16]", 16, 16)
-broadCastPacket.addMember("float", "lattitude", 4, 0)
-broadCastPacket.addMember("float", "longitude", 4, 0)
+broadCastPacket.addMember("uint8_t", "packetType", 1, NONE)
+broadCastPacket.addMember("float", "lat", 4, LONG)
+broadCastPacket.addMember("float", "lon", 4, LONG)
 
 acceptHeadsetStr = """
 // AcceptHeadset:
@@ -159,10 +131,9 @@ acceptHeadsetStr = """
 // This tells the headset it is included and
 // tells it where the geospatial origin is."""
 acceptHeadset = Struct("acceptHeadset", acceptHeadsetStr)
-acceptHeadset.addMember("uint8_t", "packetType", 1, 0)
-acceptHeadset.addMember("uint8_t", "id[16]", 16, 16)
-acceptHeadset.addMember("float", "x", 4, 0)
-acceptHeadset.addMember("float", "y", 4, 0)
+acceptHeadset.addMember("uint8_t", "packetType", 1, NONE)
+acceptHeadset.addMember("float", "x", 4, LONG)
+acceptHeadset.addMember("float", "y", 4, LONG)
 
 loadStaticDataStr = """
 // LoadStaticData:
@@ -172,32 +143,32 @@ loadStaticDataStr = """
 // the initial number and placement of objects as well as their id.
 """
 loadStaticData = Struct("loadStaticData",loadStaticDataStr)
-loadStaticData.addMember("uint8_t", "packetType", 1, 0)
-loadStaticData.addMember("uint32_t", "numBytes", 4, 0)
+loadStaticData.addMember("uint8_t", "packetType", 1, NONE)
+loadStaticData.addMember("uint32_t", "numBytes", 4, LONG)
 
 updateObjInstanceStr = """
 // UpdateObjInstance:
 // Sent from ccu to headset to update the location
 // of one or more objects."""
 updateObjInstance = Struct("updateObjInstance", updateObjInstanceStr)
-updateObjInstance.addMember("uint8_t", "packetType", 1, 0)
-updateObjInstance.addMember("uint8_t", "numObj", 1, 0)
-updateObjInstance.addMember("uint8_t", "updateNumber", 1, 0)
-updateObjInstance.addMember("objInfo_t", "*objList", 0, 0)
+updateObjInstance.addMember("uint8_t", "packetType", 1, NONE)
+updateObjInstance.addMember("uint8_t", "numObj", 1, NONE)
+updateObjInstance.addMember("uint8_t", "updateNumber", 1, NONE)
+updateObjInstance.addMember("objInfo_t", "*objList", 0, LONG)
 
 startSimulationStr = """
 // StartSimulation:
 // Sent from ccu to one or more headsets
 // This tells a headset to begin simulation."""
 startSimulation = Struct("startSimulation", startSimulationStr)
-startSimulation.addMember("uint8_t", "packetType", 1, 0)
+startSimulation.addMember("uint8_t", "packetType", 1, NONE)
 
 endSimulationStr = """
 // EndSimulation:
 // Sent from ccu to one or more headsets
 // This tells a headset to end the simulation."""
 endSimulation = Struct("endSimulation", endSimulationStr)
-endSimulation.addMember("uint8_t", "packetType", 1, 0)
+endSimulation.addMember("uint8_t", "packetType", 1, NONE)
 
 heartBeatStr = """
 // HeartBeat: This is the packet
@@ -205,13 +176,12 @@ heartBeatStr = """
 // during a simulation to inform the ccu
 // about it's gps location and orientation."""
 heartBeat = Struct("heartBeat", heartBeatStr)
-heartBeat.addMember("uint8_t", "packetType", 1, 0)
-heartBeat.addMember("uint8_t", "id[8]", 8, 8) # lower 8 bytes of address.
-heartBeat.addMember("float", "x", 4, 0)
-heartBeat.addMember("float", "y", 4, 0)
-heartBeat.addMember("float", "roll", 4, 0)
-heartBeat.addMember("float", "pitch", 4, 0)
-heartBeat.addMember("float", "yaw", 4, 0)
+heartBeat.addMember("uint8_t", "packetType", 1, NONE)
+heartBeat.addMember("float", "x", 4, LONG)
+heartBeat.addMember("float", "y", 4, LONG)
+heartBeat.addMember("float", "roll", 4, LONG)
+heartBeat.addMember("float", "pitch", 4, LONG)
+heartBeat.addMember("float", "yaw", 4, LONG)
 
 confirmPacketStr = """
 // confirmPacket: This is the packet
@@ -219,13 +189,13 @@ confirmPacketStr = """
 // that it received an update from the ccu.
 // Sent from headset directly to ccu."""
 confirmPacket = Struct("confirmPacket", confirmPacketStr)
-confirmPacket.addMember("uint8_t", "packetType", 1, 0)
-confirmPacket.addMember("uint8_t", "updateNumber", 1, 0)
+confirmPacket.addMember("uint8_t", "packetType", 1, NONE)
+confirmPacket.addMember("uint8_t", "updateNumber", 1, NONE)
 
 goBackStr = """
 // Sent from ccu directly to a headset."""
 goBack = Struct("goBack", goBackStr)
-goBack.addMember("uint8_t", "packetType", 1, 0)
+goBack.addMember("uint8_t", "packetType", 1, NONE)
 
 packetList = []
 packetList.append(objInfo)

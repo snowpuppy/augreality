@@ -26,9 +26,9 @@
 // Local Function prototypes.
 //int readBytes(int fd, char *data, int numBytes);
 
-// Global Variables.
-std::map<std::string, broadCastInfo_t> broadCastList;
-std::map<std::string, heartBeatInfo_t> heartBeatList;
+// Global Variables (Maps ip addresses information.)
+std::map<uint32_t, broadCastInfo_t> broadCastList;
+std::map<uint32_t, heartBeatInfo_t> heartBeatList;
 // 
 int32_t g_packetLibPort;
 int32_t g_udpPort = DEFAULT_UDP_PORT;
@@ -118,6 +118,7 @@ int16_t startSimulation()
 	*/
   return 0;
 }
+
 // endSimulationID(id)
 int16_t endSimulationID(uint8_t *destId)
 {
@@ -130,11 +131,12 @@ int16_t endSimulationID(uint8_t *destId)
 	*/
 	return 0;
 }
+
 // sendFile(filename)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
-  uint8_t buf[LOADSTATICDATASIZE + HEADERSIZE + CRCSIZE];
+  uint8_t buf[sizeof(loadStaticData_t)];
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
   FILE *fp = NULL;
@@ -158,7 +160,7 @@ int16_t sendFile(char *filename)
 	// Add header info and crc.
   //addHeader(buf);
 	// Write the packet to the serial port.
-  write(g_packetLibPort, buf, LOADSTATICDATASIZE + HEADERSIZE);
+  write(g_packetLibPort, buf, sizeof(loadStaticData_t));
   // Write the file to the serial port
   while ( !feof(fp))
   {
@@ -510,6 +512,43 @@ int bindToUdpPort(int port)
   return socketId;
 }
 
+int connectToServer(int port, uint32_t addr)
+{
+  int fd = 0;
+	int rc = 0;
+  struct sockaddr_in sockAddr = {0};
+	char paddr[INET_ADDRSTRLEN];
+	uint32_t n_addr = htonl(addr);
+	uint32_t n_myIp = htonl(g_myIp);
+
+  // Fill out connection structure.
+  sockAddr.sin_port = htons(port);
+  sockAddr.sin_family = AF_INET;
+  sockAddr.sin_addr.s_addr = htonl(addr);
+
+	inet_ntop(AF_INET, &n_addr, paddr, INET_ADDRSTRLEN);
+	printf("Connecting to %s\n", paddr);
+	inet_ntop(AF_INET, &n_myIp, paddr, INET_ADDRSTRLEN);
+	printf("My Ip: %s\n", paddr);
+
+	// Create a socket.
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if ( fd < 0 )
+	{
+		perror("Error creating socket!\n");
+		return -1;
+	}
+
+	//Connect to server
+	rc = connect(fd, (const struct sockaddr *) &sockAddr, sizeof(sockAddr) );
+	if ( rc < 0 )
+	{
+		fprintf(stderr,"Error connecting to port %d!\n", port);
+		return -1;
+	}
+	return fd;
+}
+
 void sendUpdatePacket(int udpFd, int *state)
 {
 	switch (*state)
@@ -556,12 +595,31 @@ void processPacket(int udpFd, int tcpFd, int ret, int pType, int *state)
 	return;
 }
 
-int16_t writeTcpByteStream(void *buf, uint16_t size)
+int32_t writeTcpByteStream(void *buf, uint32_t size)
 {
-	return 0;
+	int32_t fd = 0, rc = 0;
+
+	// Open connection.
+	fd = connectToServer(g_tcpPort, g_myIp); // TODO: change from myIp!
+	if (fd < 0)
+	{
+		perror("writeTcpByteStream:Error connecting to server.\n");
+		return -1;
+	}
+	rc = write(fd, (void *)buf, size);
+	if (rc < 0)
+	{
+		perror("writeTcpByteStream:Error writing to socket.\n");
+		return -1;
+	}
+	printf("Sent tcp packet\n");
+	// Close socket.
+	close(fd);
+
+	return rc;
 }
 
-int16_t writeUdpByteStream(void *msg, uint16_t size, uint32_t dest)
+int32_t writeUdpByteStream(void *msg, uint32_t size, uint32_t dest)
 {
   // Variables.
   int rc = 0;
@@ -598,18 +656,64 @@ int16_t writeUdpByteStream(void *msg, uint16_t size, uint32_t dest)
   return bytesSent;
 }
 
-int16_t readTcpByteStream(void *buf, uint16_t size)
+int32_t readTcpByteStream(void *buf, uint32_t size)
 {
-	return 0;
+	uint32_t clientlen = 0, connfd = 0;
+	struct sockaddr_in clientaddr = {0};
+	int32_t rc = 0;
+
+	connfd = accept(g_tcpFd, (struct sockaddr *)&clientaddr, &clientlen);
+
+	rc = read(connfd, (void *)buf, size);
+	if (rc < 0)
+	{
+		perror("getAcceptPacket: Could not read from file descriptor.");
+	}
+	close(connfd);
+
+	return rc;
 }
-int16_t readUdpByteStream(void *buf, uint16_t size, uint16_t peek)
+
+int32_t readUdpByteStream(void *buf, size_t size, uint32_t *addr, uint32_t peek)
 {
-	return 0;
+	char paddr[INET_ADDRSTRLEN];
+	int flags = 0;
+	struct sockaddr src_addr = {0};
+	socklen_t addrlen = sizeof(src_addr);
+	int ret = 0;
+
+	// Set the call to peek if the user requests
+	// so that the next call will read the same
+	// data.
+	if (peek)
+	{
+		flags = MSG_PEEK;
+	}
+
+	// Retrieve data from the socket!
+	ret = recvfrom(g_udpFd, buf, size, flags, &src_addr, &addrlen);
+	if (ret < 0)
+	{
+		perror("Error receiving message!\n");
+		return -1;
+	}
+	// Return the address associated with this
+	// network packet....
+	inet_ntop(AF_INET, &(((struct sockaddr_in *)&src_addr)->sin_addr), paddr, INET_ADDRSTRLEN);
+	*addr = ntohl((((struct sockaddr_in *)&src_addr)->sin_addr.s_addr));
+#if DEBUG
+	printf("Received %d bytes from %s\n", ret, paddr);
+#endif
+
+	return ret;
 }
 
 uint8_t detectUdpType(int fd)
 {
-	return 0;
+	uint8_t packetType = 0;
+	uint32_t addr = 0;
+	readUdpByteStream(&packetType, sizeof(packetType), &addr, 1);
+	return packetType;
 }
 
 uint8_t detectTcpType(int fd)
@@ -619,30 +723,14 @@ uint8_t detectTcpType(int fd)
 
 void getBroadCastPacket(void)
 {
-	/*
 	broadCastPacket_t p;
-	uint16_t i = 0, j = 0;
-	// use BROADCASTPACKETSIZE-1 because
-	// packetType was already read
-	uint8_t buf[BROADCASTPACKETSIZE-1];
-	readBytes(g_packetLibPort, buf, BROADCASTPACKETSIZE-1);
-	broadCastPacketUnpack(&p,buf);
-	if (findBroadCasting(p.address) < 0)
-	{
-		i = g_numBroadCasting;
-		strncpy(g_broadCasting[i].address, p.address, SIZEOFID);
-		g_numBroadCasting++;
-    printf("\nProcessed broadcast packet num: %d\n", g_numBroadCasting);
-		printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
-		for (j = 0; j < MAXSIZEOFID; j++)
-		{
-			printf("%2.2X ", p.address[j]);
-		}
-		printf("\n");
-	}
-	g_broadCasting[i].lat = p.lat;
-	g_broadCasting[i].lon = p.lon;
-	*/
+	uint32_t addr = 0;
+
+	// Read in the broadcast packet.
+	readUdpByteStream(&p, sizeof(broadCastPacket_t), &addr, 0);
+	printf("\nProcessed broadcast packet num: %d\n", addr);
+	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
+	// TODO: Assign this info to a local structure of data.
 	return;
 }
 

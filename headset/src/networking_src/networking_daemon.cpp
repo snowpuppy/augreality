@@ -22,7 +22,8 @@ int main(void)
 	int ret = 0;
 	uint8_t pac[3];
 	uint8_t packetType = 0;
-	int32_t state = INIT;
+	//int32_t state = INIT;
+	int32_t state = BROADCAST;
 
 	// Initialize networking stuff.
 	ret = wirelessConnection();
@@ -74,6 +75,7 @@ int main(void)
 
 		// Wait for packet.
 		ret = checkForNewPackets(udpFd, tcpFd);
+		printf("Ret = %d.\n", ret);
 		// Find out what packet was received.
 		switch (ret)
 		{
