@@ -1,4 +1,13 @@
-/* Includes */
+/*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
+ * main.c - Sensor microcontroller source code
+ */
 
 #include "main.h"
 #include "imu.h"
@@ -22,17 +31,6 @@
 #define ROLOFFSET 12
 #define YAWOFFSET 16
 #define SATOFFSET 20
-
-// Spi shared data.
-// Data ready indicator.
-// Buffer, length of data,
-// and synchronization primitive.
-/*
-static int spiDataReady = 0;
-static uint8_t spiBuf[256] = {0};
-static uint8_t spiNumBytesRdy = 0;
-static uint8_t spiMutex = 0;
-*/
 
 // GPS state machine for stream reading
 static struct {
@@ -117,24 +115,14 @@ int main(void) {
 static void transmitData(void) {
 	static uint32_t count = 0;
 	uint32_t bytesWritten = 0;
-	if (millis() > count + FIFTY_MSECOND)
-	{
+	if (millis() > count + FIFTY_MSECOND) {
 		count = millis();
-		do
-		{
-			bytesWritten += usbVCPWrite(headsetData+bytesWritten, HEADSETDATABYTES-bytesWritten);
-		} while (bytesWritten < HEADSETDATABYTES);
-	/*
-	size = snprintf((char *)buffer, 256, "%0.2f %0.2f %0.2f %0.2f %0.2f %0.2f",
-		*((float *)&headsetData[0]),
-		*((float *)&headsetData[4]),
-		*((float *)&headsetData[8]),
-		*((float *)&headsetData[12]),
-		*((float *)&headsetData[16]),
-		*((float *)&headsetData[20])
-		);
-	usbVCPWrite(buffer, size);
-	*/
+		if (usbVCPConnected())
+			// Write all bytes, even if buffer needs to evicted by the host
+			do {
+				bytesWritten += usbVCPWrite(headsetData + bytesWritten, HEADSETDATABYTES -
+					bytesWritten);
+			} while (bytesWritten < HEADSETDATABYTES);
 	}
 }
 

@@ -1,7 +1,14 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * comm.h - SPI slave driver and USART communication drivers for STM32F4xx chip
  *
- * Used for Raspberry PI communication and the GPS/XBee/Spare headers.
+ * Used for the GPS and Spare headers, along with some indirect support for USB to Serial.
  */
 
 #ifndef COMM_H_

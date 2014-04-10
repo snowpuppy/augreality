@@ -1,4 +1,11 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * imu.h - 9-DOF IMU access and hardware support functions for reading gyro, accelerometer, and
  * compass data from the onboard L3DG20 and LSM303DHLC chips
  */

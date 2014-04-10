@@ -102,7 +102,6 @@
 static void SetSysClock(void);
 
 void SystemInit(void) {
-
 	/* Set MSION bit */
 	RCC->CR |= 0x00000100;
 
@@ -137,55 +136,54 @@ void SystemInit(void) {
  * @retval None
  */
 static void SetSysClock(void) {
-	uint32_t startUpCounter = 0, hseStatus = 0;
-
-	/* Enable HSE */
-	RCC->CR |= ((uint32_t) RCC_CR_HSEON);
-
-	/* Wait till HSE is ready and if Time out is reached exit */
-	do {
-		hseStatus = RCC->CR & RCC_CR_HSERDY;
-		startUpCounter++;
-	} while ((hseStatus == 0) && (startUpCounter < HSE_STARTUP_TIMEOUT));
-
-	if (hseStatus) {
-		/* Enable 64-bit access, prefetch buffer, 1 WS */
+	uint32_t startUpCounter = HSE_STARTUP_TIMEOUT;
+	// Enable HSE and LSI
+	RCC->CR |= RCC_CR_HSEON;
+	RCC->CSR |= RCC_CSR_LSION;
+	// HCLK = SYSCLK / 1, PCLK2 = HCLK / 1, PCLK1 = HCLK / 1
+	RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE2 | RCC_CFGR_PPRE1)) |
+		RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE2_DIV1 | RCC_CFGR_PPRE1_DIV1;
+	// Wait till HSE is ready
+	while (!(RCC->CR & RCC_CR_HSERDY) && --startUpCounter > 0);
+	if (startUpCounter > 0) {
+		// Enable 64-bit access, prefetch buffer, 1 WS
+		// NOTE These cannot be combined into one statement!
 		FLASH->ACR |= FLASH_ACR_ACC64;
 		FLASH->ACR |= FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY;
-
-		/* Power enable */
+		// Enable clock to PWR module
 		RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 		__DSB();
-
-		/* Select the Voltage Range 1 (1.8 V) */
+		// Select Voltage Range 1 (1.8 V) required for USB
 		PWR->CR = PWR_CR_VOS_0;
 		__DSB();
-
-		/* Wait Until the Voltage Regulator is ready */
-		while ((PWR->CSR & PWR_CSR_VOSF) != RESET);
-
-		/* HCLK = SYSCLK / 1, PCLK2 = HCLK / 1, PCLK1 = HCLK / 1 */
-		RCC->CFGR |= RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE2_DIV1 | RCC_CFGR_PPRE1_DIV1;
-
-		/* PLL configuration */
-		RCC->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMUL | RCC_CFGR_PLLDIV);
-		RCC->CFGR |= RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMUL12 | RCC_CFGR_PLLDIV3;
-
-		/* Enable PLL */
+		// Wait until the voltage regulator is ready
+		while (PWR->CSR & PWR_CSR_VOSF);
+		// PLL configuration: *12, /3 (overall X4)
+		RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMUL | RCC_CFGR_PLLDIV)) |
+			RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMUL12 | RCC_CFGR_PLLDIV3;
+		// Enable PLL
 		RCC->CR |= RCC_CR_PLLON;
-
-		/* Wait till PLL is ready */
-		while ((RCC->CR & RCC_CR_PLLRDY) == 0);
-
-		/* Select PLL as system clock source */
-		RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_PLL;
-
-		/* Wait till PLL is used as system clock source */
-		while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
-	} else {
-		/* If HSE fails to start-up, the application will have wrong clock
-		 configuration. User can add here some code to deal with this error */
+		// Wait till PLL is ready
+		while (!(RCC->CR & RCC_CR_PLLRDY) && --startUpCounter > 0);
+		if (startUpCounter > 0) {
+			// Select PLL as system clock source
+			RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_PLL;
+			// Wait till PLL is used as system clock source
+			while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL && --startUpCounter > 0);
+		}
 	}
+	if (startUpCounter == 0) {
+		// The MSI will be selected as system clock (this allows us to come up, but w/o USB)
+		RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_MSI;
+		while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI);
+		// If HSE fails to start-up, or if PLL fails to lock
+		RCC->CR &= ~(RCC_CR_HSEON | RCC_CR_PLLON);
+	}
+	// Wait for LSI to be ready
+	while (!(RCC->CSR & RCC_CSR_LSIRDY));
+	// Set the MSI to 1.048 MHz
+	RCC->ICSCR = (RCC->ICSCR & ~RCC_ICSCR_MSIRANGE) | RCC_ICSCR_MSIRANGE_4;
+	__DSB();
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

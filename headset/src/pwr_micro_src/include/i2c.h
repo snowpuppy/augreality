@@ -1,4 +1,11 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * i2c.h - I2C (TWI) implementation for STM32F1/3/4xx and STM32L1xx chips
  */
 

@@ -1,3 +1,15 @@
+/*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
+ * printf.h - Definitions and declarations to support limited subset of standard I/O on the
+ * power microcontroller
+ */
+
 #ifndef PRINTF_H_
 #define PRINTF_H_
 

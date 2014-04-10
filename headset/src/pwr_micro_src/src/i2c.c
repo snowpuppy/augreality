@@ -1,20 +1,12 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * i2c.c - I2C implementation
- *
- * This file is part of the Purdue Robotics Operating System (PROS).
- *
- * PROS is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * PROS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with PROS. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "main.h"
@@ -44,10 +36,9 @@ volatile I2CStatus_TypeDef i2cState;
 void i2cInit() {
 	GPIO_InitTypeDef gs;
 	I2C_InitTypeDef is;
-	// Clocks on
+	// I2C clocks on
 	RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 	__DSB();
-	// GPIOs set up
 	gs.GPIO_Mode = GPIO_Mode_AF;
 	gs.GPIO_OType = GPIO_OType_OD;
 	gs.GPIO_PuPd = GPIO_PuPd_NOPULL;
@@ -190,7 +181,7 @@ bool i2cWriteRegister(uint8_t addr, uint8_t reg, uint8_t value) {
 }
 
 // I2C2 event interrupt
-void __attribute__ ((interrupt("IRQ"))) I2C2_EV_IRQHandler() {
+void IRQ I2C2_EV_IRQHandler(void) {
 	uint16_t sr1 = I2C2->SR1;
 	volatile I2CStatus_TypeDef *state = &i2cState;
 	// Read SR2
@@ -253,7 +244,7 @@ void __attribute__ ((interrupt("IRQ"))) I2C2_EV_IRQHandler() {
 }
 
 // I2C2 error interrupt
-void __attribute__ ((interrupt("IRQ"))) I2C2_ER_IRQHandler() {
+void IRQ I2C2_ER_IRQHandler(void) {
 	uint16_t cr, flags = I2C2->SR1;
 	// Store interrupt flags, then clear them
 	I2C2->SR1 = flags & ~(I2C_SR1_ARLO | I2C_SR1_BERR | I2C_SR1_OVR | I2C_SR1_AF);

@@ -1,4 +1,11 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * nmea.h - GPS NMEA parser for determining latitude and longitude from the Venus standard
  * GPS data
  */
