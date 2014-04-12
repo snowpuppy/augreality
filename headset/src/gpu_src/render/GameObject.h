@@ -21,6 +21,8 @@ public:
                bool visible = true);
     void setPosition(irr::core::vector3df position);
     void setRotation(irr::core::vector3df rotation);
+    void setPosition(float, float, float);
+    void setRotation(float, float, float);
     void setScale(irr::core::vector3df scale);
     void setVisible(bool visible);
 

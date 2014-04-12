@@ -6,6 +6,7 @@
 #include "SensorReader.h"
 #include "genlevel.c"
 #include "gpuPyThreadInterface.h"
+#include "../../networking_src/packets.h"
 
 using namespace irr;
 using namespace core;
@@ -21,6 +22,8 @@ using namespace gui;
 #define CAMERA_SPEED 40.0f
 #define PROCESS 1
 #define HEADSET_VERSION
+
+GameObject *objects;
 
 #ifdef PROCESS
 int main(int argc, char *argv[]) {
@@ -62,7 +65,6 @@ int render(int argc, char *argv[]) {
     GameObject::setSceneManager(smgr);
 
     //load level file
-    GameObject *objects = new GameObject[2096];
     writeLevel(configFileName, modelsPath);
     GameObject::loadConfigFile("tmp.cfg", objects);
 
@@ -76,7 +78,7 @@ int render(int argc, char *argv[]) {
     device->getCursorControl()->setVisible(false);
     vector3df camerapos = camera->getPosition();
     vector3df camerarot = vector3df(0, 0, 0);
-    
+    objects = new GameObject[2096];
     //get font
     IGUIFont* font = device->getGUIEnvironment()->getBuiltInFont();
 
@@ -164,4 +166,16 @@ int render(int argc, char *argv[]) {
     std::cout << "Rendering exit\n";
     device->drop();
     return 0;
+}
+
+void updateObjects(objInfo_t *objInfo, int size) {
+    int instId;
+    objInfo_t objinfo;
+    for(int i=0; i<size; i++) {
+        objinfo = objInfo[i];
+        instId = objinfo.instId;
+        objects[instId].setPosition(objinfo.x3, objinfo.y3, 0.0);
+        objects[instId].setRotation(objinfo.roll, objinfo.pitch, objinfo.yaw);
+        objects[instId].setVisible(objinfo.typeShow);
+    }
 }
