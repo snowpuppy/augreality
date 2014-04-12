@@ -27,7 +27,7 @@
 //int readBytes(int fd, char *data, int numBytes);
 
 // Global Variables (Maps ip addresses information.)
-std::map<uint32_t, broadCastInfo_t> broadCastList;
+std::map<uint32_t, broadCastPacket_t> broadCastList;
 std::map<uint32_t, heartBeatInfo_t> heartBeatList;
 // 
 int32_t g_packetLibPort;
@@ -41,94 +41,147 @@ int32_t g_tcpFd = 0;
 
 // API FUNCTIONS
 
-// Function: getBroadCastingLoc(id)
-// Returns an object for a given id that specifies
-// the location information for that object.
-int16_t getBroadCastingLoc(headsetPos_t *pos, uint8_t *id)
-{
-	/*
-	std::map<std::string, broadCastInfo_t>::iterator mapIt;
-	// Assume incoming string id is NULL terminated!
-	mapIt = broadCastList.find(std::string(id,MAXNUMHEADSETS));
-	if (mapIt != broadCastList.end())
-	{
-		*pos = mapIt->second;
-	}
-	*/
-  return 0;
-}
-
 // Function: getNumBroadCasting()
 // Return the number of Headsets
 // currently broadcasting.
 uint16_t getNumBroadCasting()
 {
-	/*
-	return g_numBroadCasting;
-	*/
-	return 0;
+	return broadCastList.size();
 }
 
 // Function: getBroadCastingIDs()
 // Copies id numbers into the list and returns
 // the number of values copied.
 // Returns the number of IDs in the array, -1 on error.
-int16_t getBroadCastingIDs(uint8_t *ids, uint16_t numIds)
+int16_t getBroadCastingIDs(uint32_t *ids, uint16_t numIds)
 {
-	/*
-	int16_t i = 0;
-	for (i = 0; i < numIds && i < g_numBroadCasting; i++)
+	int i = 0;
+	std::map<uint32_t, broadCastPacket_t>::iterator it;
+	for (i=0,it = broadCastList.begin(); i < numIds && it != broadCastList.end(); i++, it++)
 	{
-		strncpy(&ids[i*SIZEOFID], g_broadCasting[i].address, SIZEOFID);
+		ids[i] = it->first;
 	}
 	return i;
-	*/
-	return 0;
 }
 
 // Function: acceptID(id)
-int16_t acceptID(uint8_t *ccuId, uint8_t *destId, float originLat, float originLon )
+int16_t acceptID(uint32_t destId, float originLat, float originLon )
 {
-	/*
-	uint16_t i = 0;
-	// Create a packet and stuff it.
-	acceptHeadset_t p = {0};
-	p.packetType = BROADCASTPACKET;
-	for (i = 0; i < SIZEOFID; i++)
-	{
-		p.id[i] = ccuId[i];
-	}
+	acceptHeadset p;
+	uint32_t fd = 0;
+	uint32_t rc = 0;
+	uint32_t ret = 0;
+	uint8_t buf[8];
+	p.packetType = ACCEPTHEADSET;
 	p.x = originLat;
 	p.y = originLon;
-	// Pack the packet to a byte stream.
-	// Add header info and crc.
-	// Write the packet to the serial port.
-	*/
-  return 0;
-}
-// startSimulation()
-int16_t startSimulation()
-{
-	/*
-	startSimulation_t p = {0};
-	p.packetType = STARTSIMULATION;
-	// Pack the packet to a byte stream.
-	// Add header info and crc.
-	// Write the packet to the serial port.
-	*/
+	// convert the accept packet to network
+	// byte format.
+	acceptHeadsetHton(&p);
+	// Connect to the specified host.
+	fd = connectToServer(g_tcpPort, destId);
+	if (fd < 0)
+	{
+		perror("acceptID:Error connecting to server.\n");
+		close(fd);
+		return -1;
+	}
+	// write the type of packet to the wire.
+	rc = write(fd, &p.packetType, sizeof(p.packetType));
+	if (rc < 0)
+	{
+		perror("acceptID:Error writing to socket.\n");
+		close(fd);
+		return -1;
+	}
+	// write the accept packet to the wire.
+	rc = write(fd, &p, sizeof(p));
+	if (rc < 0)
+	{
+		perror("acceptID:Error writing to socket.\n");
+		close(fd);
+		return -1;
+	}
+	// read in two bytes to get response.
+	rc = read(fd, buf, sizeof("ok"));
+	if (rc < 0)
+	{
+		perror("acceptID:Error reading from socket.\n");
+		close(fd);
+		return -1;
+	}
+	// Check to see if we were able to accept the headset.
+	if (strncmp((char *)buf,"ok",2) != 0)
+	{
+		perror("acceptID:Error did not receive ok!.\n");
+		close(fd);
+		return -1;
+	}
+	close(fd);
   return 0;
 }
 
-// endSimulationID(id)
-int16_t endSimulationID(uint8_t *destId)
+int16_t getAcceptID(int32_t connfd)
 {
-	/*
-	endSimulation_t p = {0};
+	int32_t rc = 0;
+	uint8_t buf[] = "ok";
+	acceptHeadset p;
+
+	// Read the packet off of the wire. Note that we sent the id
+	// twice so that this packet reading operation could work. I
+	// understand that it is inefficient, but it is also easy to
+	// fix and is currently more flexible.
+	rc = read(connfd, &p, sizeof(p));
+	if (rc < 0)
+	{
+		perror("getAcceptID: Could not read from file descriptor.");
+		return -1;
+	}
+	acceptHeadsetNtoh(&p);
+	setGPSOrigin(p.x,p.y);
+	// respond with an ok.
+	rc = write(connfd, buf, sizeof("ok"));
+	if (rc < 0)
+	{
+		perror("getAcceptID: Could not write to file descriptor.");
+		return -1;
+	}
+	return 0;
+}
+
+// startSimulation()
+int16_t startSimulation()
+{
+	startSimulation_t p;
+	int32_t rc = 0;
+	p.packetType = STARTSIMULATION;
+	startSimulationHton(&p);
+	writeUdpByteStream((void *)&p, sizeof(p), 0);
+  return 0;
+}
+
+int16_t getStartSimulation(int32_t connfd)
+{
+	startSimulation_t p;
+	int32_t rc = 0;
+	return 0;
+}
+
+// endSimulationID(id)
+int16_t endSimulationID(uint32_t destId)
+{
+	endSimulation_t p;
+	int32_t rc = 0;
 	p.packetType = ENDSIMULATION;
-	// Pack the packet to a byte stream.
-	// Add header info and crc.
-	// Write the packet to the serial port.
-	*/
+	endSimulationHton(&p);
+	writeUdpByteStream((void *)&p, sizeof(p), destId);
+	return 0;
+}
+
+int16_t getEndSimulation(int32_t connfd)
+{
+	endSimulation_t p;
+	int32_t rc = 0;
 	return 0;
 }
 
@@ -185,137 +238,44 @@ int16_t sendFile(char *filename)
 // updateObjs(objInfo *objList)
 int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 {
-	/*
-	// Static update number increments for each
-	// packet sent.
-	static uint8_t updateNumber = 0;
-	updateObjInstance_t p = {0};
-
-  p.packetType = UPDATEOBJINSTANCE;
-  p.numObj = numObjects;
-  p.updateNumber = updateNumber++;
-  p.objList = objList;
-	// Pack the packet to a byte stream.
-	// Add header info and crc.
-	// Write the packet to the serial port.
-	*/
   return 0;
 }
 // getAlive(id)
-uint16_t getAlive(uint8_t *id)
+// Compare current time value
+// to the last time a packet was
+// received and determine if it is
+// greater than a threshold.
+uint16_t getAlive(uint32_t id)
 {
-	/*
-	int16_t ret = 0;
-	ret = findHeartBeating(id);
-	return (ret > 0 ? 1 : 0);
-	*/
-	return 0;
-}
-// getNumAlive()
-uint16_t getNumAlive()
-{
-	/*
-	return g_numHeartBeating;
-	*/
 	return 0;
 }
 
-// AddAliveID
-uint16_t addAliveID(uint8_t *id)
+// getNumAlive()
+uint16_t getNumAlive()
 {
-	/*
-	int16_t ret = 0;
-	uint16_t i = 0;
-	ret = findHeartBeating(id);
-	// If not already found, add it.
-	if (ret == -1)
-	{
-		i = g_numHeartBeating;
-		strncpy(g_heartBeating[i].id, id, SIZEOFID/2);
-		g_numHeartBeating++;
-		return 1;
-	}
-	*/
 	return 0;
 }
 
 // getAliveIDs()
-int16_t getAliveIDs(uint8_t *ids, uint16_t size)
+int16_t getAliveIDs(uint32_t *ids, uint16_t size)
 {
-	/*
-	int16_t i = 0, j = 0;
-	for (i = 0; i < g_numHeartBeating && i < size; i++)
-	{
-		for (j = 0; j < SIZEOFID; j++)
-		{
-			ids[i*SIZEOFID + j] = g_heartBeating[i].id[j];
-		}
-	}
-	return i;
-	*/
 	return 0;
 }
+
 // Function: getPos(id)
 // Sets position information for headset with id.
 // Returns -1 on error.
-int16_t getPos(headsetPos_t *pos, uint8_t *id)
+int16_t getPos(headsetPos_t *pos, uint32_t id)
 {
-	/*
-	int16_t index = 0;
-	if (pos == NULL)
-	{
-		return -1;
-	}
-	index = findHeartBeating(id);
-	if (index >= 0)
-	{
-		pos->x = g_heartBeating[index].x;
-		pos->y = g_heartBeating[index].y;
-		pos->roll = g_heartBeating[index].roll;
-		pos->pitch = g_heartBeating[index].pitch;
-		pos->yaw = g_heartBeating[index].yaw;
-	}
-	return index;
-	*/
 	return 0;
 }
 // Function: goBack(id)
 // Send a goBack message to the headset
 // indicating that it should transition to
 // an earlier state.
-int16_t goBack(uint8_t *id)
+int16_t goBack(uint32_t id)
 {
-	/*
-	goBack_t p = {0};
-	p.packetType = GOBACK;
-	// Pack the packet to a byte stream.
-	// Add header info and crc.
-	// Write the packet to the serial port.
-	*/
   return 0;
-}
-
-
-// NON_API FUNCTIONS
-
-// Function: findBroadCastingLoc
-// Purpose: abstract process of finding ids
-// 			in the data structure they are in.
-// Returns -1 on error
-int16_t findBroadCasting(uint8_t *id)
-{
-	/*
-	int16_t i = 0;
-	for (i = 0; i < MAXNUMHEADSETS; i++)
-	{
-		if (strncmp(g_broadCasting[i].address, id, MAXSIZEOFID) == 0)
-		{
-			return i;
-		}
-	}
-	return -1;
-	*/
-	return 0;
 }
 
 /**
@@ -556,8 +516,7 @@ void sendUpdatePacket(int udpFd, int *state)
 		case BROADCAST:
 			sendBroadcast(udpFd);
 		case SIMULATION:
-			//sendHeartbeat(udpFd);
-			;
+			sendHeartbeat(udpFd);
 	}
 }
 
@@ -569,11 +528,45 @@ void sendBroadcast(int udpFd)
 	p.packetType = BROADCASTPACKET;
 	p.lat = pl.lat;
 	p.lon = pl.lon;
+	broadCastPacketHton(&p);
 	writeUdpByteStream((void *)&p, sizeof(p), 0);
 }
 
-void processPacket(int udpFd, int tcpFd, int ret, int pType, int *state)
+void sendHeartbeat(int udpFd)
 {
+	heartBeat_t p;
+	localHeadsetPos_t pl;
+	getHeadsetPosData(&pl);
+	p.packetType = HEARTBEAT;
+	p.lat = pl.lat;
+	p.lon = pl.lon;
+	p.x = pl.x;
+	p.y = pl.y;
+	p.pitch = pl.pitch;
+	p.yaw = pl.roll;
+	p.roll = pl.yaw;
+	heartBeatHton(&p);
+	writeUdpByteStream((void *)&p, sizeof(p), 0);
+}
+
+/**
+* @brief processPacket - reads from either the udp or tcp file descriptor
+*				for a client connection and processes the packet. The type of packet
+*				has been successfully determined if this function is called. Please
+*				note that any tcp packet funcion called in here needs to close the
+*				connFd file descriptor.
+*
+* @param udpFd - udp file descriptor.
+* @param tcpFd - tcp file descriptor.
+* @param connFd - tcp client connection file descriptor
+* @param addr - the address of a client on a tcp connection only
+* @param ret  - the file descriptor used to send the packet.
+* @param pType - the type of packet received.
+* @param state - the current state of the headset.
+*/
+void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int pType, int *state)
+{
+	int32_t rc = 0;
 	// If no packet was sent, then simply return immediately.
 	if (ret == 0)
 		return;
@@ -587,7 +580,27 @@ void processPacket(int udpFd, int tcpFd, int ret, int pType, int *state)
 		case HEARTBEAT:
 			getHeartBeatPacket();
 			break;
-		case CONFIRMUPDATE:
+		case ACCEPTHEADSET:
+			rc = getAcceptID(connFd);
+			// Transition to next state.
+			if (rc > 0 && *state == BROADCAST)
+			{
+				*state = ACCEPTED;
+			}
+			break;
+		case STARTSIMULATION:
+			getStartSimulation(connFd);
+			if (*state == ACCEPTED)
+			{
+				*state = SIMULATION;
+			}
+			break;
+		case ENDSIMULATION:
+			getEndSimulation(connFd);
+			if (*state == SIMULATION)
+			{
+				*state = INIT;
+			}
 			break;
 		default:
 			break;
@@ -667,7 +680,7 @@ int32_t readTcpByteStream(void *buf, uint32_t size)
 	rc = read(connfd, (void *)buf, size);
 	if (rc < 0)
 	{
-		perror("getAcceptPacket: Could not read from file descriptor.");
+		perror("readTcpByteStream: Could not read from file descriptor.");
 	}
 	close(connfd);
 
@@ -716,47 +729,86 @@ uint8_t detectUdpType(int fd)
 	return packetType;
 }
 
-uint8_t detectTcpType(int fd)
+uint8_t detectTcpType(int fd, int *connfd, uint32_t *clientAddr)
 {
-	return 0;
+	uint32_t clientlen = 0;
+	struct sockaddr_in clientaddr = {0};
+	int32_t rc = 0;
+	uint8_t packetType = 0;
+
+	// Accept the client connection.
+	*connfd = accept(g_tcpFd, (struct sockaddr *)&clientaddr, &clientlen);
+	if (*connfd < 0)
+	{
+		perror("Could not connect to host!\n");
+		return -1;
+	}
+	// return the ip address of the client we connected to.
+	*clientAddr = ntohl(clientaddr.sin_addr.s_addr);
+
+	// Find out what type of packet was sent.
+	rc = read(*connfd, (void *)&packetType, sizeof(packetType));
+	if (rc < 0)
+	{
+		perror("detectTcpType: Could not read from file descriptor.");
+		return -1;
+	}
+
+	return packetType;
 }
 
 void getBroadCastPacket(void)
 {
 	broadCastPacket_t p;
 	uint32_t addr = 0;
+	uint32_t ret = 0;
 
 	// Read in the broadcast packet.
-	readUdpByteStream(&p, sizeof(broadCastPacket_t), &addr, 0);
+	ret = readUdpByteStream(&p, sizeof(broadCastPacket_t), &addr, 0);
+	broadCastPacketNtoh(&p);
+	if (ret > 0)
+	{
+		// update our entry for this address.
+		broadCastList[addr] = p;
+	}
 	printf("\nProcessed broadcast packet num: %d\n", addr);
 	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
-	// TODO: Assign this info to a local structure of data.
 	return;
 }
 
 void getHeartBeatPacket(void)
 {
-	/*
 	heartBeat_t p;
-	int16_t i = 0;
-	// use HEARTBEATSIZE-1 because
-	// packetType was already read
-	uint8_t buf[HEARTBEATSIZE-1];
-	readBytes(g_packetLibPort, buf, HEARTBEATSIZE-1);
-	heartBeatUnpack(&p,buf);
-	i = findHeartBeating(p.id);
-	if (i >= 0)
+	heartBeatInfo_t hi;
+	uint32_t addr = 0;
+	uint32_t ret = 0;
+
+	// Read in the heartbeat packet.
+	ret = readUdpByteStream(&p, sizeof(heartBeat_t), &addr, 0);
+	heartBeatNtoh(&p);
+	if (ret > 0)
 	{
-		g_heartBeating[i].x = p.x;
-		g_heartBeating[i].y = p.y;
-		g_heartBeating[i].roll = p.roll;
-		g_heartBeating[i].pitch = p.pitch;
-		g_heartBeating[i].yaw = p.yaw;
+		// update our entry for this address.
+		// TODO: Add timestamp to packet.
+		// Also only add this if the ip
+		// has been previously accepted.
+		hi.lat = p.lat;
+		hi.lon = p.lon;
+		hi.x = p.x;
+		hi.y = p.y;
+		hi.pitch = p.pitch;
+		hi.yaw = p.yaw;
+		hi.roll = p.roll;
+		hi.lastUpdate = time(NULL);
+		hi.ipAddr = addr;
+		heartBeatList[addr] = hi;
 	}
-	printf("x: %0.2f, y: %0.2f, y: %0.2f, p: %0.2f, r: %0.2f\n", p.x,p.y,p.roll,p.pitch,p.yaw);
-	*/
+	printf("\nProcessed heartbeat packet num: %d\n", addr);
+	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
 	return;
 }
+
+
 
 // Function: printFloatBytes
 // Purpose: Used to print the hex

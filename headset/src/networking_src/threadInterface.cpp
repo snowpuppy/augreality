@@ -36,7 +36,6 @@ void _sendUpdateObjs(int fd);
 void _getAlive(int fd);
 void _getNumAlive(int fd);
 void _getPosition(int fd);
-void _getBroadcastLoc(int fd);
 void _getNumBroadcast(int fd);
 void _getBroadCastIDs(int fd);
 void _getUserPos(int fd);
@@ -166,9 +165,6 @@ void serviceConnections(int fd)
       case GETNUMBROADCAST:
 				_getNumBroadcast(connfd);
         break;
-			case GETBROADCASTLOC:
-				_getBroadcastLoc(connfd);
-				break;
 			case GETPOSITION:
 				_getPosition(connfd);
 				break;
@@ -255,43 +251,24 @@ void _getBatteryStatus(int fd)
 
 void _getBroadCastIDs(int fd)
 {
-	/*
 	int rc = 0;
-	uint8_t ids[MAXNUMHEADSETS*SIZEOFID];
+	uint32_t ids[MAXNUMHEADSETS];
 	uint8_t num = (uint8_t)getNumBroadCasting();
 	// get ids.
 	getBroadCastingIDs(ids, num);
 	// send the return message.
 	rc = write(fd, (void *)&num, sizeof(num));
-	rc = write(fd, (void *)ids, num*SIZEOFID);
-	*/
+	rc = write(fd, (void *)ids, num*sizeof(uint32_t));
 	return;
 }
 void _getNumBroadcast(int fd)
 {
-	/*
 	int rc = 0;
 	uint8_t num = (uint8_t) getNumBroadCasting();
 	rc = write(fd, (void *)&num, sizeof(num));
-	*/
 	return;
 }
-void _getBroadcastLoc(int fd)
-{
-	/*
-	int rc = 0;
-	uint8_t id[SIZEOFID];
-	headsetPos_t pos = {0};
-	// Read in the id
-	rc = read(fd, (void *)id, SIZEOFID);
-	if (rc < SIZEOFID) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); }
-	// Find the Loc element for this id and send our reply.
-	getBroadCastingLoc(&pos, id);
-	// Send the position information out.
-	rc = write(fd, (void *)&pos, sizeof(pos));
-	*/
-	return;
-}
+
 void _getPosition(int fd)
 {
 	/*
@@ -435,10 +412,10 @@ void _sendAccept(int fd)
 	p.packetType = ACCEPTHEADSET;
 	// Read in the id
 	rc = read(fd, (void *)id, SIZEOFID);
-	if (rc < SIZEOFID) { perror("Error:_getBroadcastLoc: read less than size of id!\n"); return; }
+	if (rc < SIZEOFID) { perror("Error:_sendAccept: read less than size of id!\n"); return; }
 	// Read in lat/lon coordinates
 	rc = read(fd, (void *)coord, 2*sizeof(float));
-	if (rc < 2*sizeof(float)) {perror("Error:_getBroadcastLoc: read less than size 2*float!\n"); return;}
+	if (rc < 2*sizeof(float)) {perror("Error:_sendAccept: read less than size 2*float!\n"); return;}
 	p.x = coord[0];
 	p.y = coord[1];
 	//p.id = getCcuId();

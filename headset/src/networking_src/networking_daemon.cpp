@@ -18,7 +18,8 @@ void printFloatBytes(char *buf);
 // Main Function.
 int main(void)
 {
-  int udpFd = 0, tcpFd = 0;
+  int udpFd = 0, tcpFd = 0, connFd = 0;
+	uint32_t clientAddr = 0;
 	int ret = 0;
 	uint8_t pac[3];
 	uint8_t packetType = 0;
@@ -87,7 +88,7 @@ int main(void)
 							// If headsets send messages
 							// to each other at the same time
 							// then this program will hang.
-			packetType = detectTcpType(tcpFd);
+			packetType = detectTcpType(tcpFd, &connFd, &clientAddr);
 			break;
 		case 0: // We timed out.
 							// An update will be sent.
@@ -100,7 +101,7 @@ int main(void)
 		}
 		// Processing a packet may change
 		// state.
-		processPacket(udpFd, tcpFd, ret, packetType, &state);
+		processPacket(udpFd, tcpFd, connFd, clientAddr, ret, packetType, &state);
 	}
 	return 0;
 }
