@@ -197,7 +197,8 @@ void GpuPyThreadInterface::_gpuQuit(int fd)
 void GpuPyThreadInterface::_updateObjects(int fd)
 {
 	int32_t rc = 0, i = 0;
-	uint8_t numObjs = 0;
+	uint32_t numObjs = 0;
+	objInfo_t *objs;
 	// Read in the number of objects to read
 	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
 	if (rc < 0)
@@ -205,8 +206,21 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 		printf("gpuThreadInterface: Error reading numobjects.\n");
 		return;
 	}
+	objs = new objInfo_t[numObjs];
 	// TODO:
 	// Read in each object.
+	for (i = 0; i < numObjs; i++)
+	{
+		rc = read(fd, (void *)&objs[i], sizeof(objInfo_t));
+		if (rc < 0)
+		{
+			printf("gpuThreadInterface: Error reading in objects.\n");
+			delete[] objs
+			return;
+		}
+	}
 	// Call a function that will copy these objects
+	updateObjects(objs,numObjs);
 	// to the gpu's objects.
+	delete[] objs;
 }

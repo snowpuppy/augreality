@@ -11,6 +11,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include "../../networking_src/packets.h"
+
+void updateObjects(objInfo_t *objInfo, int size);
 
 enum gpuApiRequest {
 	GETRUNNING = 1,
