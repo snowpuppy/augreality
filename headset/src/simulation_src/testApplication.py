@@ -35,4 +35,14 @@ print "Running", output
 #	sys.stdout.write("\rNumSat: %d Lat: %2.2f Lon: %2.2f X: %2.2f Y: %2.2f Roll: %2.2f Pitch: %2.2f Yaw: %2.2f" % (numSat, lat, lon, x,y,roll,pitch,yaw) )
 #	time.sleep(0.02)
 time.sleep(3.0)
-gpuQuit()
+x3 = 0
+y3 = 5
+roll = 0
+pitch = 0
+yaw = 0
+while (1):
+  sendUpdateObjsGpu(1,0,1,0,0,x3,y3,roll,pitch,yaw)
+  roll = (roll + 5) % 90
+  time.sleep(.2)
+time.sleep(3.0)
+#gpuQuit()

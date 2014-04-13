@@ -206,8 +206,8 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 		printf("gpuThreadInterface: Error reading numobjects.\n");
 		return;
 	}
+	printf("Received %d objects\n", numObjs)
 	objs = new objInfo_t[numObjs];
-	// TODO:
 	// Read in each object.
 	for (i = 0; i < numObjs; i++)
 	{
@@ -215,7 +215,7 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 		if (rc < 0)
 		{
 			printf("gpuThreadInterface: Error reading in objects.\n");
-			delete[] objs
+			delete[] objs;
 			return;
 		}
 	}

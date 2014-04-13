@@ -65,6 +65,7 @@ int render(int argc, char *argv[]) {
     GameObject::setSceneManager(smgr);
 
     //load level file
+    objects = new GameObject[2096];
     writeLevel(configFileName, modelsPath);
     GameObject::loadConfigFile("tmp.cfg", objects);
 
@@ -78,7 +79,6 @@ int render(int argc, char *argv[]) {
     device->getCursorControl()->setVisible(false);
     vector3df camerapos = camera->getPosition();
     vector3df camerarot = vector3df(0, 0, 0);
-    objects = new GameObject[2096];
     //get font
     IGUIFont* font = device->getGUIEnvironment()->getBuiltInFont();
 

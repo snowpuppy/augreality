@@ -62,6 +62,8 @@ def gpuQuit():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	s.close()
+	return
 
 def sendUpdateObjsGpu(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
 	# Set command
@@ -73,6 +75,9 @@ def sendUpdateObjsGpu(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-	s.send(chr(num))
+	data = pack('I',num)
+	s.send(data)
 	data = pack(OBJSGPUFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
 	s.send(data)
+	s.close()
+	return

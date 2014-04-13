@@ -60,7 +60,7 @@ void GameObject::setPosition(float x, float y , float z) {
 }
 
 void GameObject::setRotation(float x, float y , float z) {
-    node->setPosition(irr::core::vector3df(x, y, z));
+    node->setRotation(irr::core::vector3df(x, y, z));
 }
 
 void GameObject::setScale(irr::core::vector3df scale) {
