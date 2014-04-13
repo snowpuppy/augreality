@@ -1,4 +1,11 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * comm.c - USART communication drivers for STM32L1xx chip
  */
 
@@ -178,7 +185,7 @@ void serialWriteBytes(uint32_t port, uint8_t *data, uint32_t count) {
 /**
  * USART 1 interrupt handler for TXE and RXNE interrupts [DEBUG]
  */
-void __attribute__ ((interrupt("IRQ"))) USART1_IRQHandler() {
+void IRQ USART1_IRQHandler(void) {
 	if (USART1->SR & USART_SR_RXNE) {
 		// Shut off the alarm clock
 		char data = (char)(uint8_t)USART1->DR;

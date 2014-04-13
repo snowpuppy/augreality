@@ -1,3 +1,14 @@
+/*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
+ * i2c.c - I2C implementation
+ */
+
 #include <i2c.h>
 #include <stm32f4xx.h>
 #include <stm32f4xx_rcc.h>

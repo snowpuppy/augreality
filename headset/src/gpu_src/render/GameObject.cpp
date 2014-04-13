@@ -1,5 +1,5 @@
 #include "GameObject.h"
-#include <irrlicht/irrlicht.h>
+#include <irrlicht.h>
 #include <unistd.h>
 #include <string>
 #include <iostream>
@@ -9,7 +9,12 @@ irr::scene::ISceneManager* GameObject::smgr = NULL;
 std::map<std::string, irr::scene::IMesh*> GameObject::Meshes;
 
 GameObject::GameObject() { }
-
+/** \brief Primary GameObject constructor.
+ * \param name The name of the mesh file to load.
+ * \param position The initial position to place the object.
+ * \param rotation The rotation to initially apply to the object, about (X,Y,Z) axes.
+ * \param visible Whether or not the object should be diplayed by the application.
+ */
 GameObject::GameObject(std::string name,
                        irr::core::vector3df position,
                        irr::core::vector3df rotation,
@@ -50,6 +55,14 @@ void GameObject::setRotation(irr::core::vector3df rotation) {
     node->setRotation(rotation);
 }
 
+void GameObject::setPosition(float x, float y , float z) {
+    node->setPosition(irr::core::vector3df(x, y, z));
+}
+
+void GameObject::setRotation(float x, float y , float z) {
+    node->setPosition(irr::core::vector3df(x, y, z));
+}
+
 void GameObject::setScale(irr::core::vector3df scale) {
     node->setScale(scale);
 }
@@ -62,6 +75,10 @@ void GameObject::setSceneManager(irr::scene::ISceneManager* manager) {
     smgr = manager;
 }
 
+/** \brief Fills an array of GameObjects with those described in a file.
+ * \param filename The filename of the configuration file to load.
+ * \param objects The array of GameObjects to be written to.
+ */
 void GameObject::loadConfigFile(std::string filename, GameObject *objects) {
     int index;
     bool threed;

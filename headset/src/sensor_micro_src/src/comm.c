@@ -1,6 +1,12 @@
 /*
- * comm.c - USART communication drivers for STM32F4xx chip
+ * Cornell Cup 2014 - Augmented Reality Simulator
  *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
+ * comm.c - USART communication drivers for STM32F4xx chip
  * Used for the GPS/Spare headers.
  */
 

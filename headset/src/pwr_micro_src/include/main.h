@@ -1,4 +1,11 @@
 /*
+ * Cornell Cup 2014 - Augmented Reality Simulator
+ *
+ * Stephen Carlson
+ * Steven Ellis
+ * Thor Smith
+ * Dr. Mark C. Johnson
+ *
  * main.h - Main include file for microcontroller code
  */
 
@@ -18,6 +25,8 @@
 #include "usb_cdcacm.h"
 #include "printf.h"
 
+// Defines an IRQ function
+#define IRQ __attribute__ ((interrupt("IRQ")))
 // Goes into Sleep mode, peripherals continue to run
 #define SLEEP() do { __WFI(); asm volatile ("nop\n\t"); } while (0)
 // Goes into STOP mode, peripherals are stopped but SRAM is retained
