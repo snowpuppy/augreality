@@ -110,9 +110,11 @@ objInfo.addMember("uint16_t", "x2", 2, SHORT)       # 2d coordinates of object.
 objInfo.addMember("uint16_t", "y2", 2, SHORT)			
 objInfo.addMember("float", "x3", 4, LONG)       		# 3d coordinates of object.
 objInfo.addMember("float", "y3", 4, LONG)
+objInfo.addMember("float", "z3", 4, LONG)
 objInfo.addMember("float", "roll", 4, LONG)  			# orientation of object.
 objInfo.addMember("float", "pitch", 4, LONG)
 objInfo.addMember("float", "yaw", 4, LONG)
+objInfo.addMember("float", "scale", 4, LONG)
 
 broadCastPacketStr = """
 // broadCastPacket: This is the packet

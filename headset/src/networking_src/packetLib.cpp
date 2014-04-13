@@ -515,8 +515,10 @@ void sendUpdatePacket(int udpFd, int *state)
 	{
 		case BROADCAST:
 			sendBroadcast(udpFd);
+			break;
 		case SIMULATION:
 			sendHeartbeat(udpFd);
+			break;
 	}
 }
 
@@ -771,7 +773,7 @@ void getBroadCastPacket(void)
 		// update our entry for this address.
 		broadCastList[addr] = p;
 	}
-	printf("\nProcessed broadcast packet num: %d\n", addr);
+	printf("\nProcessed broadcast packet num: %8X\n", addr);
 	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
 	return;
 }
@@ -803,12 +805,10 @@ void getHeartBeatPacket(void)
 		hi.ipAddr = addr;
 		heartBeatList[addr] = hi;
 	}
-	printf("\nProcessed heartbeat packet num: %d\n", addr);
+	printf("\nProcessed heartbeat packet num: %8X\n", addr);
 	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
 	return;
 }
-
-
 
 // Function: printFloatBytes
 // Purpose: Used to print the hex
