@@ -76,7 +76,7 @@ int main(void)
 
 		// Wait for packet.
 		ret = checkForNewPackets(udpFd, tcpFd);
-		printf("Ret = %d.\n", ret);
+		//printf("Ret = %d.\n", ret);
 		// Find out what packet was received.
 		switch (ret)
 		{

@@ -16,7 +16,7 @@
 // CONSTANTS
 #define PORT 7777
 #define LISTENQ 100
-#define DEBUG 1
+#define DEBUG 0
 
 // GLOBAL VARIABLES
 pthread_t threadInterfaceTidp;
@@ -147,7 +147,9 @@ void serviceConnections(int fd)
 #endif
     // Handle the request here.
     rc = read(connfd, (void *)&packetType, 1);
+#if DEBUG == 1
 		printf("Packet type of %d received.\n", (int)packetType);
+#endif
 		// Find out what type of request was sent
     switch(packetType)
     {
@@ -216,7 +218,7 @@ void _resetGPSOrigin(int fd)
 {
 	localHeadsetPos_t pos;
 	getHeadsetPosData(&pos);
-	setGPSOrigin(pos.lat,pos.lon);
+	setGPSOrigin(pos.lon,pos.lat);
 }
 
 /**

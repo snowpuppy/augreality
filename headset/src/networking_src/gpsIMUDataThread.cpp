@@ -32,8 +32,8 @@ void updatePosition(char *data);
 // Global Variables.
 // position of this headset
 localHeadsetPos_t g_pos;
-float originlat = 0;
-float originlon = 0;
+volatile float originlat = 0;
+volatile float originlon = 0;
 // port open for gps and imu communication.
 int32_t g_port;
 pthread_t gpsIMUInterfaceTidp;
@@ -160,6 +160,7 @@ void updatePosition(char *data)
 	// Set x and y based on origin
 	g_pos.x = (g_pos.lat - originlat)*DECIMALSPERDEGLAT;
 	g_pos.y = (g_pos.lon - originlon)*DECIMALSPERDEGLON;
+	printf("\rg_lat: %f, g_lon: %f, originlat: %f, originlon: %f, x: %f, y: %f", g_pos.lat, g_pos.lon, originlat, originlon, g_pos.x, g_pos.y);
 	// Automatic sanitization of gps coordinates.
 	// If no one initializes us, at least we have an "ok" value.
 	if (originlat == 0 && originlon == 0 && g_pos.numSat > 2)
@@ -189,6 +190,7 @@ void updatePosition(char *data)
 */
 int setGPSOrigin(float lon, float lat)
 {
+	printf("OriginLat = %f, OriginLon = %f\n", lat, lon);
 	originlat = lat;
 	originlon = lon;
 	// Always succeeds.

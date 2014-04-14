@@ -773,8 +773,8 @@ void getBroadCastPacket(void)
 		// update our entry for this address.
 		broadCastList[addr] = p;
 	}
-	printf("\nProcessed broadcast packet num: %8X\n", addr);
-	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
+	//printf("\nProcessed broadcast packet num: %8X\n", addr);
+	//printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
 	return;
 }
 
@@ -805,8 +805,8 @@ void getHeartBeatPacket(void)
 		hi.ipAddr = addr;
 		heartBeatList[addr] = hi;
 	}
-	printf("\nProcessed heartbeat packet num: %8X\n", addr);
-	printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
+	//printf("\nProcessed heartbeat packet num: %8X\n", addr);
+	//printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
 	return;
 }
 
