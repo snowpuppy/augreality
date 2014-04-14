@@ -29,7 +29,8 @@ helpStr = """Enter a number to test a function:
 10 SENDSTART       _sendStart(int fd);
 11 SENDACCEPT      _sendAccept(int fd);
 12 SENDGOBACK      _sendGoBack(int fd);
-13 exit
+13 RESETGPSORIGIN  _resetGPSOrigin(int fd);
+14 exit
 """
 while True:
 	inpu = raw_input(helpStr)
@@ -74,4 +75,6 @@ while True:
 	elif (num == 12):
 		sendGoBack(nid)
 	elif (num == 13):
+		resetGPSOrigin()
+	elif (num == 14):
 		exit()

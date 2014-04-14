@@ -45,6 +45,9 @@ SENDACCEPTFORMAT = '=2f'
 SENDGOBACK = '\x0f'
 SENDGOBACKFORMAT = '=B16B'
 
+# Commands for sensor data
+SENDRESETORIGIN = '\x10'
+
 ##
 # @brief getBroadCastIDs() gets a list of 16 byte
 #   strings indicating the id of a headset in hex.
@@ -246,6 +249,7 @@ def sendFile(filename):
 	s.send(chr(len(filename)))
 	# send filename
 	s.send(filename)
+	s.close()
 
 def sendUpdateObjs(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
 	# Set command
@@ -260,6 +264,7 @@ def sendUpdateObjs(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
 	s.send(chr(num))
 	data = pack(OBJSFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
 	s.send(data)
+	s.close()
 	
 def sendEnd(nid):
 	# Set command
@@ -270,6 +275,7 @@ def sendEnd(nid):
 	# send info
 	s.send(command)
 	s.send(nid)
+	s.close()
 
 def sendStart():
 	# Set command
@@ -279,6 +285,7 @@ def sendStart():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	s.close()
 
 def sendAccept(nid,lat,lon):
 	# Set command
@@ -292,6 +299,7 @@ def sendAccept(nid,lat,lon):
 	# pack and send gps coordinates of origin
 	data = pack(SENDACCEPTFORMAT, lat, lon)
 	s.send(data)
+	s.close()
 
 def sendGoBack(nid):
 	# Set command
@@ -302,4 +310,15 @@ def sendGoBack(nid):
 	# send info
 	s.send(command)
 	s.send(nid)
+	s.close()
+
+def resetGPSOrigin():
+	# Set command
+	# Pack info
+	command = SENDRESETORIGIN
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
 

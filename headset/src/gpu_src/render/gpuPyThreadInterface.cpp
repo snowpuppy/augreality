@@ -198,7 +198,7 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 {
 	int32_t rc = 0, i = 0;
 	uint32_t numObjs = 0;
-	objInfo_t *objs;
+	objInfo_t *objs = NULL;
 	// Read in the number of objects to read
 	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
 	if (rc < 0)
@@ -206,11 +206,13 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 		printf("gpuThreadInterface: Error reading numobjects.\n");
 		return;
 	}
-	printf("Received %d objects\n", numObjs)
+	printf("Received %d objects\n", numObjs);
 	objs = new objInfo_t[numObjs];
+	// check if objs is null...
 	// Read in each object.
 	for (i = 0; i < numObjs; i++)
 	{
+		printf("Reading in obj %d\n", i);
 		rc = read(fd, (void *)&objs[i], sizeof(objInfo_t));
 		if (rc < 0)
 		{
@@ -218,6 +220,8 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 			delete[] objs;
 			return;
 		}
+		printf("instId: %d, typeShow: %d, x2: %d, y2: %d, x3: %f, y3: %f, roll: %f, pitch: %f, yaw: %f\n", objs[i].instId, objs[i].typeShow, objs[i].x2, objs[i].y2, objs[i].x3, objs[i].y3, objs[i].roll, objs[i].pitch, objs[i].yaw);
+		printf("Sizeof obj: %d\n", sizeof(objInfo_t));
 	}
 	// Call a function that will copy these objects
 	updateObjects(objs,numObjs);

@@ -173,6 +173,8 @@ void updateObjects(objInfo_t *objInfo, int size) {
     objInfo_t objinfo;
     for(int i=0; i<size; i++) {
         objinfo = objInfo[i];
+				printf("Object: instId %d: x3: %f y3: %f\n", objinfo.instId, objinfo.x3, objinfo.y3);
+				printf("Object: roll %f: pitch: %f yaw: %f\n", objinfo.roll, objinfo.pitch, objinfo.yaw);
         instId = objinfo.instId;
         objects[instId].setPosition(objinfo.x3, objinfo.y3, 0.0);
         objects[instId].setRotation(objinfo.roll, objinfo.pitch, objinfo.yaw);

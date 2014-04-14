@@ -41,6 +41,7 @@ void _getBroadCastIDs(int fd);
 void _getUserPos(int fd);
 void _getWifiStatus(int fd);
 void _getBatteryStatus(int fd);
+void _resetGPSOrigin(int fd);
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -192,6 +193,8 @@ void serviceConnections(int fd)
 			case SENDGOBACK:
 				_sendGoBack(connfd);
 				break;
+			case RESETGPSORIGIN:
+				_resetGPSOrigin(connfd);
       default:
         break;
     }
@@ -201,6 +204,19 @@ void serviceConnections(int fd)
 		// inefficient, but it works.)
     close(connfd);
   }
+}
+
+/**
+* @brief This call resets the origin for the gps to the
+*				 users current gps coordinates.
+*
+* @param fd
+*/
+void _resetGPSOrigin(int fd)
+{
+	localHeadsetPos_t pos;
+	getHeadsetPosData(&pos);
+	setGPSOrigin(pos.lat,pos.lon);
 }
 
 /**

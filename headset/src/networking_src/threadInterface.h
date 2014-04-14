@@ -23,7 +23,8 @@ enum apiRequest
 	SENDEND,
 	SENDSTART,
 	SENDACCEPT,
-	SENDGOBACK
+	SENDGOBACK,
+	RESETGPSORIGIN
 };
 
 // Function: initServer()

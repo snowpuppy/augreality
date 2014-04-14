@@ -18,7 +18,46 @@ GPUQUITFORMATS = '=B'
 GPUQUITFORMATR = '=I7f'
 SENDUPDATEOJBSGPU = '\x03'
 SENDUPDATEOJBSGPUFORMAT = '=BB'
-OBJSGPUFORMAT = 'BBHH5f'			# objInfo struct
+OBJSGPUFORMAT = 'IIII7f'			# objInfo struct
+
+##
+# @brief ObjInfo_t mirros a c structure. This structure is used to bridge the gap between
+#					C and python code and is used to pack information when sending info through sockets.
+class ObjInfo_t:
+	def __init__(self, instId, typeShow, x2, y2, x3, y3, z3, roll, pitch, yaw, scale, name):
+		self.instId = int(instId)
+		self.typeShow = int(typeShow)
+		self.x2 = float(x2)
+		self.y2 = float(y2)
+		self.x3 = float(x3)
+		self.y3 = float(y3)
+		self.z3 = float(z3)
+		self.roll = float(roll)
+		self.pitch = float(pitch)
+		self.yaw = float(yaw)
+		self.scale = float(scale)
+		self.name = str(name)
+	def __str__(self):
+		return "%d %d %f %f %f %f %f %f %f %f %f %s" % (self.instId, self.typeShow, self.x2, self.y2, self.x3, self.y3, self.z3, self.roll, self.pitch, self.yaw, self.scale, self.name)
+
+##
+# @brief readObjsFromConfig - reads in the objects from the file and puts the
+#					information into an object with named parameters.
+#
+# @param fp - open file descriptor for the file to be read from.
+#
+# @return - returns a dictionary categorized by the name of the object.
+#						Each dictionary entry is a list of the objects with the given name.
+def readObjsFromConfig(fp):
+	myLines = fp.readlines()
+	myObjsDict = {}
+	for i in range(0,len(myLines),2):
+		instId = int(myLines[i].strip())
+		data = myLines[i+1].strip().split()
+		if data[7] not in myObjsDict:
+			myObjsDict[data[7]] = []
+		myObjsDict[data[7]].append(ObjInfo_t(instId,data[8],0,0,data[1],data[2],data[3],data[4],data[5],data[6],data[9],data[7]))
+	return myObjsDict
 
 ##
 # @brief getPostion() gets the position information
@@ -65,10 +104,17 @@ def gpuQuit():
 	s.close()
 	return
 
-def sendUpdateObjsGpu(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
+##
+# @brief sendUpdateObjsGpu
+#
+# @param num - the number of objects to update
+# @param objs - a list of objInfo_t for the objects to update
+#
+# @return 
+def sendUpdateObjsGpu(num,objs):
 	# Set command
 	# format SENDUPDATEOJBSGPUFORMAT'=BB' 
-	# format OBJSGPUFORMAT 'BBHH5f'
+	# format OBJSGPUFORMAT 'IIII7f'
 	# Pack info
 	command = SENDUPDATEOJBSGPU
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -77,7 +123,8 @@ def sendUpdateObjsGpu(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
 	s.send(command)
 	data = pack('I',num)
 	s.send(data)
-	data = pack(OBJSGPUFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
-	s.send(data)
+	for i in objs:
+		data = pack(OBJSGPUFORMAT, i.instId, i.typeShow, i.x2, i.y2, i.x3, i.y3, i.z3, i.roll, i.pitch, i.yaw, i.scale)
+		s.send(data)
 	s.close()
 	return

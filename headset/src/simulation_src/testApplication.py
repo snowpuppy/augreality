@@ -16,7 +16,6 @@ from guiNetInterface import *
 from gpuPyInterface import *
 
 # hardcoded id of headset.
-nid = '40A66DAE\r13A200\r'
 subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simulations/pacman/models/"])
 time.sleep(1.0)
 output = getRunning();
@@ -34,15 +33,32 @@ print "Running", output
 #	yaw = output[7]
 #	sys.stdout.write("\rNumSat: %d Lat: %2.2f Lon: %2.2f X: %2.2f Y: %2.2f Roll: %2.2f Pitch: %2.2f Yaw: %2.2f" % (numSat, lat, lon, x,y,roll,pitch,yaw) )
 #	time.sleep(0.02)
+
+# Read in the information for each
+# object from the config file.
+configFile = open("simulations/pacman/config.txt");
+myObjs = readObjsFromConfig(configFile)
 time.sleep(3.0)
 x3 = 0
 y3 = 5
 roll = 0
 pitch = 0
 yaw = 0
+# 74 and 75 are ghosts
+ghost1 = myObjs['ghost'][0]
+ghost2 = myObjs['ghost'][1]
+ghost1.x3 = 2
+ghost1.y3 = 3
+ghost2.x3 = 2
+ghost2.y3 = 2
+#	def __init__(self, instId, typeShow, x2, y2, x3, y3, z3, roll, pitch, yaw, scale, name):
 while (1):
-  sendUpdateObjsGpu(1,0,1,0,0,x3,y3,roll,pitch,yaw)
-  roll = (roll + 5) % 90
-  time.sleep(.2)
+	sendUpdateObjsGpu(2, [ghost1, ghost2])
+	ghost1.yaw = (ghost1.yaw + 5)  % 270
+	ghost2.yaw = (ghost2.yaw + 5) % 270
+	ghost1.x3 = (ghost1.x3 + .2) % 5
+	ghost2.y3 = (ghost2.y3 + .2) % 5
+	time.sleep(.2)
 time.sleep(3.0)
-#gpuQuit()
+gpuQuit()
+

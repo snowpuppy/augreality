@@ -103,11 +103,11 @@ enum packetType
 objInfoStr = """
 // Information for an object."""
 objInfo = Struct("objInfo", objInfoStr)
-objInfo.addMember("uint8_t", "instId", 1, NONE) 	  # instance id of the object.
-objInfo.addMember("uint8_t", "typeShow", 1, NONE)  # 0 (3d object hidden) 2 (3d object shown)
+objInfo.addMember("uint32_t", "instId", 4, NONE) 	  # instance id of the object.
+objInfo.addMember("uint32_t", "typeShow", 4, NONE)  # 0 (3d object hidden) 2 (3d object shown)
 																								# 1 (2d object hidden) 3 (2d object shown)
-objInfo.addMember("uint16_t", "x2", 2, SHORT)       # 2d coordinates of object.
-objInfo.addMember("uint16_t", "y2", 2, SHORT)			
+objInfo.addMember("uint32_t", "x2", 4, SHORT)       # 2d coordinates of object.
+objInfo.addMember("uint32_t", "y2", 4, SHORT)			
 objInfo.addMember("float", "x3", 4, LONG)       		# 3d coordinates of object.
 objInfo.addMember("float", "y3", 4, LONG)
 objInfo.addMember("float", "z3", 4, LONG)
