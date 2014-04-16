@@ -45,6 +45,7 @@ int render(int argc, char *argv[]) {
 	int sats = 0;
 	stringw orientString = "y: 0.0 p: 0.0 r 0.0";
 	stringw fpsString = "FPS: ???";
+	stringw posString = "x: 0.0 y: 0.0";
     //interfaces to other modules
 #ifdef HEADSET_VERSION
     SensorReader sensor;
@@ -155,12 +156,15 @@ int render(int argc, char *argv[]) {
 #endif
         orientString = stringw("r:") + stringw(camerarot.X) + stringw(" p:") + stringw(camerarot.Y) + stringw(" y:") + stringw(camerarot.Z);
         //sprintf(orientString, "r:%f p:%f y:%f", camerarot.X, camerarot.Y, camerarot.Z);
+        posString = stringw("x:") + stringw(camerapos.X)
+                    + stringw(" y:") + stringw(camerapos.Y);
         fpsString = stringw("FPS: ") + stringw(driver->getFPS());
 	font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
         font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
         font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
         font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255-(signal),signal,0));
 	font->draw(fpsString, rect<s32>(20,50,300,50), SColor(255,255,255,255));
+	font->draw(posString, rect<s32>(80,60,300,50), SColor(255,255,255,255));
         driver->endScene();
     }
     std::cout << "Rendering exit\n";
