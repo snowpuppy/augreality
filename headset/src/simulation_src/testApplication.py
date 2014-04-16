@@ -68,6 +68,29 @@ def moveGhosts(objs):
 	# Ghost2
 	# Ghost3
 	# Ghost4
+
+def collideWithPellet(objs):
+	# pass in users position
+	# and return the pellet that
+	# a user collides with so that
+	# it can be made hidden. Don't
+	# collide with hidden pellets.
+	pos = getUserPosition()
+	print pos
+	x = pos[3]
+	y = pos[4]
+	print pos
+	pellets = objs['pellet']
+	# Find distance player is from pellet.
+	# Return any pellet that the player collides
+	# with.
+	for i in pellet:
+		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
+		if d < 2:
+			return pellet
+	# Return nothing if no collision.
+	return None
+
 # hardcoded id of headset.
 subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simulations/pacman/models/"])
 time.sleep(1.0)
@@ -102,8 +125,13 @@ yaw = 0
 initGhosts(myObjs)
 while (1):
 	moveGhosts(myObjs);
-	sendUpdateObjsGpu(4, myObjs['ghost'])
-	time.sleep(.2)
+	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
+	pellet = collideWithPellet(myObjs)
+	if pellet:
+		pellet.typeShow = 0
+	time.sleep(.1)
+	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
+	time.sleep(.1)
 time.sleep(3.0)
 gpuQuit()
 
