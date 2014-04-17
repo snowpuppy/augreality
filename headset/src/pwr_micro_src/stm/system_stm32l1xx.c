@@ -92,40 +92,12 @@
   ******************************************************************************
   */
 
-#include "stm32l1xx.h"
+#include "main.h"
 
 /** Uncomment the following line if you need to relocate the vector table to SRAM. */
 /* #define VECT_TAB_SRAM */
 /** Vector table offset, must be multiple of 0x200 */
 #define VECT_TAB_OFFSET 0x00
-
-static void SetSysClock(void);
-
-void SystemInit(void) {
-	/* Set MSION bit */
-	RCC->CR |= 0x00000100;
-
-	/* Reset SW[1:0], HPRE[3:0], PPRE1[2:0], PPRE2[2:0], MCOSEL[2:0] and MCOPRE[2:0] bits */
-	RCC->CFGR &= 0x88FFC00C;
-
-	/* Reset HSION, HSEBYP, HSEON, CSSON and PLLON bits */
-	RCC->CR &= 0xEEFAFFFE;
-
-	/* Reset PLLSRC, PLLMUL[3:0] and PLLDIV[1:0] bits */
-	RCC->CFGR &= 0xFF02FFFF;
-
-	/* Disable all interrupts */
-	RCC->CIR = 0x00000000;
-
-	/* Configure the System clock frequency, AHB/APBx prescalers and Flash settings */
-	SetSysClock();
-
-#ifdef VECT_TAB_SRAM
-	SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET;
-#else
-	SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET;
-#endif
-}
 
 /**
  * @brief  Configures the System clock frequency, AHB/APBx prescalers and Flash 
@@ -136,54 +108,52 @@ void SystemInit(void) {
  * @retval None
  */
 static void SetSysClock(void) {
-	uint32_t startUpCounter = HSE_STARTUP_TIMEOUT;
-	// Enable HSE and LSI
-	RCC->CR |= RCC_CR_HSEON;
+	// Enable LSI
 	RCC->CSR |= RCC_CSR_LSION;
 	// HCLK = SYSCLK / 1, PCLK2 = HCLK / 1, PCLK1 = HCLK / 1
 	RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE2 | RCC_CFGR_PPRE1)) |
 		RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE2_DIV1 | RCC_CFGR_PPRE1_DIV1;
-	// Wait till HSE is ready
-	while (!(RCC->CR & RCC_CR_HSERDY) && --startUpCounter > 0);
-	if (startUpCounter > 0) {
-		// Enable 64-bit access, prefetch buffer, 1 WS
-		// NOTE These cannot be combined into one statement!
-		FLASH->ACR |= FLASH_ACR_ACC64;
-		FLASH->ACR |= FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY;
-		// Enable clock to PWR module
-		RCC->APB1ENR |= RCC_APB1ENR_PWREN;
-		__DSB();
-		// Select Voltage Range 1 (1.8 V) required for USB
-		PWR->CR = PWR_CR_VOS_0;
-		__DSB();
-		// Wait until the voltage regulator is ready
-		while (PWR->CSR & PWR_CSR_VOSF);
-		// PLL configuration: *12, /3 (overall X4)
-		RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMUL | RCC_CFGR_PLLDIV)) |
-			RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMUL12 | RCC_CFGR_PLLDIV3;
-		// Enable PLL
-		RCC->CR |= RCC_CR_PLLON;
-		// Wait till PLL is ready
-		while (!(RCC->CR & RCC_CR_PLLRDY) && --startUpCounter > 0);
-		if (startUpCounter > 0) {
-			// Select PLL as system clock source
-			RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_PLL;
-			// Wait till PLL is used as system clock source
-			while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL && --startUpCounter > 0);
-		}
-	}
-	if (startUpCounter == 0) {
-		// The MSI will be selected as system clock (this allows us to come up, but w/o USB)
-		RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_MSI;
-		while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI);
-		// If HSE fails to start-up, or if PLL fails to lock
-		RCC->CR &= ~(RCC_CR_HSEON | RCC_CR_PLLON);
-	}
+	// Switch on PWR clock
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+	__DSB();
+	// Enable fast wake-up and disable VREFINT, clear interrupt flags
+	PWR->CR = PWR_CR_VOS_0 | PWR_CR_FWU | PWR_CR_ULP | PWR_CR_CWUF | PWR_CR_CSBF;
+	__DSB();
+	// Wait until the voltage regulator is ready
+	while (PWR->CSR & PWR_CSR_VOSF);
+	// Do NOT combine the next two lines
+	FLASH->ACR |= FLASH_ACR_ACC64;
+	FLASH->ACR |= FLASH_ACR_PRFTEN;
+	// Switch to the HSE oscillator for USB initialization
+	switchToHSE();
 	// Wait for LSI to be ready
 	while (!(RCC->CSR & RCC_CSR_LSIRDY));
-	// Set the MSI to 1.048 MHz
-	RCC->ICSCR = (RCC->ICSCR & ~RCC_ICSCR_MSIRANGE) | RCC_ICSCR_MSIRANGE_4;
+	// Set the MSI to ~4.194 MHz
+	RCC->ICSCR = (RCC->ICSCR & ~RCC_ICSCR_MSIRANGE) | RCC_ICSCR_MSIRANGE_6;
 	__DSB();
+}
+
+/**
+ * Called by the assembly-level reset function to configure the clocks.
+ */
+void SystemInit(void) {
+	// Set MSION bit
+	RCC->CR |= 0x00000100;
+	// Reset SW[1:0], HPRE[3:0], PPRE1[2:0], PPRE2[2:0], MCOSEL[2:0] and MCOPRE[2:0] bits
+	RCC->CFGR &= 0x88FFC00C;
+	// Reset HSION, HSEBYP, HSEON, CSSON and PLLON bits
+	RCC->CR &= 0xEEFAFFFE;
+	// Reset PLLSRC, PLLMUL[3:0] and PLLDIV[1:0] bits
+	RCC->CFGR &= 0xFF02FFFF;
+	// Disable all interrupts
+	RCC->CIR = 0x00000000;
+	// Configure the System clock frequency, AHB/APBx prescalers and Flash settings
+	SetSysClock();
+#ifdef VECT_TAB_SRAM
+	SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET;
+#else
+	SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET;
+#endif
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

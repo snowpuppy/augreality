@@ -11,12 +11,21 @@
 
 #include "main.h"
 
+// Flag bits for the flags byte
+#define FLAG_REPORT 0x01U
+#define FLAG_ALARM 0x02U
+#define FLAG_STOP 0x04U
+
+// Flags byte used to handle reporting over USB
+static volatile uint32_t flags;
+
 /**
  * USB initialization
  *
  * Initializes the USB peripheral and turns on the internal USB pull-up resistor
  */
 static void initUSB(void) {
+	EXTI_InitTypeDef exti;
 	GPIO_InitTypeDef gpio;
 	// Power up USB
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
@@ -35,59 +44,19 @@ static void initUSB(void) {
 	// Turn on USB pull-up resistor
 	SYSCFG->PMC |= SYSCFG_PMC_USB_PU;
 	usbInit();
-	// Enable USB IRQ
-	NVIC_SetPriority(USB_LP_IRQn, 2);
-	NVIC_EnableIRQ(USB_LP_IRQn);
-}
-
-/**
- * Low-power mode, RTC, and LSI
- *
- * Initializes the real-time clock and low-speed oscillator, and prepares the microcontroller
- * for the necessary low-power modes.
- */
-static void initLP(void) {
-	EXTI_InitTypeDef exti;
-	// EXTI clocks on
-	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-	// Unlock for write access
-	PWR->CR |= PWR_CR_DBP;
-	__DSB();
-	// RTC clocks on, pick the LSI as the source
-	RCC->CSR = (RCC->CSR & ~RCC_CSR_RTCSEL) | RCC_CSR_RTCEN | RCC_CSR_RTCSEL_LSI;
-	// Enter initialization mode
-	RTC->WPR = 0xCAU;
-	RTC->WPR = 0x53U;
-	__DSB();
-	RTC->ISR |= RTC_ISR_INIT;
-	while (!(RTC->ISR & RTC_ISR_INITF));
-	// Configure RTC prescalars for 1 Hz clock (38 KHz nom / (124 + 1) / (303 + 1) ~= 1 Hz)?
-	RTC->PRER = (RTC->PRER & ~RTC_PRER_PREDIV_A) | (uint32_t)(127U << 16);
-	RTC->PRER = (RTC->PRER & ~RTC_PRER_PREDIV_S) | (uint32_t)(256U);
-	// Set up RTC Alarm A to trip every second
-	RTC->ALRMAR = RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1;
-	RTC->CR |= RTC_CR_ALRAIE | RTC_CR_ALRAE;
-	// Reset clock to zero
-	RTC->TR = 0x0U;
-	RTC->DR = 0x0U;
-	// Exit initialization mode and enable write protection
-	RTC_ExitInitMode();
-	RTC->WPR = 0xFFU;
-	// Configure EXTI line 17 to interrupt in rising edge mode
-	exti.EXTI_Line = EXTI_Line17;
+	// Configure EXTI line 18 to interrupt in rising edge mode
+	exti.EXTI_Line = EXTI_Line18;
 	exti.EXTI_LineCmd = ENABLE;
 	exti.EXTI_Mode = EXTI_Mode_Interrupt;
 	exti.EXTI_Trigger = EXTI_Trigger_Rising;
 	EXTI_Init(&exti);
 	// Clear any pending interrupts
-	RTC->ISR &= ~RTC_ISR_ALRAF;
-	EXTI->PR &= EXTI_PR_PR17;
-	// Enable the RTC alarm in NVIC
-	NVIC_SetPriority(RTC_Alarm_IRQn, 3);
-	NVIC_EnableIRQ(RTC_Alarm_IRQn);
-	// XXX Remove me for lower power usage when working
-	DBGMCU->CR |= DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_DBG_STOP;
-	SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
+	EXTI->PR &= EXTI_PR_PR18;
+	// Enable USB IRQs
+	NVIC_SetPriority(USB_LP_IRQn, 2);
+	NVIC_EnableIRQ(USB_LP_IRQn);
+	NVIC_SetPriority(USB_FS_WKUP_IRQn, 3);
+	NVIC_EnableIRQ(USB_FS_WKUP_IRQn);
 }
 
 /**
@@ -96,20 +65,42 @@ static void initLP(void) {
  * Initializes the interrupt system, enables GPIO clocks, and sets up each peripheral
  */
 static void init(void) {
+	flags = 0x00U;
 	// Priority group #3 configuration
 	NVIC_SetPriorityGrouping(3);
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN;
-	// Set up the peripherals
+	// EXTI and SYSCFG clocks on
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	// Set up the peripherals, the debug serial is not used anymore so shut it off for power
 	i2cInit();
-	serialInit();
-	initLP();
+	rtcInit();
 	initUSB();
 	// Enable interrupts for all peripherals
 	__enable_fault_irq();
 	__enable_irq();
 }
 
-static bool send = false;
+/**
+ * Prepares for STOP low-power mode, arming RTC for 1 minute. Switches the clock to MSI.
+ *
+ * This should probably be called from USB suspend.
+ */
+static void enterStopMode(void) {
+	//switchToMSI();
+	flags |= FLAG_STOP;
+	rtcSetAlarmFrequency(RTC_1M);
+}
+
+/**
+ * Prepares for normal run mode, arming RTC for 1 second. Switches the clock to HSE+PLL.
+ *
+ * This should probably be called from USB resume.
+ */
+static void exitStopMode(void) {
+	switchToHSE();
+	flags &= ~FLAG_STOP;
+	rtcSetAlarmFrequency(RTC_1S);
+}
 
 /**
  * Called by the startup to run the main program
@@ -119,8 +110,11 @@ int main(void) {
 	init();
 	while (1) {
 		// Loop bytes back
-		if (usbIsConnected() && send) {
+		const uint32_t lFlags = flags;
+		if (usbIsConnected() && (lFlags & FLAG_ALARM)) {
 			uint8_t value[2];
+			// Shut off alarm clock
+			flags = lFlags & ~FLAG_ALARM;
 			// Get voltage registers from the fuel gauge
 			if (i2cReadRegister(0x34, 0x0C, value, 2)) {
 				// DS2782 Figure 4: V = 9876543210XXXXX
@@ -128,19 +122,47 @@ int main(void) {
 				// 1 lsb = 4.88 mV, 39/8 = 4.875 mV, calculate voltage
 				printf("%u\r\n", (unsigned int)((volts * 39) >> 3));
 			}
-			send = false;
 		}
-		SLEEP();
+		// Go into STOP mode if necessary
+		if (lFlags & FLAG_STOP)
+			STOP();
+		else
+			SLEEP();
 	}
 	return 0;
 }
 
 /**
- * Called every 1s to read the fuel gauge
+ * Called when the USB interface receives a suspend event, indicating that the host has powered
+ * down.
+ */
+void usbPowerDown(void) {
+	// Disable reporting over USB
+	flags &= ~(FLAG_ALARM | FLAG_REPORT);
+	enterStopMode();
+}
+
+/**
+ * Called every 1s to read the fuel gauge.
  */
 void IRQ RTC_Alarm_IRQHandler(void) {
-	// Reset the alarm clock
+	// Shut off the alarm clock
 	RTC->ISR &= ~RTC_ISR_ALRAF;
 	EXTI->PR &= EXTI_PR_PR17;
-	send = true;
+	// Assert ALARM signal if needed
+	const uint32_t lFlags = flags;
+	if (lFlags & FLAG_REPORT)
+		flags = lFlags | FLAG_ALARM;
+}
+
+/**
+ * Called on USB wake-up detected.
+ */
+void IRQ USB_FS_WKUP_IRQHandler(void) {
+	// Shut off the alarm clock
+	EXTI->PR &= EXTI_PR_PR18;
+	// Exit STOP mode, as the host has connected and powered up
+	exitStopMode();
+	// Enable reporting over USB
+	flags = (flags & ~FLAG_ALARM) | FLAG_REPORT;
 }
