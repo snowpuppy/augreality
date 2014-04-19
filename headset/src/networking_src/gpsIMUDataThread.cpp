@@ -15,10 +15,12 @@
 #include <netdb.h>
 #include "gpsIMUDataThread.h"
 #include <time.h>
+#include <math.h>
 
 // Constants
 #define BAUDRATE B115200
 #define GPSIMUPORT "/dev/ttyACM0"
+#define REARTH 6378100
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
 
@@ -34,6 +36,8 @@ void updatePosition(char *data);
 localHeadsetPos_t g_pos;
 volatile float originlat = 0;
 volatile float originlon = 0;
+float decimalsperdegreelat = DECIMALSPERDEGLAT;
+float decimalsperdegreelon = DECIMALSPERDEGLON;
 // port open for gps and imu communication.
 int32_t g_port;
 pthread_t gpsIMUInterfaceTidp;
@@ -158,8 +162,8 @@ void updatePosition(char *data)
 #endif
 
 	// Set x and y based on origin
-	g_pos.x = (g_pos.lat - originlat)*DECIMALSPERDEGLAT;
-	g_pos.y = (g_pos.lon - originlon)*DECIMALSPERDEGLON;
+	g_pos.x = (g_pos.lat - originlat)*decimalsperdegreelat;
+	g_pos.y = (g_pos.lon - originlon)*decimalsperdegreelon;
 	printf("\rg_lat: %f, g_lon: %f, originlat: %f, originlon: %f, x: %f, y: %f", g_pos.lat, g_pos.lon, originlat, originlon, g_pos.x, g_pos.y);
 	// Automatic sanitization of gps coordinates.
 	// If no one initializes us, at least we have an "ok" value.
@@ -167,6 +171,8 @@ void updatePosition(char *data)
 	{
 		originlat = g_pos.lat;
 		originlon = g_pos.lon;
+    decimalsperdegreelat = REARTH*(M_PI/180);
+    decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
 	}
 	/*
 	printf("lat: %0.2f ", g_pos.lat);
@@ -193,6 +199,8 @@ int setGPSOrigin(float lon, float lat)
 	printf("OriginLat = %f, OriginLon = %f\n", lat, lon);
 	originlat = lat;
 	originlon = lon;
+  decimalsperdegreelat = REARTH*(M_PI/180);
+  decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
 	// Always succeeds.
 	return 1;
 }
