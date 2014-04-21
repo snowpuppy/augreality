@@ -41,8 +41,8 @@
   </categories>
   <events>
     <event>
-      <start>2014-01-20 00:00:00</start>
-      <end>2014-02-13 06:35:07</end>
+      <start>2014-02-01 00:00:00</start>
+      <end>2014-02-16 00:00:00</end>
       <text>Select Parts</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -52,7 +52,7 @@
     </event>
     <event>
       <start>2013-12-16 00:00:00</start>
-      <end>2014-01-26 00:00:00</end>
+      <end>2014-02-16 00:00:00</end>
       <text>Update Block Diagram</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -61,8 +61,8 @@
       <description>Update block diagram to reflect any changes to expected hardware</description>
     </event>
     <event>
-      <start>2014-02-15 15:26:15</start>
-      <end>2014-02-15 15:26:15</end>
+      <start>2014-02-28 23:18:39</start>
+      <end>2014-02-28 23:18:39</end>
       <text>Order Parts</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -95,8 +95,8 @@ Other Hardware</description>
       <category>Cornell Cup Event</category>
     </event>
     <event>
-      <start>2014-03-24 00:00:00</start>
-      <end>2014-03-29 00:00:00</end>
+      <start>2014-03-31 00:00:00</start>
+      <end>2014-04-04 00:00:00</end>
       <text>Build Power Supply</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -107,7 +107,7 @@ Test to make sure that all connections are good.</description>
     </event>
     <event>
       <start>2014-03-15 00:00:00</start>
-      <end>2014-03-31 00:00:00</end>
+      <end>2014-04-05 00:00:00</end>
       <text>Assemble Electrical Hardware Pieces</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -118,8 +118,8 @@ Get Appropriate Cables and connections
 Test components and connections</description>
     </event>
     <event>
-      <start>2014-03-15 00:00:00</start>
-      <end>2014-03-15 00:00:00</end>
+      <start>2014-04-06 00:00:00</start>
+      <end>2014-04-06 00:00:00</end>
       <text>Combine Packaging and Electrical Systems</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -129,7 +129,7 @@ Test components and connections</description>
     </event>
     <event>
       <start>2013-12-16 00:38:00</start>
-      <end>2014-02-15 00:00:00</end>
+      <end>2014-03-16 00:00:00</end>
       <text>Assess Software Changes</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -138,8 +138,8 @@ Test components and connections</description>
       <description>Assess the magnitude of software changes required to make the Cornell Cup project a reality, given hardware changes.</description>
     </event>
     <event>
-      <start>2014-02-24 00:00:00</start>
-      <end>2014-03-02 00:00:00</end>
+      <start>2014-03-17 00:00:00</start>
+      <end>2014-03-20 00:00:00</end>
       <text>Port Sensor</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -158,8 +158,8 @@ Test components and connections</description>
       <description>Eliminate the CCU and give any headset the option to host the game.</description>
     </event>
     <event>
-      <start>2014-02-24 00:00:00</start>
-      <end>2014-03-08 00:00:00</end>
+      <start>2014-03-01 00:00:00</start>
+      <end>2014-03-13 00:00:00</end>
       <text>Port GPU</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -168,8 +168,8 @@ Test components and connections</description>
       <description>Put the GPU software onto the Inel Atom board, get OpenGL running, and display our current maps.</description>
     </event>
     <event>
-      <start>2014-03-15 00:00:00</start>
-      <end>2014-03-21 00:00:00</end>
+      <start>2014-03-20 00:00:00</start>
+      <end>2014-04-20 00:00:00</end>
       <text>Port Central</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -178,8 +178,8 @@ Test components and connections</description>
       <description>Put the CCU user interface on the Intel Board and make sure that the interface is traversable.</description>
     </event>
     <event>
-      <start>2014-03-21 00:00:00</start>
-      <end>2014-03-28 00:00:00</end>
+      <start>2014-03-23 00:00:00</start>
+      <end>2014-04-20 00:00:00</end>
       <text>Port Networking</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -191,8 +191,8 @@ Test components and connections</description>
 - Can receive HeadsetHeartbeat messages</description>
     </event>
     <event>
-      <start>2014-03-28 00:00:00</start>
-      <end>2014-04-08 00:00:00</end>
+      <start>2014-04-05 00:00:00</start>
+      <end>2014-04-13 00:00:00</end>
       <text>Port Simulation</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -202,7 +202,7 @@ Test components and connections</description>
     </event>
     <event>
       <start>2013-12-16 00:00:00</start>
-      <end>2014-02-01 00:00:00</end>
+      <end>2014-02-16 00:00:00</end>
       <text>Intel Board Evaluation</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -222,7 +222,7 @@ Test components and connections</description>
     </event>
     <event>
       <start>2014-02-15 00:00:00</start>
-      <end>2014-03-03 00:00:00</end>
+      <end>2014-03-20 00:00:00</end>
       <text>Implement New Packaging</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -254,8 +254,8 @@ Test components and connections</description>
       <description>Begin testing with users to assess the issues with our current phase 1 prototype.</description>
     </event>
     <event>
-      <start>2014-02-19 12:21:00</start>
-      <end>2014-02-26 12:21:00</end>
+      <start>2014-02-22 00:00:00</start>
+      <end>2014-02-27 00:00:00</end>
       <text>Sensor Data Collection</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -264,8 +264,8 @@ Test components and connections</description>
       <description>Collect Sensor Data and assess that it operates adequately for our task.</description>
     </event>
     <event>
-      <start>2014-03-04 00:00:00</start>
-      <end>2014-03-10 00:00:00</end>
+      <start>2014-04-02 00:00:00</start>
+      <end>2014-04-06 00:00:00</end>
       <text>Power Supply Test</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -274,8 +274,8 @@ Test components and connections</description>
       <description>Put the power supply through a longevity test before mounting other components. Leave on overnight.</description>
     </event>
     <event>
-      <start>2014-03-04 00:00:00</start>
-      <end>2014-03-11 00:00:00</end>
+      <start>2014-04-05 00:00:00</start>
+      <end>2014-04-10 00:00:00</end>
       <text>Test Geospatial Render</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -285,18 +285,8 @@ Test components and connections</description>
 - When moving E,W,S,N the GPS responds correctly and visually appears as if the user is moving in those directions.</description>
     </event>
     <event>
-      <start>2014-03-12 00:00:00</start>
-      <end>2014-03-17 00:00:00</end>
-      <text>User Feedback</text>
-      <fuzzy>False</fuzzy>
-      <locked>False</locked>
-      <ends_today>False</ends_today>
-      <category>Testing</category>
-      <description>Ask X number of users to satisfy our method of gathering user feedback. Assess possible changes to design that may address any issues brought on by the users.</description>
-    </event>
-    <event>
-      <start>2014-03-18 00:00:00</start>
-      <end>2014-03-23 00:00:00</end>
+      <start>2014-03-17 00:00:00</start>
+      <end>2014-03-22 00:00:00</end>
       <text>IMU Performance</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -306,28 +296,8 @@ Test components and connections</description>
 - When tilting head on yaw,pitch,roll axis the expected behavior is seen. Minor shaking is acceptable.</description>
     </event>
     <event>
-      <start>2014-03-26 00:00:00</start>
-      <end>2014-04-01 00:00:00</end>
-      <text>Test File Transfer</text>
-      <fuzzy>False</fuzzy>
-      <locked>False</locked>
-      <ends_today>False</ends_today>
-      <category>Testing</category>
-      <description>Test to make sure that files may be transferred between headsets when loading a new simulation. This operation should perform seamlessly without failure.</description>
-    </event>
-    <event>
-      <start>2014-03-26 00:00:00</start>
-      <end>2014-04-01 00:00:00</end>
-      <text>Start/End Packets</text>
-      <fuzzy>False</fuzzy>
-      <locked>False</locked>
-      <ends_today>False</ends_today>
-      <category>Testing</category>
-      <description>Check to make sure that a Start packet starts a simulation and that an End packet stops a simulation.</description>
-    </event>
-    <event>
-      <start>2014-03-26 00:00:00</start>
-      <end>2014-04-01 00:00:00</end>
+      <start>2014-04-20 00:00:00</start>
+      <end>2014-04-26 00:00:00</end>
       <text>Wireless Connection</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -336,8 +306,8 @@ Test components and connections</description>
       <description>Check to make sure that the headset notifies the user when he/she loses and then regains wireless connection. The user should be notified that they will be taken out of a group simulation if the user is out of range of the wireless base station.</description>
     </event>
     <event>
-      <start>2014-03-31 00:00:00</start>
-      <end>2014-04-05 00:00:00</end>
+      <start>2014-04-20 00:00:00</start>
+      <end>2014-04-25 00:00:00</end>
       <text>Wireless Packets</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -346,8 +316,8 @@ Test components and connections</description>
       <description>Test to make sure wireless commands seamlessly transition the headset through it's appropriate states.</description>
     </event>
     <event>
-      <start>2014-04-05 00:00:00</start>
-      <end>2014-04-11 00:00:00</end>
+      <start>2014-04-22 00:00:00</start>
+      <end>2014-04-28 00:00:00</end>
       <text>User Feedback</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -356,24 +326,14 @@ Test components and connections</description>
       <description>Gather user feedback for X number of users using given system. Assess problems with design and make any changes deemed applicable.</description>
     </event>
     <event>
-      <start>2014-04-05 00:00:00</start>
-      <end>2014-04-11 00:00:00</end>
+      <start>2014-04-22 00:00:00</start>
+      <end>2014-04-28 00:00:00</end>
       <text>Multiple Headsets</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
       <ends_today>False</ends_today>
       <category>Testing</category>
       <description>Test to make sure that multiple headsets can participate in a simulation seamlessly. There should not be lag of object position updates. Users should see objects in the "same location". Users should see objects move in the "same way".</description>
-    </event>
-    <event>
-      <start>2014-04-12 00:00:00</start>
-      <end>2014-04-18 00:00:00</end>
-      <text>User Feedback</text>
-      <fuzzy>False</fuzzy>
-      <locked>False</locked>
-      <ends_today>False</ends_today>
-      <category>Testing</category>
-      <description>Gather User Feedback on current system for X number of users. Assess changes that can be made to system given user feedback.</description>
     </event>
     <event>
       <start>2014-03-07 00:00:00</start>
@@ -432,8 +392,8 @@ Test components and connections</description>
       <description>Update the timeline to account for changes in hardware/software.</description>
     </event>
     <event>
-      <start>2014-02-21 00:00:00</start>
-      <end>2014-02-21 00:00:00</end>
+      <start>2014-02-24 00:00:00</start>
+      <end>2014-02-24 00:00:00</end>
       <text>Order PCB</text>
       <fuzzy>False</fuzzy>
       <locked>False</locked>
@@ -461,11 +421,31 @@ Test components and connections</description>
       <category>Milestone</category>
       <description>The current project will be demonstrated to Dr. Johnson.</description>
     </event>
+    <event>
+      <start>2014-03-13 12:17:00</start>
+      <end>2014-03-13 12:17:00</end>
+      <text>Sensor PCB Built and Tested</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>Soldered the sensor PCB together and tested code on the microcontroller.</description>
+    </event>
+    <event>
+      <start>2014-03-31 12:10:00</start>
+      <end>2014-03-31 12:10:00</end>
+      <text>Build power supply system (PCB and Battery).</text>
+      <fuzzy>False</fuzzy>
+      <locked>False</locked>
+      <ends_today>False</ends_today>
+      <category>Hardware</category>
+      <description>The power supply system was soldered together.</description>
+    </event>
   </events>
   <view>
     <displayed_period>
-      <start>2014-03-02 02:58:28</start>
-      <end>2014-04-26 10:50:39</end>
+      <start>2013-12-23 18:49:37</start>
+      <end>2014-01-31 22:40:44</end>
     </displayed_period>
     <hidden_categories>
     </hidden_categories>
