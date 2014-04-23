@@ -137,6 +137,14 @@ acceptHeadset.addMember("uint8_t", "packetType", 1, NONE)
 acceptHeadset.addMember("float", "x", 4, LONG)
 acceptHeadset.addMember("float", "y", 4, LONG)
 
+dropHeadsetStr = """
+// DropHeadset:
+// Sent from ccu to one headset.
+// This tells the headset it is no longer 
+// included in the simulation."""
+dropHeadset = Struct("dropHeadset", dropHeadsetStr)
+dropHeadset.addMember("uint8_t", "packetType", 1, NONE)
+
 loadStaticDataStr = """
 // LoadStaticData:
 // Sent from ccu to all headsets.
@@ -205,10 +213,10 @@ packetList = []
 packetList.append(objInfo)
 packetList.append(broadCastPacket)
 packetList.append(acceptHeadset)
+packetList.append(dropHeadset)
 packetList.append(loadStaticData)
 packetList.append(updateObjInstance)
 packetList.append(startSimulation)
 packetList.append(endSimulation)
 packetList.append(heartBeat)
 packetList.append(confirmPacket)
-packetList.append(goBack)

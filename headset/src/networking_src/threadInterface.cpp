@@ -27,21 +27,29 @@ int bindServer(uint16_t port);
 void serviceConnections(int fd);
 void *threadServer(void *arg);
 
-void _sendGoBack(int fd);
 void _sendAccept(int fd);
+void _getAccept(int fd); // NEW
+void _sendDrop(int fd); // NEW
+void _getDrop(int fd); // NEW
 void _sendStart(int fd);
+void _getStart(int fd); // NEW
 void _sendEnd(int fd);
+void _getEnd(int fd);  // NEW
 void _sendFile(int fd);
+void _getReceivedFile(int fd); // NEW
 void _sendUpdateObjs(int fd);
 void _getAlive(int fd);
 void _getNumAlive(int fd);
 void _getPosition(int fd);
 void _getNumBroadcast(int fd);
 void _getBroadCastIDs(int fd);
+void _getAcceptedIds(int fd); // NEW
 void _getUserPos(int fd);
 void _getWifiStatus(int fd);
 void _getBatteryStatus(int fd);
 void _resetGPSOrigin(int fd);
+void _getGPSOrigin(int fd); // NEW
+void _setGPSOrigin(int fd); // NEW
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -192,11 +200,26 @@ void serviceConnections(int fd)
 			case SENDACCEPT:
 				_sendAccept(connfd);
 				break;
-			case SENDGOBACK:
-				_sendGoBack(connfd);
-				break;
 			case RESETGPSORIGIN:
 				_resetGPSOrigin(connfd);
+      case SETGPSORIGIN:
+        break;
+      case GETGPSORIGIN:
+        break;
+      case GETACCEPTEDIDS:
+        break;
+      case GETRECEIVEDFILE:
+        break;
+      case GETEND:
+        break;
+      case GETSTART:
+        break;
+      case GETDROP:
+        break;
+      case SENDDROP:
+        break;
+      case GETACCEPT:
+        break;
       default:
         break;
     }
@@ -219,6 +242,16 @@ void _resetGPSOrigin(int fd)
 	localHeadsetPos_t pos;
 	getHeadsetPosData(&pos);
 	setGPSOrigin(pos.lon,pos.lat);
+}
+
+void _getGPSOrigin(int fd)
+{
+  return;
+}
+
+void _setGPSOrigin(int fd)
+{
+  return;
 }
 
 /**
@@ -279,6 +312,7 @@ void _getBroadCastIDs(int fd)
 	rc = write(fd, (void *)ids, num*sizeof(uint32_t));
 	return;
 }
+
 void _getNumBroadcast(int fd)
 {
 	int rc = 0;
@@ -287,46 +321,21 @@ void _getNumBroadcast(int fd)
 	return;
 }
 
+void _getAcceptedIds(int fd)
+{
+  return;
+}
+
 void _getPosition(int fd)
 {
-	/*
-	int rc = 0;
-	uint8_t id[SIZEOFID];
-	headsetPos_t pos = {0};
-	// Read in the id
-	rc = read(fd, (void *)id, SIZEOFID);
-	if (rc < SIZEOFID) { perror("Error:_getPosition: read less than size of id!\n"); }
-	// Find the Loc element for this id and send our reply.
-	getPos(&pos, id);
-	// Send the position information out.
-	rc = write(fd, (void *)&pos, sizeof(pos));
-	*/
 	return;
 }
 void _getNumAlive(int fd)
 {
-	/*
-	int rc = 0;
-	int num = 0;
-	num = getNumAlive();
-	rc = write(fd, (void *)&num, sizeof(num));
-	*/
 	return;
 }
 void _getAlive(int fd)
 {
-	/*
-	int rc = 0;
-	uint8_t id[SIZEOFID];
-	uint16_t alive = 0;
-	// Read in the id
-	rc = read(fd, (void *)id, SIZEOFID);
-	if (rc < SIZEOFID) { perror("Error:_getAlive: read less than size of id!\n"); }
-	// Find the Loc element for this id and send our reply.
-	alive = getAlive(id);
-	// Send the position information out.
-	rc = write(fd, (void *)&alive, sizeof(alive));
-	*/
 	return;
 }
 // This function needs to be
@@ -335,37 +344,14 @@ void _getAlive(int fd)
 // only to file transfers.
 void _sendUpdateObjs(int fd)
 {
-	/*
-	static uint8_t updateNumber = 0;
-	int rc = 0;
-	uint8_t numObjs = 0;
-	uint16_t i = 0;
-	updateObjInstance_t objs = {0};
-	objInfo_t objInfo = {0};
-	// reserve a large buffer because this
-	// could be a large update.
-	uint8_t buf[5024] = {0};
-	// Read in number of objects to update
-	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
-	if (rc < sizeof(numObjs)) { perror("Error:_sendUpdateObjs: read less than size of numObjs!\n"); }
-	// Write header to packet
-	addHeader(buf);
-	// Write the objs packet.
-	objs.packetType = UPDATEOBJINSTANCE;
-	objs.numObj = numObjs;
-	objs.updateNumber = updateNumber++;
-	updateObjInstancePack(&objs, &buf[HEADERSIZE]);
-	// Pack in all of the object update information.
-	for (i = 0; i < numObjs && i < 150; i++)
-	{
-		rc = read(fd, (void *)&objInfo, sizeof(objInfo));
-		objInfoPack(&objInfo, &buf[i*OBJINFOSIZE + UPDATEOBJINSTANCESIZE + HEADERSIZE]);
-	}
-	// Now that the bytestream has been populated, it is time to send out wireless.
-	rc = writeByteStream(buf, i*OBJINFOSIZE + UPDATEOBJINSTANCESIZE + HEADERSIZE);
-	*/
 	return;
 }
+
+void _getReceivedFile(int fd)
+{
+  return;
+}
+
 void _sendFile(int fd)
 {
 	int rc = 0;
@@ -389,79 +375,47 @@ void _sendFile(int fd)
 	// Send the file on its way!
 	sendFile((char *)filename);
 }
+
+void _sendStart(int fd)
+{
+	return;
+}
+
+void _getStart(int fd)
+{
+  return;
+}
+
 // The functions below need to be sent to a
 // specific headset. Therefore the id of the
 // headset to send to will need to be retrieved
 // and used to send the information.
 void _sendEnd(int fd)
 {
-	/*
-	uint8_t buf[ENDSIMULATIONSIZE + HEADERSIZE];
-	endSimulation_t p = {0};
-	p.packetType = ENDSIMULATION;
-	//addHeader(buf);
-	//endSimulationPack(&p, &buf[HEADERSIZE]);
-	//writeByteStream(buf, ENDSIMULATIONSIZE + HEADERSIZE);
-	printf("Sent end command.\n");
-	*/
 	return;
 }
-void _sendStart(int fd)
+
+void _getEnd(int fd)
 {
-	/*
-	uint8_t buf[STARTSIMULATIONSIZE + HEADERSIZE];
-	startSimulation_t p = {0};
-	p.packetType = STARTSIMULATION;
-	//addHeader(buf);
-	//startSimulationPack(&p, &buf[HEADERSIZE]);
-	//writeByteStream(buf, STARTSIMULATIONSIZE + HEADERSIZE);
-	printf("Sent start command.\n");
-	*/
-	return;
+  return;
 }
+
 void _sendAccept(int fd)
 {
-	/*
-	uint8_t buf[ACCEPTHEADSETSIZE + HEADERSIZE];
-	uint8_t id[SIZEOFID];
-	float coord[2];
-	int rc = 0;
-	acceptHeadset_t p = {0};
-	p.packetType = ACCEPTHEADSET;
-	// Read in the id
-	rc = read(fd, (void *)id, SIZEOFID);
-	if (rc < SIZEOFID) { perror("Error:_sendAccept: read less than size of id!\n"); return; }
-	// Read in lat/lon coordinates
-	rc = read(fd, (void *)coord, 2*sizeof(float));
-	if (rc < 2*sizeof(float)) {perror("Error:_sendAccept: read less than size 2*float!\n"); return;}
-	p.x = coord[0];
-	p.y = coord[1];
-	//p.id = getCcuId();
-	// Id of headset needs to be passed to getOrigin
-	// so that I know which headset is being accepted
-	// and so I can update the origin correctly. :)
-	//getOrigin(&p.x, &p.y, );
-	addHeader(buf);
-	acceptHeadsetPack(&p, &buf[HEADERSIZE]);
-	writeByteStream(buf, ACCEPTHEADSETSIZE + HEADERSIZE);
-	// Add id to list of id's for heartbeat
-	addAliveID(id);
-	printf("Sent Accept command.\n");
-	*/
 	return;
 }
-// This needs to be sent to specific address
-// or broadcast as needed...
-void _sendGoBack(int fd)
+
+void _getAccept(int fd)
 {
-	/*
-	uint8_t buf[GOBACKSIZE + HEADERSIZE];
-	goBack_t p = {0};
-	p.packetType = GOBACK;
-	addHeader(buf);
-	goBackPack(&p, &buf[HEADERSIZE]);
-	writeByteStream(buf, GOBACKSIZE + HEADERSIZE);
-	printf("Sent GoBack command.\n");
-	*/
-	return;
+  return;
+}
+
+void _sendDrop(int fd)
+{
+  return;
+}
+
+void _getDrop(int fd)
+{
+  return;
 }

@@ -15,7 +15,7 @@ GETUSERPOSITIONFORMATS = '=B'
 GETUSERPOSITIONFORMATR = '=I7f'
 GETBROADCASTIDS = '\x04'
 BROADCASTIDSFORMATS = '=B'
-BROADCASTIDSFORMATR = '=%sB'
+BROADCASTIDSFORMATR = '=%sI'
 GETNUMBROADCAST = '\x05'
 NUMBROADCASTFORMATS = '=B'
 NUMBROADCASTFORMATR = '=B'
@@ -42,11 +42,16 @@ SENDSTART = '\x0d'
 SENDSTARTFORMAT = '=B'
 SENDACCEPT = '\x0e'
 SENDACCEPTFORMAT = '=2f'
-SENDGOBACK = '\x0f'
-SENDGOBACKFORMAT = '=B16B'
-
-# Commands for sensor data
-SENDRESETORIGIN = '\x10'
+SENDRESETORIGIN = '\x0f'
+SETGPSORIGIN = '\x10'
+GETGPSORIGIN = '\x11'
+GETACCEPTEDIDS = '\x12'
+GETRECEIVEDFILE = '\x13'
+GETEND = '\x14'
+GETSTART = '\x15'
+GETDROP = '\x16'
+SENDDROP = '\x17'
+GETACCEPT = '\x18'
 
 ##
 # @brief getBroadCastIDs() gets a list of 16 byte
@@ -67,19 +72,17 @@ def getBroadCastIDs():
 	data = ""
 	if (ord(numIds) > 0):
 		#print (BROADCASTIDSFORMATR % (ord(numIds)*16,));
-		numToRead = calcsize(BROADCASTIDSFORMATR % (ord(numIds)*16,))
+		numToRead = calcsize(BROADCASTIDSFORMATR % (ord(numIds),))
 		#print "numToRead:",numToRead
-		reply = s.recv(numToRead*16);
-		data = unpack(BROADCASTIDSFORMATR % (ord(numIds)*16,),reply);
+		reply = s.recv(numToRead);
+		data = unpack(BROADCASTIDSFORMATR % (ord(numIds),),reply);
 	#print "NumIds:",ord(numIds)
 	#print "IDs: ",data
 	s.close()
 	output = []
 	# Format the data, then return it.
-	# Returns a list of 16 byte strings
-	for i in range(ord(numIds)):
-		output.append(''.join("%c" % chr(x) for x in data[i:i+16]))
-	return output
+  # Returns a list of integers.
+	return data
 
 ##
 # @brief getNumBroadCast() gets the number of headsets
@@ -99,36 +102,6 @@ def getNumBroadCast():
 	#print "NumIds:",ord(reply)
 	s.close()
 	return ord(reply)
-
-##
-# @brief getBroadcastLoc() gets the gps location broadcast
-#					by a headset. This call is meant to be used to find
-#					the location of a headset before it is accepted into
-#					a simulation.
-#
-# @param nid
-#
-# @return a tuple containing x,y,pitch,yaw,roll.
-def getBroadcastLoc(nid):
-	# Set command
-	# Pack info
-	command = GETBROADCASTLOC
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.send(nid)
-	# receive info
-	data = ""
-	# Get number of bytes to read.
-	numToRead = calcsize( BROADCASTLOCFORMATR )
-	#print "numToRead:", numToRead
-	reply = s.recv(numToRead);
-	s.close()
-	data = unpack(BROADCASTLOCFORMATR,reply);
-	#print "Position: ",data
-	# returns x,y,roll,pitch,yaw
-	return data
 
 ##
 # @brief getPostion() gets the position information
