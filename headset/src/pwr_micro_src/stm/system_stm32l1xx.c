@@ -125,12 +125,18 @@ static void SetSysClock(void) {
 	FLASH->ACR |= FLASH_ACR_ACC64;
 	FLASH->ACR |= FLASH_ACR_PRFTEN;
 	// Switch to the HSE oscillator for USB initialization
+#ifndef LOW_POWER_STARTUP
 	switchToHSE();
+#else
+	switchToMSI();
+#endif
 	// Wait for LSI to be ready
 	while (!(RCC->CSR & RCC_CSR_LSIRDY));
 	// Set the MSI to ~4.194 MHz
+#ifndef LOW_POWER_STARTUP
 	RCC->ICSCR = (RCC->ICSCR & ~RCC_ICSCR_MSIRANGE) | RCC_ICSCR_MSIRANGE_6;
 	__DSB();
+#endif
 }
 
 /**

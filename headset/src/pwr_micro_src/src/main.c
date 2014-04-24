@@ -15,9 +15,46 @@
 #define FLAG_REPORT 0x01U
 #define FLAG_ALARM 0x02U
 #define FLAG_STOP 0x04U
+#define FLAG_PREPARE_STOP 0x08U
+
+#define USB_COUNT_DOWN 3U
 
 // Flags byte used to handle reporting over USB
-static volatile uint32_t flags;
+static volatile uint16_t flags;
+// Countdown for stop mode after host disconnect
+static volatile uint16_t count;
+
+/**
+ * GPIO initialization
+ *
+ * Turn on the GPIO, set the unused pins to input pull down, then kill clocks on unused
+ * modules
+ */
+static void initGPIO(void) {
+	GPIO_InitTypeDef gpio;
+	// Turn all GPIO on
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN |
+		RCC_AHBENR_GPIODEN;
+	__DSB();
+	// PA11, PA12 are USB; PA13, PA14, PA15 are JTAG (PA9 and PA10 are the serial port)
+	gpio.GPIO_Mode = GPIO_Mode_IN;
+	gpio.GPIO_PuPd = GPIO_PuPd_DOWN;
+	gpio.GPIO_Speed = GPIO_Speed_400KHz;
+	gpio.GPIO_OType = GPIO_OType_OD;
+	gpio.GPIO_Pin = (uint16_t)0x07FFU;
+	GPIO_Init(GPIOA, &gpio);
+	// PB10, PB11 are I2C; PB2 has external pull down
+	gpio.GPIO_Pin = (uint16_t)0xF3FBU;
+	GPIO_Init(GPIOB, &gpio);
+	// All PC unused
+	gpio.GPIO_Pin = (uint16_t)0xFFFFU;
+	GPIO_Init(GPIOC, &gpio);
+	// PD2 only pin
+	gpio.GPIO_Pin = (uint16_t)0x0004U;
+	GPIO_Init(GPIOD, &gpio);
+	// Turn off C and D which are not used
+	RCC->AHBENR &= ~(RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIODEN);
+}
 
 /**
  * USB initialization
@@ -68,7 +105,7 @@ static void init(void) {
 	flags = 0x00U;
 	// Priority group #3 configuration
 	NVIC_SetPriorityGrouping(3);
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN;
+	initGPIO();
 	// EXTI and SYSCFG clocks on
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	// Set up the peripherals, the debug serial is not used anymore so shut it off for power
@@ -86,9 +123,10 @@ static void init(void) {
  * This should probably be called from USB suspend.
  */
 static void enterStopMode(void) {
-	//switchToMSI();
-	flags |= FLAG_STOP;
+	switchToMSI();
+	flags = (flags & ~FLAG_PREPARE_STOP) | FLAG_STOP;
 	rtcSetAlarmFrequency(RTC_1M);
+	count = 0U;
 }
 
 /**
@@ -98,8 +136,9 @@ static void enterStopMode(void) {
  */
 static void exitStopMode(void) {
 	switchToHSE();
-	flags &= ~FLAG_STOP;
+	flags &= ~(FLAG_STOP | FLAG_PREPARE_STOP);
 	rtcSetAlarmFrequency(RTC_1S);
+	count = USB_COUNT_DOWN;
 }
 
 /**
@@ -138,8 +177,9 @@ int main(void) {
  */
 void usbPowerDown(void) {
 	// Disable reporting over USB
-	flags &= ~(FLAG_ALARM | FLAG_REPORT);
-	enterStopMode();
+	flags = (flags & ~(FLAG_ALARM | FLAG_REPORT | FLAG_STOP)) | FLAG_PREPARE_STOP;
+	// Prepare to STOP in 5 seconds
+	count = USB_COUNT_DOWN;
 }
 
 /**
@@ -149,11 +189,55 @@ void IRQ RTC_Alarm_IRQHandler(void) {
 	// Shut off the alarm clock
 	RTC->ISR &= ~RTC_ISR_ALRAF;
 	EXTI->PR &= EXTI_PR_PR17;
-	// Assert ALARM signal if needed
+	// Read flags
 	const uint32_t lFlags = flags;
 	if (lFlags & FLAG_REPORT)
+		// Assert ALARM signal if needed
 		flags = lFlags | FLAG_ALARM;
+	else if (lFlags & FLAG_PREPARE_STOP) {
+		const uint32_t c = count;
+		if (usbIsConnected()) {
+			// USB is connected
+			flags = (lFlags & ~FLAG_PREPARE_STOP) | FLAG_REPORT;
+			count = USB_COUNT_DOWN;
+		} else if (c == 0U)
+			// Actually stop
+			enterStopMode();
+		else
+			count = c - 1U;
+	}
 }
+
+#ifndef USB_WORK_AROUND
+// Work around for USB not resuming right?
+
+#define USB_NR_EP_REGS 8
+typedef struct {
+	// Endpoint registers
+	__IO uint32_t EP[USB_NR_EP_REGS];
+	uint32_t RESERVED[8];
+	// Control register
+	__IO uint32_t CNTR;
+	// Interrupt status register
+	__IO uint32_t ISTR;
+	// Frame number register
+	__IO uint32_t FNR;
+	// Device address register
+	__IO uint32_t DADDR;
+	// Buffer table address register, 8-byte aligned
+	__IO uint32_t BTABLE;
+	/*
+	 * Address offset within the USB
+	 * packet memory area which points
+	 * to the base of the buffer
+	 * descriptor table.  Must be
+	 * aligned to an 8 byte boundary.
+	 */
+} USB_TypeDef;
+// USB
+#define USB_BASE (APB1PERIPH_BASE + 0x5C00)
+#define USB ((USB_TypeDef*)USB_BASE)
+#endif
 
 /**
  * Called on USB wake-up detected.
@@ -163,6 +247,13 @@ void IRQ USB_FS_WKUP_IRQHandler(void) {
 	EXTI->PR &= EXTI_PR_PR18;
 	// Exit STOP mode, as the host has connected and powered up
 	exitStopMode();
+#ifndef USB_WORK_AROUND
+	// LP_MODE was cleared by hardware
+	USB->CNTR &= ~USB_CNTR_FSUSP;
+	__DSB();
+	// Enable all IRQs again
+	USB->CNTR = 0x9C00U;
+#endif
 	// Enable reporting over USB
 	flags = (flags & ~FLAG_ALARM) | FLAG_REPORT;
 }
