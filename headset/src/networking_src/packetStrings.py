@@ -97,7 +97,7 @@ enum packetType
 	ENDSIMULATION,
 	HEARTBEAT,
 	CONFIRMUPDATE,
-	GOBACK
+  DROPHEADSET
 };"""
 
 objInfoStr = """
@@ -162,8 +162,8 @@ updateObjInstanceStr = """
 // of one or more objects."""
 updateObjInstance = Struct("updateObjInstance", updateObjInstanceStr)
 updateObjInstance.addMember("uint8_t", "packetType", 1, NONE)
-updateObjInstance.addMember("uint8_t", "numObj", 1, NONE)
-updateObjInstance.addMember("uint8_t", "updateNumber", 1, NONE)
+updateObjInstance.addMember("uint32_t", "numObj", 4, LONG)
+updateObjInstance.addMember("uint32_t", "updateNumber", 4, LONG)
 updateObjInstance.addMember("objInfo_t", "*objList", 0, LONG)
 
 startSimulationStr = """

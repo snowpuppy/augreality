@@ -50,6 +50,7 @@ void _getBatteryStatus(int fd);
 void _resetGPSOrigin(int fd);
 void _getGPSOrigin(int fd); // NEW
 void _setGPSOrigin(int fd); // NEW
+void _setHostHeadset(int fd); // NEW
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -203,22 +204,34 @@ void serviceConnections(int fd)
 			case RESETGPSORIGIN:
 				_resetGPSOrigin(connfd);
       case SETGPSORIGIN:
+        _setGPSOrigin(connfd);
         break;
       case GETGPSORIGIN:
+        _getGPSOrigin(connfd);
         break;
       case GETACCEPTEDIDS:
+        _getAcceptedIds(connfd);
         break;
       case GETRECEIVEDFILE:
+        _getReceivedFile(connfd);
         break;
       case GETEND:
+        _getEnd(connfd);
         break;
       case GETSTART:
+        _getStart(connfd);
         break;
       case GETDROP:
+        _getDrop(connfd);
         break;
       case SENDDROP:
+        _sendDrop(connfd);
         break;
       case GETACCEPT:
+        _getAccept(connfd);
+        break;
+      case SETHOSTHEADSET:
+        _setHostHeadset(connfd);
         break;
       default:
         break;
@@ -241,16 +254,26 @@ void _resetGPSOrigin(int fd)
 {
 	localHeadsetPos_t pos;
 	getHeadsetPosData(&pos);
-	setGPSOrigin(pos.lon,pos.lat);
+	setGPSOrigin(pos.lat,pos.lon);
 }
 
 void _getGPSOrigin(int fd)
 {
-  return;
+  int32_t rc = 0;
+  float olat = 0, olon = 0;
+  getGPSOrigin(&olat,&olon);
+  // send the lat then the lon
+  rc = write(fd, (void *)&olat, sizeof(olat));
+  rc = write(fd, (void *)&olon, sizeof(olon));
 }
 
 void _setGPSOrigin(int fd)
 {
+  int32_t rc = 0;
+  float lat = 0, lon = 0;
+  rc = read(fd, (void *)&lat, sizeof(lat));
+  rc = read(fd, (void *)&lon, sizeof(lon));
+  setGPSOrigin(lat,lon);
   return;
 }
 
@@ -323,19 +346,47 @@ void _getNumBroadcast(int fd)
 
 void _getAcceptedIds(int fd)
 {
+  int rc = 0;
+  uint32_t ids[MAXNUMHEADSETS];
+  uint8_t num = (uint8_t)getNumAlive();
+  // get ids
+  getAliveIDs(ids,num);
+  // send the return message
+  rc = write(fd, (void *)&num, sizeof(num));
+  rc = write(fd, (void *)ids, num*sizeof(uint32_t));
   return;
 }
 
 void _getPosition(int fd)
 {
+  int rc = 0;
+  uint32_t id = 0;
+  headsetPos_t pos = {0};
+  // Get the id needed.
+  rc = read(fd, (void *)&id, sizeof(id));
+  // Get the position of the id
+  getPos(&pos, id);
+  // Send the position back.
+  rc = write(fd, (void *)&pos, sizeof(pos));
 	return;
 }
 void _getNumAlive(int fd)
 {
+  int rc = 0;
+  uint8_t numAlive = 0;
+  numAlive = (uint8_t)getNumAlive();
+  rc = write(fd, (void *)&numAlive, sizeof(numAlive));
 	return;
 }
 void _getAlive(int fd)
 {
+  int rc = 0;
+  uint8_t alive = 0;
+  uint32_t id = 0;
+  // Get the id needed.
+  rc = read(fd, (void *)&id, sizeof(id));
+  alive = (uint8_t)getAlive(id);
+  rc = write(fd, (void *)&alive, sizeof(alive));
 	return;
 }
 // This function needs to be
@@ -378,11 +429,23 @@ void _sendFile(int fd)
 
 void _sendStart(int fd)
 {
+  startSimulation();
 	return;
 }
 
 void _getStart(int fd)
 {
+  uint32_t rc = 0;
+  uint8_t started = 0;
+  rc = getState();
+  // Find out if we entered simulation
+  // state.
+  if (rc == SIMULATION)
+  {
+    // If so, then we started the simulation.
+    started = 1;
+  }
+  rc = write(fd, (void *)&started, sizeof(started));
   return;
 }
 
@@ -392,30 +455,101 @@ void _getStart(int fd)
 // and used to send the information.
 void _sendEnd(int fd)
 {
+  uint32_t rc = 0;
+  uint32_t id = 0;
+  // Get the id needed.
+  rc = read(fd, (void *)&id, sizeof(id));
+  if (rc > 0)
+  {
+    endSimulationID(id);
+  }
 	return;
 }
 
 void _getEnd(int fd)
 {
+  uint32_t rc = 0;
+  uint8_t ended = 0;
+  rc = getState();
+  // Find out if we entered simulation
+  // state.
+  if (rc == INIT)
+  {
+    // If so, then we ended the simulation.
+    ended = 1;
+  }
+  rc = write(fd, (void *)&ended, sizeof(ended));
   return;
 }
 
 void _sendAccept(int fd)
 {
+  uint32_t rc = 0;
+  uint32_t id = 0;
+  uint8_t status = 0;
+  // Get the id needed.
+  rc = read(fd, (void *)&id, sizeof(id));
+  if (rc >= 0)
+  {
+    rc = acceptID(id);
+  }
+  // Change rc to reflect the 
+  if (rc >= 0)
+  {
+    status = 1;
+  }
+  // return whether the call succeeded or failed.
+  rc = write(fd, (void *)&status, sizeof(status));
 	return;
 }
 
 void _getAccept(int fd)
 {
+  uint32_t rc = 0;
+  uint8_t accepted = 0;
+  rc = getState();
+  // Find out if we entered accepted
+  // state.
+  if (rc == ACCEPTED)
+  {
+    // If so, then we were accepted.
+    accepted = 1;
+  }
+  rc = write(fd, (void *)&accepted, sizeof(accepted));
   return;
 }
 
 void _sendDrop(int fd)
 {
+  uint32_t rc = 0;
+  uint32_t id = 0;
+  // Get the id needed.
+  rc = read(fd, (void *)&id, sizeof(id));
+  sendDropId(id);
   return;
 }
 
 void _getDrop(int fd)
 {
+  uint32_t rc = 0;
+  uint8_t dropped = 0;
+  rc = getState();
+  // Find out if we entered simulation
+  // state.
+  if (rc == INIT)
+  {
+    // If so, then we dropped the simulation.
+    dropped = 1;
+  }
+  rc = write(fd, (void *)&dropped, sizeof(dropped));
+  return;
+}
+
+void _setHostHeadset(int fd)
+{
+  uint32_t rc = 0;
+  uint8_t host = 0;
+  rc = read(fd, (void *)&host, sizeof(host));
+  setHostHeadset(host);
   return;
 }

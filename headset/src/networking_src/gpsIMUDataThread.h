@@ -22,7 +22,8 @@ typedef struct localHeadsetPos
 // Functions
 int openComPort();
 int getHeadsetPosData(localHeadsetPos_t *pos);
-int setGPSOrigin(float lon, float lat);
+int setGPSOrigin(float lat, float lon);
+int getGPSOrigin(float *lat, float *lon);
 void *gpsImuThread(void *args);
 int initGPSIMUServer(void);
 void stopGPSIMUServer(void);

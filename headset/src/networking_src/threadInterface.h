@@ -32,7 +32,8 @@ enum apiRequest
   GETSTART,
   GETDROP,
   SENDDROP,
-  GETACCEPT
+  GETACCEPT,
+  SETHOSTHEADSET
 };
 
 // Function: initServer()

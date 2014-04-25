@@ -52,6 +52,7 @@ GETSTART = '\x15'
 GETDROP = '\x16'
 SENDDROP = '\x17'
 GETACCEPT = '\x18'
+SETHOSTHEADSET = '\x19'
 
 ##
 # @brief getBroadCastIDs() gets a list of 16 byte
@@ -295,3 +296,100 @@ def resetGPSOrigin():
 	s.send(command)
 	s.close()
 
+def setGPSOrigin():
+	# Set command
+	# Pack info
+	command = SETGPSORIGIN
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getGPSOrigin():
+	# Set command
+	# Pack info
+	command = GETGPSORIGIN
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getAcceptIds():
+	# Set command
+	# Pack info
+	command = GETACCEPTEDIDS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getReceivedFile():
+	# Set command
+	# Pack info
+	command = GETRECEIVEDFILE
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getEnd():
+	# Set command
+	# Pack info
+	command = GETEND
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getStart():
+	# Set command
+	# Pack info
+	command = GETSTART
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getDrop():
+	# Set command
+	# Pack info
+	command = GETDROP
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def sendDrop():
+	# Set command
+	# Pack info
+	command = SENDDROP
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def getAccept():
+	# Set command
+	# Pack info
+	command = GETACCEPT
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
+def setHostHeadset(host):
+	command = SETHOSTHEADSET
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()

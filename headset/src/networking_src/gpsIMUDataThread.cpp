@@ -189,12 +189,12 @@ void updatePosition(char *data)
 /**
 * @brief Set the gps position information.
 *
-* @param lon - longitude of headset
 * @param lat - latitude of headset
+* @param lon - longitude of headset
 *
 * @return - success or failure.
 */
-int setGPSOrigin(float lon, float lat)
+int setGPSOrigin(float lat, float lon)
 {
 	printf("OriginLat = %f, OriginLon = %f\n", lat, lon);
 	originlat = lat;
@@ -203,6 +203,21 @@ int setGPSOrigin(float lon, float lat)
   decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
 	// Always succeeds.
 	return 1;
+}
+
+/**
+* @brief Get the gps position information.
+*
+* @param &lat - latitude of headset
+* @param &lon - longitude of headset
+*
+* @return - success or failure.
+*/
+int getGPSOrigin(float *lat, float *lon)
+{
+  *lat = originlat;
+  *lon = originlon;
+  return 1;
 }
 
 /**
