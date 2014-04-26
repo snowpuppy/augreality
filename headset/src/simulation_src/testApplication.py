@@ -87,7 +87,8 @@ def collideWithPellet(objs):
 	for i in pellet:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
-			return pellet
+			if i.typeShow == 0:
+				return pellet
 	# Return nothing if no collision.
 	return None
 
