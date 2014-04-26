@@ -52,7 +52,7 @@ uint16_t getAlive(uint32_t id);
 int16_t getAliveIDs(uint32_t *ids, uint16_t size);
 uint16_t addAliveID(uint32_t id);
 int16_t updateObjs(objInfo_t *objList, uint32_t numObjects);
-int16_t sendFile(char *filename);
+int16_t sendFile(char *filename, uint32_t id);
 int16_t startSimulation();
 int16_t getStartSimulation(int32_t connfd);
 int16_t sendDropId(uint32_t destId);

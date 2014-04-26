@@ -27,7 +27,7 @@
 #define DECIMALSPERDEGLON 78710
 
 // if no gps/imu, then fake the data.
-//#define NOGPSIMU 1
+#define NOGPSIMU 1
 #define NOFUELGAUGE
 
 // Local Function prototypes.

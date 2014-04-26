@@ -221,7 +221,7 @@ int16_t getEndSimulation(int32_t connfd)
 }
 
 // sendFile(filename)
-int16_t sendFile(char *filename)
+int16_t sendFile(char *filename, uint32_t id)
 {
 	loadStaticData_t p = {0};
   uint8_t fileBuf[256];
@@ -248,7 +248,7 @@ int16_t sendFile(char *filename)
 	// Add header info and crc.
   //addHeader(buf);
 	// Write the packet to the serial port.
-	fd = connectToServer(g_tcpPort, g_myIp); // TODO: change from myIp!
+	fd = connectToServer(g_tcpPort, id); // TODO: change from myIp!
 	if (fd < 0)
 	{
 		perror("sendFile:Error connecting to server.\n");

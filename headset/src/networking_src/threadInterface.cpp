@@ -433,7 +433,15 @@ void _sendFile(int fd)
 	// Limit the filename to 256 characters (more than reasonable).
 	uint8_t filename[256];
 	uint8_t filenameSize = 0;
+	uint32_t id = 0;
 
+	// Read in the id to send it to.
+	rc = read(fd, (void *)&id, sizeof(id));
+	if (rc < 0)
+	{
+		perror("Error: sendFile could not read id.\n");
+		return;
+	}
 	// Read size of the filename
 	rc = read(fd, (void *)&filenameSize, sizeof(filenameSize));
 	if (rc < sizeof(filenameSize)) { perror("Error:_sendFile: read less than size of filenameSize!\n"); }
@@ -448,7 +456,7 @@ void _sendFile(int fd)
 	if (rc < filenameSize) { perror("Error:_sendFile: read less than filenameSize!\n"); return;}
 	filename[filenameSize] = '\0';
 	// Send the file on its way!
-	sendFile((char *)filename);
+	sendFile((char *)filename, id);
 }
 
 void _sendStart(int fd)

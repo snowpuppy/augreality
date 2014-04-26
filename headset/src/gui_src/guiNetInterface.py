@@ -221,7 +221,7 @@ def getAlive(nid):
 # @param filename - string indicating the file to be sent.
 #
 # @return - none
-def sendFile(filename):
+def sendFile(filename,nid):
 	# Set command
 	# Pack info
 	command = SENDFILE
@@ -229,6 +229,9 @@ def sendFile(filename):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# send the id that it goes to.
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	# send filename length
 	s.send(chr(len(filename)))
 	# send filename

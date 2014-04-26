@@ -310,9 +310,11 @@ class AugRealObj:
     elif (self.state == SELECTSIM):
       # Hardcoded simulations.
       if (num == 1):
-        sendFile("../sim/pacman.tar")
+				for i in self.acceptList:
+					sendFile("../simulation_src/simulation/pacman.tar",i)
       if (num == 2):
-        sendFile("../sim/demo.tar")
+				for i in self.acceptList:
+					sendFile("../simulation_src/simulation/demo.tar",i)
     elif (self.state == RUNSIMHOST):
       pass
 
@@ -333,7 +335,7 @@ class AugRealObj:
       self.state = WAITRECEIVE
       self.teardownWaitAccept()
       self.setupWaitReceive()
-      self.after(1000, self.WaitReceive)
+      self.root.after(1000, self.WaitReceive)
     if (self.state == WAITACCEPT):
       self.root.after(1000, self.WaitAccept)
   def WaitReceive(self):
@@ -342,7 +344,7 @@ class AugRealObj:
       self.state = WAITSTART
       self.teardownWaitReceive()
       self.setupWaitStart()
-      self.after(1000, self.WaitStart())
+      self.root.after(1000, self.WaitStart())
     if (self.state == WAITRECEIVE):
       self.root.after(1000, self.WaitReceive)
   def WaitStart(self):
