@@ -115,7 +115,7 @@ void checkFuelGauge(int32_t fd) {
 
 	int bytes, pos;
 	unsigned int power = 0U;
-	if (ioctl(fd, FIONREAD, &bytes) >= 0) {
+	if (ioctl(fd, FIONREAD, &bytes) >= 0 && bytes > 0) {
 		// Have # of bytes available on fd
 		if (bytes > sizeof(in))
 			bytes = sizeof(in);
