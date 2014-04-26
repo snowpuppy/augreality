@@ -12,6 +12,7 @@ import socket
 import time
 import copy
 import subprocess
+from math import sqrt
 sys.path.append(os.path.realpath('../gui_src/'))
 from guiNetInterface import *
 from gpuPyInterface import *
@@ -79,12 +80,15 @@ def collideWithPellet(objs):
 	print pos
 	x = pos[3]
 	y = pos[4]
+	# coordinate adjustments
+	x = -pos[4]
+	y = pos[3]
 	print pos
 	pellets = objs['pellet']
 	# Find distance player is from pellet.
 	# Return any pellet that the player collides
 	# with.
-	for i in pellet:
+	for i in pellets:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
 			if i.typeShow == 0:
@@ -97,6 +101,8 @@ subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simu
 time.sleep(1.0)
 output = getRunning();
 print "Running", output
+
+resetGPSOrigin()
 
 #while (1):
 #	output = getUserPosition()
@@ -128,7 +134,7 @@ while (1):
 	moveGhosts(myObjs);
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
-	if pellet:
+	if pellet and pellet.typeShow == 1:
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
