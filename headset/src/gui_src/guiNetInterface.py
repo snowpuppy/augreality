@@ -11,6 +11,8 @@ from struct import *
 import socket
 
 GETUSERPOSITION = '\x01'
+GETWIFISTATUS = '\x02'
+GETBATTERYSTATUS = '\x03'
 GETUSERPOSITIONFORMATS = '=B'
 GETUSERPOSITIONFORMATR = '=I7f'
 GETBROADCASTIDS = '\x04'
@@ -53,6 +55,8 @@ GETDROP = '\x16'
 SENDDROP = '\x17'
 GETACCEPT = '\x18'
 SETHOSTHEADSET = '\x19'
+GETMYID = '\x20'
+GETUPDATEOBJS = '\x21'
 NIDFORMAT = '=I'
 IDLISTFORMAT = '=%sI'
 
@@ -428,3 +432,51 @@ def setHostHeadset(host):
 	s.send(command)
 	s.send(chr(host))
 	s.close()
+
+def getMyId():
+	command = GETMYID
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	numToRead = calcsize(NIDFORMAT)
+	reply = s.recv(numToRead)
+	data = unpack(NIDFORMAT, reply)
+	s.close()
+
+def getWiFiStatus():
+	# Set command
+	# Pack info
+	command = GETWIFISTATUS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	reply = s.recv(1)
+	s.close()
+	data = ord(reply)
+	return data
+
+def getWiFiStatus():
+	# Set command
+	# Pack info
+	command = GETBATTERYSTATUS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	reply = s.recv(1)
+	s.close()
+	data = ord(reply)
+	return data
+
+def getUpdateObjs():
+	# Set command
+	# Pack info
+	command = GETBATTERYSTATUS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+	return

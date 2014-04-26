@@ -33,7 +33,9 @@ enum apiRequest
   GETDROP,
   SENDDROP,
   GETACCEPT,
-  SETHOSTHEADSET
+  SETHOSTHEADSET,
+  GETMYID,
+  GETUPDATEOBJS
 };
 
 // Function: initServer()

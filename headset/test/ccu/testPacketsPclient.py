@@ -39,8 +39,12 @@ helpStr = """Enter a number to test a function:
 20 GETDROP         _getDrop(int fd);
 21 SENDDROP        _sendDrop(int fd);
 22 GETACCEPT       _getAccept(int fd);
-23 SETHOSTHEADSET  _getAccept(int fd);
-24 exit
+23 SETHOSTHEADSET  _setHostHeadset(int fd);
+24 GETMYID         _getMyId(int fd);
+25 GETWIFISTATUS   _getWiFiStatus(int fd);
+26 GETBATTERYSTATUS_getBatteryStatus(int fd);
+27 GETUPDATEOBJS   _getUpdateObjs(int fd);
+28 exit
 """
 while True:
 	inpu = raw_input(helpStr)
@@ -116,4 +120,16 @@ while True:
 		output = setHostHeadset(1)
 		print output
 	elif (num == 24):
+		output = getMyId()
+		print output
+	elif (num == 25):
+		output = getWiFiStatus()
+		print output
+	elif (num == 26):
+		output = getBatteryStatus()
+		print output
+	elif (num == 27):
+		output = getUpdateObjs()
+		print output
+	elif (num == 28):
 		exit()

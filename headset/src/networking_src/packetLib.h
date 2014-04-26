@@ -83,5 +83,7 @@ void getBroadCastPacket(void);
 uint32_t getMyId();
 uint32_t getState();
 uint32_t setHostHeadset(int32_t host);
+uint32_t getFileReceived();
+void getReceivedFile(char *filename, int size);
 
 #endif

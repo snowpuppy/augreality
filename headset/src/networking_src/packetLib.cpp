@@ -49,6 +49,8 @@ int32_t g_tcpFd = 0;
 //int32_t g_state = INIT;
 int32_t g_state = BROADCAST;
 int32_t g_host = 0;
+char g_filename[256];
+int32_t g_fileReceived = 0;
 
 // API FUNCTIONS
 
@@ -156,7 +158,7 @@ int16_t getAcceptID(int32_t connfd)
 		perror("getAcceptID: Could not write to file descriptor.");
 		return -1;
 	}
-	return 0;
+	return rc;
 }
 
 int16_t getDropId(int32_t connfd)
@@ -222,10 +224,11 @@ int16_t getEndSimulation(int32_t connfd)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
-  uint8_t buf[sizeof(loadStaticData_t)];
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
+  uint32_t filenameLen = strlen(filename);
   FILE *fp = NULL;
+  int fd = 0;
 
   fp = fopen(filename,"rb");
   if (fp == NULL)
@@ -239,15 +242,25 @@ int16_t sendFile(char *filename)
   rewind(fp);
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
-	//p.numBytes = ;
   printf("Sending file of size: %d\n", p.numBytes);
 	// Pack the packet to a byte stream.
-  //loadStaticDataPack(&p,&buf[HEADERSIZE]);
+  loadStaticDataHton(&p);
 	// Add header info and crc.
   //addHeader(buf);
 	// Write the packet to the serial port.
-  write(g_packetLibPort, buf, sizeof(loadStaticData_t));
+	fd = connectToServer(g_tcpPort, g_myIp); // TODO: change from myIp!
+	if (fd < 0)
+	{
+		perror("sendFile:Error connecting to server.\n");
+		return -1;
+	}
+  // Send the file header.
+  write(fd, (void *)&p, sizeof(loadStaticData_t));
+  // Send the Filename
+  write(fd, (void *)&filenameLen, sizeof(filenameLen));
+  write(fd, (void *)filename, filenameLen);
   // Write the file to the serial port
+  /*
   while ( !feof(fp))
   {
     bytesRead = fread(fileBuf,1,256,fp);
@@ -264,8 +277,68 @@ int16_t sendFile(char *filename)
 		}
 		totalBytesSent += bytesSent;
   }
+  */
 	fclose(fp);
+  close(fd);
   return 0;
+}
+
+// sendFile(filename)
+int16_t receiveFile(int32_t connfd)
+{
+  loadStaticData_t p = {0};
+  uint8_t fileBuf[256];
+  uint32_t filenameLen = 0;
+  char filename[256];
+  int32_t rc = 0;
+  uint16_t bytesRead = 0, totalBytesRead = 0, bytesRemaining = 0;
+  FILE *fp = NULL;
+  int fd = 0;
+
+  rc = read(connfd, &p, sizeof(p));
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read loadStaticData.\n");
+    return -1;
+  }
+  rc = read(connfd, &filenameLen, sizeof(filenameLen));
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read filenameLen.\n");
+    return -1;
+  }
+  rc = read(connfd, filename, filenameLen);
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read filename.\n");
+    return -1;
+  }
+
+/*
+  // Check if the file exists by trying to open for reading
+  filename[rc] = '\0';
+  fp = fopen(filename, "rb");
+  if (fp != NULL)
+  {
+    printf("Already have file.\n");
+    fclose(fp);
+    return 0;
+  }
+  fp = fopen(filename, "wb");
+  while (totalBytesRead < p.numBytes)
+  {
+    bytesRemaining = 256;
+    bytesRead = 0;
+    while (bytesRemaining > 0)
+    {
+      bytesRead += read(connfd, &fileBuf[bytesRead - bytesRemaining], bytesRemaining);
+      printf("");
+    }
+  }
+  */
+  g_fileReceived = 1;
+  strcpy(filename,g_filename);
+  return 1;
 }
 
 // updateObjs(objInfo *objList)
@@ -751,11 +824,16 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			break;
 		case ACCEPTHEADSET:
 			rc = getAcceptID(connFd);
+      printf("Received Accept packet.\n");
 			// Transition to next state.
 			if (rc > 0 && g_state == BROADCAST)
 			{
+        printf("Transitioning to Accept state.\n");
 				g_state = ACCEPTED;
 			}
+      printf("rc = %d, g_state = %d\n", rc, g_state);
+      // Reset file received state
+      g_fileReceived = 0;
 			break;
     case DROPHEADSET:
       rc = getDropId(connFd);
@@ -1025,4 +1103,15 @@ uint32_t setHostHeadset(int32_t host)
   {
     g_state = BROADCAST;
   }
+}
+
+uint32_t getFileReceived()
+{
+  return g_fileReceived;
+}
+
+void getReceivedFile(char *filename, int size)
+{
+  strncpy(filename, g_filename, size);
+  return;
 }
