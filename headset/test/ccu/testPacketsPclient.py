@@ -49,14 +49,13 @@ while True:
 	lat, lon = 0,0
 	if (len(args) > 1):
 		nid = args[1]
-	else:
-		nid = 0
+
 	if (num == 0):
 		output = getUserPosition()
 		print output
 	elif (num == 1):
 		output = getBroadCastIDs()
-		nid = output[0]
+		nid = output[1]
 		print output
 		print nid
 	elif (num == 2):
