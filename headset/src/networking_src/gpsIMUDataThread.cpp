@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -20,6 +21,7 @@
 // Constants
 #define BAUDRATE B115200
 #define GPSIMUPORT "/dev/ttyACM0"
+#define FUELGAUGEPORT "/dev/ttyACM1"
 #define REARTH 6378100
 #define DECIMALSPERDEGLAT 111320
 #define DECIMALSPERDEGLON 78710
@@ -30,18 +32,23 @@
 // Local Function prototypes.
 int readBytes(int32_t fd, char *data, int numBytes);
 void updatePosition(char *data);
+void checkFuelGauge(int32_t fd);
 
 // Global Variables.
 // position of this headset
 localHeadsetPos_t g_pos;
-volatile float originlat = 0;
-volatile float originlon = 0;
-float decimalsperdegreelat = DECIMALSPERDEGLAT;
-float decimalsperdegreelon = DECIMALSPERDEGLON;
+static volatile float originlat = 0;
+static volatile float originlon = 0;
+static float decimalsperdegreelat = DECIMALSPERDEGLAT;
+static float decimalsperdegreelon = DECIMALSPERDEGLON;
 // port open for gps and imu communication.
-int32_t g_port;
-pthread_t gpsIMUInterfaceTidp;
-int gpsIMUInterfaceQuit = 0;
+static int32_t g_portImu;
+// port open for fuel gauge communication.
+static int32_t g_portFuel;
+static pthread_t gpsIMUInterfaceTidp;
+static int gpsIMUInterfaceQuit = 0;
+// fuel gauge voltage, in mV (3378 is about full, 3505 is on the charger, 2700 is empty)
+static unsigned int g_fuelVolts;
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -77,19 +84,79 @@ void stopGPSIMUServer(void)
 void *gpsImuThread(void *args)
 {
 	char data[64];
-#ifndef NOGPSIMU
 	openComPort();
-#endif
+	g_fuelVolts = BATTERY_EMPTY;
 	while (!gpsIMUInterfaceQuit)
 	{
 #ifndef NOGPSIMU
 		//printf("size of float*6: %d\n", sizeof(float)*6);
-		readBytes(g_port, data, sizeof(float)*6);
+		readBytes(g_portImu, data, sizeof(float)*6);
 #endif
 		updatePosition(data);
+#ifndef NOFUELGAUGE
+		checkFuelGauge(g_portFuel);
+#endif
 	}
 }
 
+/**
+ * @brief Checks the fuel gauge for a new battery status, and if present updates the global
+ * variable holding the current state of charge.
+ *
+ * @param fd the file descriptor where fuel gauge data can be read
+ *
+ * @return No return.
+ */
+void checkFuelGauge(int32_t fd) {
+	// Persistent buffer used to handle partial line reads
+	static char lineBuffer[32];
+	static uint32_t linePos = 0U;
+	char in[16];
+
+	int bytes, pos;
+	unsigned int power = 0U;
+	if (ioctl(fd, FIONREAD, &bytes) >= 0) {
+		// Have # of bytes available on fd
+		if (bytes > sizeof(in))
+			bytes = sizeof(in);
+		bytes = read(fd, in, bytes);
+		// Copy all #s and \n found into the line buffer, discard \r
+		for (int i = 0; i < bytes && linePos < sizeof(lineBuffer); i++) {
+			if (in[i] == '\n' || (in[i] >= '0' && in[i] <= '9'))
+				lineBuffer[linePos++] = in[i];
+		}
+		// Read as many #s as possible from the beginning of line buffer, until EOS or \n
+		for (pos = 0; pos < linePos && lineBuffer[pos] != '\n'; pos++)
+			power = (power * 10U) + (unsigned int)(lineBuffer[pos] - '0');
+		if (pos < linePos && lineBuffer[pos] == '\n') {
+			// A new line was found, store voltage
+			if (power < BATTERY_EMPTY)
+				power = BATTERY_EMPTY;
+			else if (power > BATTERY_FULL)
+				power = BATTERY_FULL;
+			g_fuelVolts = power;
+			// Push all bytes from pos + 1 onwards down to eliminate the \n and #s removed
+			for (int i = pos + 1; i < linePos; i++)
+				lineBuffer[i - pos - 1] = lineBuffer[i];
+			// Reinitialize buffer start
+			linePos -= (pos + 1);
+		}
+		if (linePos >= sizeof(in)) {
+			// The buffer is full, something has gone wrong
+			// Trash everything and move on with life!
+			linePos = 0U;
+		}
+	}
+}
+
+/**
+ * @brief Reports the battery voltage in mV, between BATTERY_EMPTY and BATTERY_FULL.
+ *
+ * @return the battery voltage in millivolts to the nearest 1 mV +/- 10 mV
+ */
+unsigned int getHeadsetVoltage(void) {
+	return g_fuelVolts;
+}
 
 int getHeadsetPosData(localHeadsetPos_t *pos)
 {
@@ -171,8 +238,8 @@ void updatePosition(char *data)
 	{
 		originlat = g_pos.lat;
 		originlon = g_pos.lon;
-    decimalsperdegreelat = REARTH*(M_PI/180);
-    decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
+		decimalsperdegreelat = REARTH*(M_PI/180);
+		decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
 	}
 	/*
 	printf("lat: %0.2f ", g_pos.lat);
@@ -199,28 +266,29 @@ int setGPSOrigin(float lon, float lat)
 	printf("OriginLat = %f, OriginLon = %f\n", lat, lon);
 	originlat = lat;
 	originlon = lon;
-  decimalsperdegreelat = REARTH*(M_PI/180);
-  decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
+	decimalsperdegreelat = REARTH*(M_PI/180);
+	decimalsperdegreelon = REARTH*cos(originlat)*(M_PI/180);
 	// Always succeeds.
 	return 1;
 }
 
 /**
-* @brief Open com port for gps/imu.
-*
-* @return file descriptor for open file.
-*/
-int openComPort()
+ * @brief Open the specified serial port.
+ *
+ * @param portName the port to open
+ *
+ * @return file descriptor for the serial port.
+ */
+static int openAComPort(const char *portName)
 {
-	int res;
 	struct termios tio;
 
 	// Open serial port for reading/writing
-	g_port = open(GPSIMUPORT, O_RDWR|O_NOCTTY); 
-	if (g_port < 0)
+	const int res = open(portName, O_RDWR | O_NOCTTY); 
+	if (res < 0)
 	{
-		perror(GPSIMUPORT);
-		exit(1);
+		perror(portName);
+		return -1;
 	}
 
 	// Clear and then configure serial port
@@ -235,11 +303,36 @@ int openComPort()
 	tio.c_cc[VMIN]     = 1;
 
 	// Flush the serial port
-	tcflush(g_port, TCIFLUSH);
+	tcflush(res, TCIFLUSH);
 	// Configure the serial port
-	tcsetattr(g_port,TCSANOW,&tio);
+	tcsetattr(res, TCSANOW, &tio);
 
-	return g_port;
+	return res;
+}
+
+/**
+* @brief Open com port for gps/imu and fuel gauge.
+*
+* @return Always returns 0
+*/
+int openComPort()
+{
+	// Open both ports
+#ifndef NOGPSIMU
+	g_portImu = openAComPort(GPSIMUPORT);
+#else
+	g_portImu = 0;
+#endif
+#ifndef NOFUELGAUGE
+	g_portFuel = openAComPort(FUELGAUGEPORT);
+#else
+	g_portFuel = 0;
+#endif
+	if (g_portImu < 0 || g_portFuel < 0)
+	{
+		exit(1);
+	}
+	return 0;
 }
 
 // Function to read in a fixed number

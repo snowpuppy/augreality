@@ -6,6 +6,10 @@
 
 #include <stdint.h>
 
+// Approximate battery voltages in millivolts reported by fuel system at empty and full charge
+#define BATTERY_EMPTY 2700
+#define BATTERY_FULL 3380
+
 /**
 * @brief localHeadsetPos used to keep track of
 *		 location info from this headset.
@@ -13,14 +17,15 @@
 typedef struct localHeadsetPos
 {
 	uint32_t numSat;  // number of satellites available
-  float lat;      		// latitude of headset
-  float lon;     		  // longitude of headset
+	float lat;      		// latitude of headset
+	float lon;     		  // longitude of headset
 	float x,y;          // coordinates of player
 	float roll,pitch,yaw;   // orientation of player
 } localHeadsetPos_t;
 
 // Functions
 int openComPort();
+unsigned int getHeadsetVoltage(void);
 int getHeadsetPosData(localHeadsetPos_t *pos);
 int setGPSOrigin(float lon, float lat);
 void *gpsImuThread(void *args);
