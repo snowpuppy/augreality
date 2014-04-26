@@ -156,7 +156,7 @@ int16_t getAcceptID(int32_t connfd)
 		perror("getAcceptID: Could not write to file descriptor.");
 		return -1;
 	}
-	return 0;
+	return rc;
 }
 
 int16_t getDropId(int32_t connfd)
