@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <string.h>
 #include "threadInterface.h"
 #include "gpsIMUDataThread.h"
 #include "packetLib.h"
@@ -38,6 +39,7 @@ void _getEnd(int fd);  // NEW
 void _sendFile(int fd);
 void _getReceivedFile(int fd); // NEW
 void _sendUpdateObjs(int fd);
+void _getUpdateObjs(int connfd); // NEW
 void _getAlive(int fd);
 void _getNumAlive(int fd);
 void _getPosition(int fd);
@@ -51,6 +53,7 @@ void _resetGPSOrigin(int fd);
 void _getGPSOrigin(int fd); // NEW
 void _setGPSOrigin(int fd); // NEW
 void _setHostHeadset(int fd); // NEW
+void _getMyId(int fd);        // NEW
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -233,6 +236,11 @@ void serviceConnections(int fd)
       case SETHOSTHEADSET:
         _setHostHeadset(connfd);
         break;
+      case GETMYID:
+        _getMyId(connfd);
+      case GETUPDATEOBJS:
+        _getUpdateObjs(connfd);
+        break;
       default:
         break;
     }
@@ -398,8 +406,24 @@ void _sendUpdateObjs(int fd)
 	return;
 }
 
+void _getUpdateObjs(int connfd)
+{
+  return;
+}
+
 void _getReceivedFile(int fd)
 {
+  uint8_t received = getFileReceived();
+  int32_t rc = 0;
+  char filename[256];
+  rc = write(fd, (void *)&received, sizeof(received));
+  if (received > 0)
+  {
+    getReceivedFile(filename, 256);
+    received = strlen(filename);
+    rc = write(fd, (void *)received, sizeof(received));
+    rc = write(fd, (void *)filename, strlen(filename));
+  }
   return;
 }
 
@@ -553,4 +577,12 @@ void _setHostHeadset(int fd)
   rc = read(fd, (void *)&host, sizeof(host));
   setHostHeadset(host);
   return;
+}
+
+void _getMyId(int fd)
+{
+  int32_t rc = 0;
+  uint32_t id = 0;
+  id = getMyId();
+  rc = write(fd, (void *)&id, sizeof(id));
 }
