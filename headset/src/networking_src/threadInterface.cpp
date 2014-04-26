@@ -435,7 +435,7 @@ void _sendStart(int fd)
 
 void _getStart(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint8_t started = 0;
   rc = getState();
   // Find out if we entered simulation
@@ -455,7 +455,7 @@ void _getStart(int fd)
 // and used to send the information.
 void _sendEnd(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint32_t id = 0;
   // Get the id needed.
   rc = read(fd, (void *)&id, sizeof(id));
@@ -468,7 +468,7 @@ void _sendEnd(int fd)
 
 void _getEnd(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint8_t ended = 0;
   rc = getState();
   // Find out if we entered simulation
@@ -484,12 +484,12 @@ void _getEnd(int fd)
 
 void _sendAccept(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint32_t id = 0;
   uint8_t status = 0;
   // Get the id needed.
   rc = read(fd, (void *)&id, sizeof(id));
-	printf("Sending accept to id: %u\n", id);
+	printf("Sending accept to id: %u\n rc = %d", id, rc);
   if (rc >= 0)
   {
     rc = acceptID(id);
@@ -506,7 +506,7 @@ void _sendAccept(int fd)
 
 void _getAccept(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint8_t accepted = 0;
   rc = getState();
   // Find out if we entered accepted
@@ -522,7 +522,7 @@ void _getAccept(int fd)
 
 void _sendDrop(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint32_t id = 0;
   // Get the id needed.
   rc = read(fd, (void *)&id, sizeof(id));
@@ -532,7 +532,7 @@ void _sendDrop(int fd)
 
 void _getDrop(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint8_t dropped = 0;
   rc = getState();
   // Find out if we entered simulation
@@ -548,7 +548,7 @@ void _getDrop(int fd)
 
 void _setHostHeadset(int fd)
 {
-  uint32_t rc = 0;
+  int32_t rc = 0;
   uint8_t host = 0;
   rc = read(fd, (void *)&host, sizeof(host));
   setHostHeadset(host);
