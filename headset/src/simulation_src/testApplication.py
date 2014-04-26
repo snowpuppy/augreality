@@ -84,10 +84,10 @@ def collideWithPellet(objs):
 	# Find distance player is from pellet.
 	# Return any pellet that the player collides
 	# with.
-	for i in pellet:
+	for i in pellets:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
-			return pellet
+			return pellets
 	# Return nothing if no collision.
 	return None
 
