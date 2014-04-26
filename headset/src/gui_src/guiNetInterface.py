@@ -15,7 +15,6 @@ GETUSERPOSITIONFORMATS = '=B'
 GETUSERPOSITIONFORMATR = '=I7f'
 GETBROADCASTIDS = '\x04'
 BROADCASTIDSFORMATS = '=B'
-BROADCASTIDSFORMATR = '=%sI'
 GETNUMBROADCAST = '\x05'
 NUMBROADCASTFORMATS = '=B'
 NUMBROADCASTFORMATR = '=B'
@@ -24,7 +23,7 @@ BROADCASTLOCFORMATS = '=B16B'
 BROADCASTLOCFORMATR = '2f3f' # x,y,roll,pitch,yaw
 GETPOSITION = '\x07'
 POSITIONFORMATS = '=B16B'
-POSITIONFORMATR = '2f3f'
+POSITIONFORMATR = '7f'
 GETNUMALIVE = '\x08'
 NUMALIVEFORMATS = '=B'
 NUMALIVEFORMATR = '=B'
@@ -41,10 +40,11 @@ SENDENDFORMAT = '=B16B'
 SENDSTART = '\x0d'
 SENDSTARTFORMAT = '=B'
 SENDACCEPT = '\x0e'
-SENDACCEPTFORMAT = '=2f'
 SENDRESETORIGIN = '\x0f'
 SETGPSORIGIN = '\x10'
+SETGPSORIGINFORMAT = '=2f'
 GETGPSORIGIN = '\x11'
+GETGPSORIGINFORMAT = '=2f'
 GETACCEPTEDIDS = '\x12'
 GETRECEIVEDFILE = '\x13'
 GETEND = '\x14'
@@ -53,6 +53,8 @@ GETDROP = '\x16'
 SENDDROP = '\x17'
 GETACCEPT = '\x18'
 SETHOSTHEADSET = '\x19'
+NIDFORMAT = '=I'
+IDLISTFORMAT = '=%sI'
 
 ##
 # @brief getBroadCastIDs() gets a list of 16 byte
@@ -72,11 +74,11 @@ def getBroadCastIDs():
 	numIds = s.recv(1)
 	data = ""
 	if (ord(numIds) > 0):
-		#print (BROADCASTIDSFORMATR % (ord(numIds)*16,));
-		numToRead = calcsize(BROADCASTIDSFORMATR % (ord(numIds),))
+		#print (IDLISTFORMAT % (ord(numIds)*16,));
+		numToRead = calcsize(IDLISTFORMAT % (ord(numIds),))
 		#print "numToRead:",numToRead
 		reply = s.recv(numToRead);
-		data = unpack(BROADCASTIDSFORMATR % (ord(numIds),),reply);
+		data = unpack(IDLISTFORMAT % (ord(numIds),),reply);
 	#print "NumIds:",ord(numIds)
 	#print "IDs: ",data
 	s.close()
@@ -120,7 +122,9 @@ def getPosition(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-	s.send(nid)
+  # send id
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	# receive info
 	data = ""
 	# Get number of bytes to read.
@@ -130,7 +134,7 @@ def getPosition(nid):
 	s.close()
 	data = unpack(POSITIONFORMATR,reply);
 	#print "Position: ",data
-	# returns x,y,roll,pitch,yaw
+	# returns lat,lon,x,y,roll,pitch,yaw
 	return data
 
 ##
@@ -194,7 +198,9 @@ def getAlive(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-	s.send(nid)
+  # send id
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	# receive info
 	# Get number of ids to read.
 	data = ""
@@ -248,7 +254,9 @@ def sendEnd(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-	s.send(nid)
+  # send id
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	s.close()
 
 def sendStart():
@@ -261,7 +269,7 @@ def sendStart():
 	s.send(command)
 	s.close()
 
-def sendAccept(nid,lat,lon):
+def sendAccept(nid):
 	# Set command
 	# Pack info
 	command = SENDACCEPT
@@ -269,22 +277,13 @@ def sendAccept(nid,lat,lon):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-	s.send(nid)
-	# pack and send gps coordinates of origin
-	data = pack(SENDACCEPTFORMAT, lat, lon)
+  # send id
+	data = pack(NIDFORMAT, nid)
 	s.send(data)
+  reply = s.recv(1)
 	s.close()
-
-def sendGoBack(nid):
-	# Set command
-	# Pack info
-	command = SENDGOBACK
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.send(nid)
-	s.close()
+  data = ord(reply)
+  return data
 
 def resetGPSOrigin():
 	# Set command
@@ -296,7 +295,7 @@ def resetGPSOrigin():
 	s.send(command)
 	s.close()
 
-def setGPSOrigin():
+def setGPSOrigin(lat,lon):
 	# Set command
 	# Pack info
 	command = SETGPSORIGIN
@@ -304,6 +303,9 @@ def setGPSOrigin():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# pack and send gps coordinates
+  data = PACK(SETGPSORIGINFORMAT, lat, lon)
+  s.send(data)
 	s.close()
 
 def getGPSOrigin():
@@ -314,7 +316,11 @@ def getGPSOrigin():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  numToRead = calcsize(GETGPSORIGINFORMAT)
+  reply = s.recv(numToRead)
 	s.close()
+  data = unpack(GETGPSORIGINFORMAT, reply)
+  return data
 
 def getAcceptIds():
 	# Set command
@@ -324,7 +330,20 @@ def getAcceptIds():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# Get number of ids to read.
+	numIds = s.recv(1)
+	data = ""
+	if (ord(numIds) > 0):
+		#print (IDLISTFORMAT % (ord(numIds)*16,));
+		numToRead = calcsize(IDLISTFORMAT % (ord(numIds),))
+		#print "numToRead:",numToRead
+		reply = s.recv(numToRead);
+		data = unpack(IDLISTFORMAT % (ord(numIds),),reply);
 	s.close()
+	output = []
+	# Format the data, then return it.
+  # Returns a list of integers.
+	return data
 
 def getReceivedFile():
 	# Set command
@@ -344,7 +363,10 @@ def getEnd():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  reply = s.recv(1)
 	s.close()
+  data = ord(reply)
+  return data
 
 def getStart():
 	# Set command
@@ -354,7 +376,10 @@ def getStart():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  reply = s.recv(1)
 	s.close()
+  data = ord(reply)
+  return data
 
 def getDrop():
 	# Set command
@@ -364,9 +389,12 @@ def getDrop():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  reply = s.recv(1)
 	s.close()
+  data = ord(reply)
+  return data
 
-def sendDrop():
+def sendDrop(nid):
 	# Set command
 	# Pack info
 	command = SENDDROP
@@ -374,6 +402,9 @@ def sendDrop():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  # send id
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	s.close()
 
 def getAccept():
@@ -384,7 +415,10 @@ def getAccept():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  reply = s.recv(1)
 	s.close()
+  data = ord(repl)
+  return data
 
 def setHostHeadset(host):
 	command = SETHOSTHEADSET
@@ -392,4 +426,5 @@ def setHostHeadset(host):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+  s.send(chr(host))
 	s.close()
