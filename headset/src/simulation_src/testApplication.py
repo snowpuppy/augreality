@@ -79,6 +79,9 @@ def collideWithPellet(objs):
 	print pos
 	x = pos[3]
 	y = pos[4]
+	# coordinate adjustments
+	x = -pos[4]
+	y = pos[3]
 	print pos
 	pellets = objs['pellet']
 	# Find distance player is from pellet.
@@ -128,7 +131,7 @@ while (1):
 	moveGhosts(myObjs);
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
-	if pellet:
+	if pellet and pellet.typeShow == 1:
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
