@@ -37,6 +37,7 @@ class ObjInfo_t:
 		self.yaw = float(yaw)
 		self.scale = float(scale)
 		self.name = str(name)
+		self.state = 0
 	def __str__(self):
 		return "%d %d %f %f %f %f %f %f %f %f %f %s" % (self.instId, self.typeShow, self.x2, self.y2, self.x3, self.y3, self.z3, self.roll, self.pitch, self.yaw, self.scale, self.name)
 
