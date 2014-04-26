@@ -206,6 +206,7 @@ void serviceConnections(int fd)
 				break;
 			case RESETGPSORIGIN:
 				_resetGPSOrigin(connfd);
+        break;
       case SETGPSORIGIN:
         _setGPSOrigin(connfd);
         break;
@@ -260,8 +261,10 @@ void serviceConnections(int fd)
 */
 void _resetGPSOrigin(int fd)
 {
+  printf("Resetting origin.\n");
 	localHeadsetPos_t pos;
 	getHeadsetPosData(&pos);
+  printf("GetPosition returned: %f, %f\n", pos.lat, pos.lon);
 	setGPSOrigin(pos.lat,pos.lon);
 }
 
@@ -421,7 +424,7 @@ void _getReceivedFile(int fd)
   {
     getReceivedFile(filename, 256);
     received = strlen(filename);
-    rc = write(fd, (void *)received, sizeof(received));
+    rc = write(fd, (void *)&received, sizeof(received));
     rc = write(fd, (void *)filename, strlen(filename));
   }
   return;
