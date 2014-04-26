@@ -65,6 +65,8 @@ class AugRealObj:
     # Create Forwards and backwards info labels.
     self.NextText = Label(root, wraplength=WRAPLENGTH,text=NextStr)
     self.GoBackText = Label(root, wraplength=WRAPLENGTH,text=GoBackStr)
+    # create a list of accepted headsets.
+    self.acceptList = []
     # SELECTSIM
     self.SimulationInfoStr = SimulationInfoStr
     self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
@@ -198,7 +200,7 @@ class AugRealObj:
       self.state = RUNSIMHOST
       self.teardownStartSimHost()
       self.setupRunSimHost()
-      #sendStart()
+      sendStart()
     elif (self.state == RUNSIMHOST):
       pass
     elif (self.state == WAITACCEPT):
@@ -278,28 +280,50 @@ class AugRealObj:
         self.state = ADDHEADSETS
         self.teardownSelectMode() 
         self.setupAddHead()
+        # Set as host
+        setHostHeadset(1)
       elif (num == 0):
         self.state = WAITACCEPT
         self.teardownSelectMode()
         self.setupWaitAccept()
-      pass
+        # Set as joining
+        setHostHeadset(0)
+        # Set up automatic transitioning
+        self.root.after(1000, self.WaitAccept)
     elif (self.state == ADDHEADSETS):
-      pass
+      myList = getBroadCastIDs()
+      # Go through all broadcasting ids.
+      for i in range(len(myList)):
+        # If the user selected one.
+        if (num == i):
+          # Check if it was already accepted.
+          if (myList[i] in self.acceptList):
+            # If so, Drop it.
+            sendDrop(myList[i])
+            self.acceptList.remove(myList[i])
+          else:
+            # If not, attempt to accept it.
+            ret = sendAccept(myList[i])
+            if (ret > 0):
+              # Add it to the list.
+              self.acceptList.append(myList[i])
     elif (self.state == SELECTSIM):
       # Hardcoded simulations.
       if (num == 1):
         sendFile("../sim/pacman.tar")
       if (num == 2):
         sendFile("../sim/demo.tar")
-      pass
     elif (self.state == RUNSIMHOST):
       pass
 
   def refreshList(self):
-    myList = [] #getBroadCastIDs()
+    myList = getBroadCastIDs()
     for i in range(len(myList)):
-      listItems = myList[i].split()
-      self.HeadsetStrList[i] = HeadsetStr % (i, listItems[0], listItems[1], "Available")
+      if (myList[i] in self.acceptList):
+        status = "Accepted"
+      else:
+        status = "Available"
+      self.HeadsetStrList[i] = HeadsetStr % (i, myList[i], status)
     self.Headsets.configure(text=" ".join(self.HeadsetStrList))
     self.root.after(1000, self.refreshList)
   
@@ -318,7 +342,7 @@ class AugRealObj:
       self.state = WAITSTART
       self.teardownWaitReceive()
       self.setupWaitStart()
-      self.after(1000, self.WaitStart()
+      self.after(1000, self.WaitStart())
     if (self.state == WAITRECEIVE):
       self.root.after(1000, self.WaitReceive)
   def WaitStart(self):
