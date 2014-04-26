@@ -97,7 +97,7 @@ enum packetType
 	ENDSIMULATION,
 	HEARTBEAT,
 	CONFIRMUPDATE,
-	GOBACK
+  DROPHEADSET
 };"""
 
 objInfoStr = """
@@ -137,6 +137,14 @@ acceptHeadset.addMember("uint8_t", "packetType", 1, NONE)
 acceptHeadset.addMember("float", "x", 4, LONG)
 acceptHeadset.addMember("float", "y", 4, LONG)
 
+dropHeadsetStr = """
+// DropHeadset:
+// Sent from ccu to one headset.
+// This tells the headset it is no longer 
+// included in the simulation."""
+dropHeadset = Struct("dropHeadset", dropHeadsetStr)
+dropHeadset.addMember("uint8_t", "packetType", 1, NONE)
+
 loadStaticDataStr = """
 // LoadStaticData:
 // Sent from ccu to all headsets.
@@ -154,8 +162,8 @@ updateObjInstanceStr = """
 // of one or more objects."""
 updateObjInstance = Struct("updateObjInstance", updateObjInstanceStr)
 updateObjInstance.addMember("uint8_t", "packetType", 1, NONE)
-updateObjInstance.addMember("uint8_t", "numObj", 1, NONE)
-updateObjInstance.addMember("uint8_t", "updateNumber", 1, NONE)
+updateObjInstance.addMember("uint32_t", "numObj", 4, LONG)
+updateObjInstance.addMember("uint32_t", "updateNumber", 4, LONG)
 updateObjInstance.addMember("objInfo_t", "*objList", 0, LONG)
 
 startSimulationStr = """
@@ -205,10 +213,10 @@ packetList = []
 packetList.append(objInfo)
 packetList.append(broadCastPacket)
 packetList.append(acceptHeadset)
+packetList.append(dropHeadset)
 packetList.append(loadStaticData)
 packetList.append(updateObjInstance)
 packetList.append(startSimulation)
 packetList.append(endSimulation)
 packetList.append(heartBeat)
 packetList.append(confirmPacket)
-packetList.append(goBack)

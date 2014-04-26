@@ -46,16 +46,18 @@ typedef struct headsetPos
 } headsetPos_t;
 
 // Functions
-int16_t goBack(uint32_t id);
 int16_t getPos(headsetPos_t *pos, uint32_t id);
 uint16_t getNumAlive();
 uint16_t getAlive(uint32_t id);
+int16_t getAliveIDs(uint32_t *ids, uint16_t size);
 uint16_t addAliveID(uint32_t id);
-int16_t updateObjs(objInfo_t *objList, uint8_t numObjects);
+int16_t updateObjs(objInfo_t *objList, uint32_t numObjects);
 int16_t sendFile(char *filename);
 int16_t startSimulation();
 int16_t getStartSimulation(int32_t connfd);
-int16_t acceptID(uint32_t destId, float originLat, float originLon );
+int16_t sendDropId(uint32_t destId);
+int16_t getDropId(int32_t connfd);
+int16_t acceptID(uint32_t destId);
 int16_t getAcceptID(int32_t connfd);
 int16_t endSimulationID(uint32_t destId);
 int16_t getEndSimulation(int32_t connfd);
@@ -67,16 +69,21 @@ int wirelessConnection();
 int bindToTcpServer(uint16_t port);
 int bindToUdpPort(int port);
 int connectToServer(int port, uint32_t addr);
-void sendUpdatePacket(int udpFd, int *state);
+void sendUpdatePacket(int udpFd);
 void sendBroadcast(int udpFd);
 void sendHeartbeat(int udpFd);
-void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int pType, int *state);
+void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int pType);
 int32_t writeTcpByteStream(void *buf, uint32_t size);
 int32_t writeUdpByteStream(void *msg, uint32_t size, uint32_t dest);
 int32_t readTcpByteStream(void *buf, uint32_t size);
-int32_t readUdpByteStream(void *buf, uint32_t size, uint32_t peek = 0);
+int32_t readUdpByteStream(void *buf, size_t size, uint32_t *addr, uint32_t peek = 0);
 uint8_t detectUdpType(int fd);
 uint8_t detectTcpType(int fd, int *connfd, uint32_t *clientAddr);
 void getBroadCastPacket(void);
+uint32_t getMyId();
+uint32_t getState();
+uint32_t setHostHeadset(int32_t host);
+uint32_t getFileReceived();
+void getReceivedFile(char *filename, int size);
 
 #endif

@@ -10,11 +10,14 @@
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <map>
+#include <vector>
 #include <string>
 #include "packets.h"
 #include "packetLib.h"
 #include "threadInterface.h"
 #include "gpsIMUDataThread.h"
+#include <time.h> // time()
+#include <string.h> // memcpy()
 
 // Constants
 #define BAUDRATE B57600
@@ -22,6 +25,9 @@
 #define LISTENQ 100
 // update every 50 milliseconds (in useconds)
 #define UPDATE_INTERVAL 50000
+// define number of seconds before a headset
+// is considered "dead"
+#define SECONDS_TO_DIE 5
 
 // Local Function prototypes.
 //int readBytes(int fd, char *data, int numBytes);
@@ -29,6 +35,8 @@
 // Global Variables (Maps ip addresses information.)
 std::map<uint32_t, broadCastPacket_t> broadCastList;
 std::map<uint32_t, heartBeatInfo_t> heartBeatList;
+std::map<uint32_t, time_t> aliveList;
+std::vector<objInfo_t> objectInfoList;
 // 
 int32_t g_packetLibPort;
 int32_t g_udpPort = DEFAULT_UDP_PORT;
@@ -38,6 +46,11 @@ int32_t g_myMask = 0;
 int32_t g_myBroadCast = 0;
 int32_t g_udpFd = 0;
 int32_t g_tcpFd = 0;
+//int32_t g_state = INIT;
+int32_t g_state = BROADCAST;
+int32_t g_host = 0;
+char g_filename[256];
+int32_t g_fileReceived = 0;
 
 // API FUNCTIONS
 
@@ -65,7 +78,7 @@ int16_t getBroadCastingIDs(uint32_t *ids, uint16_t numIds)
 }
 
 // Function: acceptID(id)
-int16_t acceptID(uint32_t destId, float originLat, float originLon )
+int16_t acceptID(uint32_t destId)
 {
 	acceptHeadset p;
 	uint32_t fd = 0;
@@ -73,8 +86,7 @@ int16_t acceptID(uint32_t destId, float originLat, float originLon )
 	uint32_t ret = 0;
 	uint8_t buf[8];
 	p.packetType = ACCEPTHEADSET;
-	p.x = originLat;
-	p.y = originLon;
+	getGPSOrigin(&p.x, &p.y);
 	// convert the accept packet to network
 	// byte format.
 	acceptHeadsetHton(&p);
@@ -146,7 +158,26 @@ int16_t getAcceptID(int32_t connfd)
 		perror("getAcceptID: Could not write to file descriptor.");
 		return -1;
 	}
-	return 0;
+	return rc;
+}
+
+int16_t getDropId(int32_t connfd)
+{
+	dropHeadset_t p;
+	int32_t rc = 0;
+  uint32_t addr = 0;
+  rc = readUdpByteStream((void *)&p, sizeof(p), &addr, 0);
+	return rc;
+}
+
+int16_t sendDropId(uint32_t destId)
+{
+	dropHeadset_t p;
+	int32_t rc = 0;
+	p.packetType = DROPHEADSET;
+	dropHeadsetHton(&p);
+	rc = writeUdpByteStream((void *)&p, sizeof(p), destId);
+  return rc;
 }
 
 // startSimulation()
@@ -156,15 +187,17 @@ int16_t startSimulation()
 	int32_t rc = 0;
 	p.packetType = STARTSIMULATION;
 	startSimulationHton(&p);
-	writeUdpByteStream((void *)&p, sizeof(p), 0);
-  return 0;
+	rc = writeUdpByteStream((void *)&p, sizeof(p), 0);
+  return rc;
 }
 
 int16_t getStartSimulation(int32_t connfd)
 {
 	startSimulation_t p;
 	int32_t rc = 0;
-	return 0;
+  uint32_t addr = 0;
+  rc = readUdpByteStream((void *)&p, sizeof(p), &addr, 0);
+	return rc;
 }
 
 // endSimulationID(id)
@@ -174,25 +207,28 @@ int16_t endSimulationID(uint32_t destId)
 	int32_t rc = 0;
 	p.packetType = ENDSIMULATION;
 	endSimulationHton(&p);
-	writeUdpByteStream((void *)&p, sizeof(p), destId);
-	return 0;
+	rc = writeUdpByteStream((void *)&p, sizeof(p), destId);
+	return rc;
 }
 
 int16_t getEndSimulation(int32_t connfd)
 {
 	endSimulation_t p;
 	int32_t rc = 0;
-	return 0;
+  uint32_t addr = 0;
+  rc = readUdpByteStream((void *)&p, sizeof(p), &addr, 0);
+	return rc;
 }
 
 // sendFile(filename)
 int16_t sendFile(char *filename)
 {
 	loadStaticData_t p = {0};
-  uint8_t buf[sizeof(loadStaticData_t)];
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
+  uint32_t filenameLen = strlen(filename);
   FILE *fp = NULL;
+  int fd = 0;
 
   fp = fopen(filename,"rb");
   if (fp == NULL)
@@ -206,15 +242,25 @@ int16_t sendFile(char *filename)
   rewind(fp);
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
-	//p.numBytes = ;
   printf("Sending file of size: %d\n", p.numBytes);
 	// Pack the packet to a byte stream.
-  //loadStaticDataPack(&p,&buf[HEADERSIZE]);
+  loadStaticDataHton(&p);
 	// Add header info and crc.
   //addHeader(buf);
 	// Write the packet to the serial port.
-  write(g_packetLibPort, buf, sizeof(loadStaticData_t));
+	fd = connectToServer(g_tcpPort, g_myIp); // TODO: change from myIp!
+	if (fd < 0)
+	{
+		perror("sendFile:Error connecting to server.\n");
+		return -1;
+	}
+  // Send the file header.
+  write(fd, (void *)&p, sizeof(loadStaticData_t));
+  // Send the Filename
+  write(fd, (void *)&filenameLen, sizeof(filenameLen));
+  write(fd, (void *)filename, filenameLen);
   // Write the file to the serial port
+  /*
   while ( !feof(fp))
   {
     bytesRead = fread(fileBuf,1,256,fp);
@@ -231,15 +277,168 @@ int16_t sendFile(char *filename)
 		}
 		totalBytesSent += bytesSent;
   }
+  */
 	fclose(fp);
+  close(fd);
   return 0;
 }
 
-// updateObjs(objInfo *objList)
-int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
+// sendFile(filename)
+int16_t receiveFile(int32_t connfd)
 {
+  loadStaticData_t p = {0};
+  uint8_t fileBuf[256];
+  uint32_t filenameLen = 0;
+  char filename[256];
+  int32_t rc = 0;
+  uint16_t bytesRead = 0, totalBytesRead = 0, bytesRemaining = 0;
+  FILE *fp = NULL;
+  int fd = 0;
+
+  rc = read(connfd, &p, sizeof(p));
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read loadStaticData.\n");
+    return -1;
+  }
+  rc = read(connfd, &filenameLen, sizeof(filenameLen));
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read filenameLen.\n");
+    return -1;
+  }
+  rc = read(connfd, filename, filenameLen);
+  if (rc < 0)
+  {
+    perror("receiveFile: Could not read filename.\n");
+    return -1;
+  }
+
+/*
+  // Check if the file exists by trying to open for reading
+  filename[rc] = '\0';
+  fp = fopen(filename, "rb");
+  if (fp != NULL)
+  {
+    printf("Already have file.\n");
+    fclose(fp);
+    return 0;
+  }
+  fp = fopen(filename, "wb");
+  while (totalBytesRead < p.numBytes)
+  {
+    bytesRemaining = 256;
+    bytesRead = 0;
+    while (bytesRemaining > 0)
+    {
+      bytesRead += read(connfd, &fileBuf[bytesRead - bytesRemaining], bytesRemaining);
+      printf("");
+    }
+  }
+  */
+  g_fileReceived = 1;
+  strcpy(filename,g_filename);
+  return 1;
+}
+
+// updateObjs(objInfo *objList)
+// Sends Five packets plus the header structure at a time until total number
+// of packets have been sent.
+// This is the most complicated send/receive function.
+//
+// 1. Convert all structures to network byte order
+// 2. Bcopy them to to a character buffer
+// 3. Send updates in groups of 5
+int16_t updateObjs(objInfo_t *objList, uint32_t numObjects)
+{
+  updateObjInstance_t p;
+  static uint32_t updateNum = 0;
+  uint32_t offset = 0;
+  int16_t ret = 0;
+  uint32_t i = 0;
+  uint8_t buf[sizeof(objInfo_t)*5+sizeof(updateObjInstance_t)] = {0};
+
+  p.packetType = UPDATEOBJINSTANCE;
+  p.numObj = 5;
+  p.updateNumber = updateNum++;
+  memcpy(buf, &p, sizeof(updateObjInstance_t));
+  // Send all multiples of 5
+  for (i = 0; i < numObjects/5; i++)
+  {
+    offset = sizeof(updateObjInstance_t);
+    memcpy(buf+offset, &objList[i*5], sizeof(objInfo_t));
+    offset += sizeof(objInfo_t);
+    memcpy(buf+offset, &objList[i*5+1], sizeof(objInfo_t));
+    offset += sizeof(objInfo_t);
+    memcpy(buf+offset, &objList[i*5+2], sizeof(objInfo_t));
+    offset += sizeof(objInfo_t);
+    memcpy(buf+offset, &objList[i*5+3], sizeof(objInfo_t));
+    offset += sizeof(objInfo_t);
+    memcpy(buf+offset, &objList[i*5+4], sizeof(objInfo_t));
+
+    // Write the five objects to neverland!
+    ret = writeUdpByteStream((void *)buf, sizeof(buf), 0);
+    if (ret < 0)
+    {
+      printf("Failed to send udp packet!\n");
+      break;
+    }
+  }
+
+  // Check if more updates to send.
+  if ( (numObjects % 5) > 0)
+  {
+    // Send last group of packets.
+    p.numObj = numObjects % 5;
+    memcpy(buf, &p, sizeof(updateObjInstance_t));
+    offset = sizeof(updateObjInstance_t);
+    for (i = 0; i < numObjects % 5; i++)
+    {
+      memcpy(buf+offset, &objList[i], sizeof(objInfo_t));
+      offset += sizeof(objInfo_t);
+    }
+    // Write the remaining objects to neverland!
+    ret = writeUdpByteStream((void *)buf, offset, 0);
+  }
   return 0;
 }
+
+int16_t getUpdateObjs()
+{
+  updateObjInstance_t p;
+  objInfo_t objInfo = {0};
+  static uint32_t updateNum = 0;
+  uint32_t offset = 0;
+  uint32_t addr = 0;
+  uint32_t i = 0;
+  uint8_t buf[sizeof(objInfo_t)*5+sizeof(updateObjInstance_t)] = {0};
+
+  // read in the entire packet.
+  readUdpByteStream(buf, sizeof(buf), &addr);
+
+  // Copy information about update.
+  memcpy(&p, buf, sizeof(updateObjInstance_t));
+  // clear the list if we're receiving a new
+  // update.
+  if (p.updateNumber != updateNum)
+  { 
+    updateNum = p.updateNumber;
+    objectInfoList.clear();
+  }
+  
+  // Parse out the important details.
+  offset = sizeof(updateObjInstance_t);
+  // read in the five updates.
+  for (i = 0; i < 5; i++)
+  {
+    memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
+    offset += sizeof(objInfo_t);
+    objectInfoList.push_back(objInfo);
+  }
+
+  return 0;
+}
+
 // getAlive(id)
 // Compare current time value
 // to the last time a packet was
@@ -247,34 +446,76 @@ int16_t updateObjs(objInfo_t *objList, uint8_t numObjects)
 // greater than a threshold.
 uint16_t getAlive(uint32_t id)
 {
-	return 0;
+  std::map<uint32_t, time_t>::iterator it;
+  time_t timer = time(NULL);
+  uint16_t ret = 0;
+  it = aliveList.find(id);
+  if (it != aliveList.end())
+  {
+    if (timer < it->second + SECONDS_TO_DIE)
+    {
+      ret = 1;
+    }
+  }
+	return ret;
 }
 
 // getNumAlive()
 uint16_t getNumAlive()
 {
-	return 0;
+  uint32_t i = 0;
+  time_t timer = time(NULL);
+  std::map<uint32_t, time_t>::iterator it;
+  for (it = aliveList.begin(); it != aliveList.end(); it++)
+  {
+    // Only return headsets that are still responding.
+    if (timer < it->second + SECONDS_TO_DIE)
+    {
+      i++;
+    }
+  }
+  // return actual number of ids.
+	return i;
 }
 
 // getAliveIDs()
 int16_t getAliveIDs(uint32_t *ids, uint16_t size)
 {
-	return 0;
+  uint32_t i = 0;
+  time_t timer = time(NULL);
+  std::map<uint32_t, time_t>::iterator it;
+  for (it = aliveList.begin(); it != aliveList.end() && i < size; it++)
+  {
+    // Only return headsets that are still responding.
+    if (timer < it->second + SECONDS_TO_DIE)
+    {
+      ids[i] = it->first;
+      i++;
+    }
+  }
+  // return actual number of ids.
+	return i;
 }
 
 // Function: getPos(id)
-// Sets position information for headset with id.
+// Gets position information for headset with id.
 // Returns -1 on error.
 int16_t getPos(headsetPos_t *pos, uint32_t id)
 {
-	return 0;
-}
-// Function: goBack(id)
-// Send a goBack message to the headset
-// indicating that it should transition to
-// an earlier state.
-int16_t goBack(uint32_t id)
-{
+  std::map<uint32_t, heartBeatInfo_t>::iterator it;
+  it = heartBeatList.find(id);
+  if (it == heartBeatList.end())
+  {
+    printf("Id %u not found in heartBeat list!\n", id);
+    return -1;
+  }
+  pos->lat = (it->second).lat;
+  pos->lon = (it->second).lon;
+  pos->x = (it->second).x;
+  pos->y = (it->second).y;
+  pos->roll = (it->second).roll;
+  pos->pitch = (it->second).pitch;
+  pos->yaw = (it->second).yaw;
   return 0;
 }
 
@@ -509,9 +750,9 @@ int connectToServer(int port, uint32_t addr)
 	return fd;
 }
 
-void sendUpdatePacket(int udpFd, int *state)
+void sendUpdatePacket(int udpFd)
 {
-	switch (*state)
+	switch (g_state)
 	{
 		case BROADCAST:
 			sendBroadcast(udpFd);
@@ -564,9 +805,8 @@ void sendHeartbeat(int udpFd)
 * @param addr - the address of a client on a tcp connection only
 * @param ret  - the file descriptor used to send the packet.
 * @param pType - the type of packet received.
-* @param state - the current state of the headset.
 */
-void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int pType, int *state)
+void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int pType)
 {
 	int32_t rc = 0;
 	// If no packet was sent, then simply return immediately.
@@ -584,24 +824,43 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			break;
 		case ACCEPTHEADSET:
 			rc = getAcceptID(connFd);
+      printf("Received Accept packet.\n");
 			// Transition to next state.
-			if (rc > 0 && *state == BROADCAST)
+			if (rc > 0 && g_state == BROADCAST)
 			{
-				*state = ACCEPTED;
+        printf("Transitioning to Accept state.\n");
+				g_state = ACCEPTED;
 			}
+      printf("rc = %d, g_state = %d\n", rc, g_state);
+      // Reset file received state
+      g_fileReceived = 0;
 			break;
+    case DROPHEADSET:
+      rc = getDropId(connFd);
+      // Transition to next state
+      if (rc > 0 && g_state != INIT)
+      {
+        g_state = INIT;
+      }
+    case UPDATEOBJINSTANCE:
+      // only update objects if
+      // running a simulation.
+      if (g_state == SIMULATION)
+      {
+        rc = getUpdateObjs();
+      }
 		case STARTSIMULATION:
 			getStartSimulation(connFd);
-			if (*state == ACCEPTED)
+			if (g_state == ACCEPTED)
 			{
-				*state = SIMULATION;
+				g_state = SIMULATION;
 			}
 			break;
 		case ENDSIMULATION:
 			getEndSimulation(connFd);
-			if (*state == SIMULATION)
+			if (g_state == SIMULATION)
 			{
-				*state = INIT;
+				g_state = INIT;
 			}
 			break;
 		default:
@@ -804,6 +1063,7 @@ void getHeartBeatPacket(void)
 		hi.lastUpdate = time(NULL);
 		hi.ipAddr = addr;
 		heartBeatList[addr] = hi;
+    aliveList[addr] = time(NULL);
 	}
 	//printf("\nProcessed heartbeat packet num: %8X\n", addr);
 	//printf("lat: %f, lon: %f, id: ", p.lat, p.lon);
@@ -824,4 +1084,34 @@ void printFloatBytes(char *buf)
     printf(" [%d] = %X",i,buf[i]);
   }
   printf("\n");
+}
+
+uint32_t getMyId()
+{
+  return g_myIp;
+}
+
+uint32_t getState()
+{
+  return g_state;
+}
+
+uint32_t setHostHeadset(int32_t host)
+{
+  g_host = host;
+  if (!host)
+  {
+    g_state = BROADCAST;
+  }
+}
+
+uint32_t getFileReceived()
+{
+  return g_fileReceived;
+}
+
+void getReceivedFile(char *filename, int size)
+{
+  strncpy(filename, g_filename, size);
+  return;
 }

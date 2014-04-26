@@ -61,7 +61,7 @@ class AugRealObj:
     # Initialize Headset status.
     for i in range(10):
       self.HeadsetStrList.append(HeadsetStr % (i, -1, "Disconnected"))
-    self.Headsets = Label(root,bg="white", wraplength=WRAPLENGTH,text=" ".join(self.HeadsetStrList))
+    self.Headsets = Label(root,bg="white", wraplength=WRAPLENGTH,justify=LEFT,text=" ".join(self.HeadsetStrList))
     # Create Forwards and backwards info labels.
     self.NextText = Label(root, wraplength=WRAPLENGTH,text=NextStr)
     self.GoBackText = Label(root, wraplength=WRAPLENGTH,text=GoBackStr)
@@ -69,9 +69,9 @@ class AugRealObj:
     self.SimulationInfoStr = SimulationInfoStr
     self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
     # (Hard coded for now...)
-    self.SimulationList = [ "1 Pac-Man" ]
-    self.SimulationList.append("2 Trees")
-    self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH, text=" ".join(self.SimulationList))
+    self.SimulationList = [ "1 Pac-Man\n" ]
+    self.SimulationList.append("2 Trees\n")
+    self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH,justify=LEFT, text=" ".join(self.SimulationList))
     # STARTSIMHOST
     self.StartSimText = Label(root,wraplength=WRAPLENGTH,text=StartSimStr)
     # RUNSIMHOST
@@ -191,7 +191,7 @@ class AugRealObj:
       self.teardownAddHead()
       self.setupSelectSim()
     elif (self.state == SELECTSIM):
-      self.state = RUNSIMHOST
+      self.state = STARTSIMHOST
       self.teardownSelectSim()
       self.setupStartSimHost()
     elif (self.state == STARTSIMHOST):
@@ -302,6 +302,35 @@ class AugRealObj:
       self.HeadsetStrList[i] = HeadsetStr % (i, listItems[0], listItems[1], "Available")
     self.Headsets.configure(text=" ".join(self.HeadsetStrList))
     self.root.after(1000, self.refreshList)
+  
+  def WaitAccept(self):
+    accepted = getAccept()
+    if (self.state == WAITACCEPT and accepted == 1):
+      self.state = WAITRECEIVE
+      self.teardownWaitAccept()
+      self.setupWaitReceive()
+      self.after(1000, self.WaitReceive)
+    if (self.state == WAITACCEPT):
+      self.root.after(1000, self.WaitAccept)
+  def WaitReceive(self):
+    receivedFile = getReceivedFile()
+    if (self.state == WAITRECEIVE and len(receivedFile) > 0):
+      self.state = WAITSTART
+      self.teardownWaitReceive()
+      self.setupWaitStart()
+      self.after(1000, self.WaitStart()
+    if (self.state == WAITRECEIVE):
+      self.root.after(1000, self.WaitReceive)
+  def WaitStart(self):
+    start = getStart()
+    if (self.state == WAITSTART and start == 1):
+      self.state = RUNSIMJOIN
+      self.teardownWaitStart()
+      self.setupRunSimJoin()
+      # TODO: Launch client simulation as a separate process.
+      # Pass in the name of the simulation run.
+    if (self.state == WAITSTART):
+      self.root.after(1000, self.WaitStart)
 
 root = Tk()
 

@@ -23,8 +23,6 @@ int main(void)
 	int ret = 0;
 	uint8_t pac[3];
 	uint8_t packetType = 0;
-	//int32_t state = INIT;
-	int32_t state = BROADCAST;
 
 	// Initialize networking stuff.
 	ret = wirelessConnection();
@@ -62,8 +60,8 @@ int main(void)
 	// Wait forever
 	while(1)
 	{
-		/* TODO: This will become relevant
-		 *			when the networking code is
+		/*
+		 *			When the networking code is
 		 *			finished. There will be a tcp
 		 *			and a udp port used for
 		 *			communication. There will be
@@ -94,14 +92,14 @@ int main(void)
 							// An update will be sent.
 							// Sending an update doesn't
 							// change state.
-			sendUpdatePacket(udpFd, &state);
+			sendUpdatePacket(udpFd);
 			break;
 		default:
 				break;
 		}
 		// Processing a packet may change
 		// state.
-		processPacket(udpFd, tcpFd, connFd, clientAddr, ret, packetType, &state);
+		processPacket(udpFd, tcpFd, connFd, clientAddr, ret, packetType);
 	}
 	return 0;
 }
