@@ -221,7 +221,7 @@ void GpuPyThreadInterface::_updateObjects(int fd)
 			return;
 		}
 		printf("instId: %d, typeShow: %d, x2: %d, y2: %d, x3: %f, y3: %f, roll: %f, pitch: %f, yaw: %f\n", objs[i].instId, objs[i].typeShow, objs[i].x2, objs[i].y2, objs[i].x3, objs[i].y3, objs[i].roll, objs[i].pitch, objs[i].yaw);
-		printf("Sizeof obj: %d\n", sizeof(objInfo_t));
+		//printf("Sizeof obj: %d\n", sizeof(objInfo_t));
 	}
 	// Call a function that will copy these objects
 	updateObjects(objs,numObjs);

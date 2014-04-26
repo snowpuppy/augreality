@@ -66,7 +66,7 @@ def moveGhost3(ghost):
 	moveGhost(ghost, 28, 36, -21, -7)
 	
 def moveGhost4(ghost):
-	moveGhost(ghost, -8, -36, -7)
+	moveGhost(ghost, -8, 36, -21, -7)
 
 def moveGhosts(objs):
 	# move ghost by .2 meters (2 decimeters)
@@ -89,6 +89,7 @@ def collideWithPellet(objs):
 	# coordinate adjustments
 	x = -pos[4]
 	y = pos[3]
+	
 	print pos
 	pellets = objs['pellet']
 	# Find distance player is from pellet.
@@ -145,12 +146,16 @@ yaw = 0
 #	def __init__(self, instId, typeShow, x2, y2, x3, y3, z3, roll, pitch, yaw, scale, name):
 initGhosts(myObjs)
 gameEnd = False
-while (!gameEnd):
+while (not gameEnd):
 	moveGhosts(myObjs);
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
 	if pellet and pellet.typeShow == 1:
 		pellet.typeShow = 0
+	pos = getUserPosition()
+	pellet = myObjs['pellet'][0]
+	pellet.x3 = pos[3]
+	pellet.y3 = pos[4]
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
 	time.sleep(.1)
@@ -158,4 +163,3 @@ while (!gameEnd):
 		
 time.sleep(3.0)
 gpuQuit()
-
