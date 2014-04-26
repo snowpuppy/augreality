@@ -15,6 +15,7 @@ WRAPLENGTH = 480
 from Tkinter import *
 from textInfo import *
 from guiNetInterface import *
+import subprocess
 
 class AugRealObj:
   def __init__(self, root):
@@ -201,6 +202,7 @@ class AugRealObj:
       self.teardownStartSimHost()
       self.setupRunSimHost()
       sendStart()
+      subprocess.call(["../simulation_src/testApplication.py"])
     elif (self.state == RUNSIMHOST):
       pass
     elif (self.state == WAITACCEPT):
@@ -310,11 +312,11 @@ class AugRealObj:
     elif (self.state == SELECTSIM):
       # Hardcoded simulations.
       if (num == 1):
-				for i in self.acceptList:
-					sendFile("../simulation_src/simulations/pacman.tar",i)
+        for i in self.acceptList:
+          sendFile("../simulation_src/simulations/pacman.tar",i)
       if (num == 2):
-				for i in self.acceptList:
-					sendFile("../simulation_src/simulations/demo.tar",i)
+        for i in self.acceptList:
+          sendFile("../simulation_src/simulations/demo.tar",i)
     elif (self.state == RUNSIMHOST):
       pass
 

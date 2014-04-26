@@ -12,6 +12,7 @@ import socket
 import time
 import copy
 import subprocess
+os.chdir(sys.path[0])
 sys.path.append(os.path.realpath('../gui_src/'))
 from guiNetInterface import *
 from gpuPyInterface import *
@@ -87,7 +88,7 @@ def collideWithPellet(objs):
 	# Find distance player is from pellet.
 	# Return any pellet that the player collides
 	# with.
-	for i in pellet:
+	for i in pellets:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
 			if i.typeShow == 0:
