@@ -751,9 +751,11 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			break;
 		case ACCEPTHEADSET:
 			rc = getAcceptID(connFd);
+      printf("Received Accept packet.\n");
 			// Transition to next state.
 			if (rc > 0 && g_state == BROADCAST)
 			{
+        printf("Transitioning to Accept state.\n");
 				g_state = ACCEPTED;
 			}
 			break;
