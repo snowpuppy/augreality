@@ -355,11 +355,19 @@ def getAcceptIds():
 def getReceivedFile():
 	# Set command
 	# Pack info
+	filename = ""
 	command = GETRECEIVEDFILE
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# receive status
+	reply = s.recv(1)
+	received = ord(reply)
+	if (received):
+		reply = s.recv(1)
+		filename = s.recv(ord(reply))
+	return str(filename)
 	s.close()
 
 def getEnd():
