@@ -2,5 +2,14 @@ This project contains the Cornell Cup headset power PCB code. It uses the STM32L
 microcontroller to establish an ultra-low-power method of correcting and reporting fuel gauge
 data to the Intel Atom board.
 
-You will need to have dfu-util 0.5 or later (http://dfu-util.gnumonks.org/releases/) installed
-on your PATH (put it in the yagarto bin directory to make sure).
+You will need to install the STM32 ST-Link utility to enable "make upload" to autonomously
+program the board through an ST-LINK dongle and SWD. Create a file named "stlink.mk" with the
+only line being:
+
+STLINK=C:/Program\ Files\ (x86)/STMicroelectronics/ST-LINK\ Utility
+
+changed to match where the utility was actually installed on the local computer. Alternatively,
+the ST-LINK GUI can be used instead, but note that the binary is only loaded when re-selected!
+
+The "libSTMCore.a" is the STM32L Standard Peripherals Library pre-compiled for this chip
+(STM32L1XX_MD), while "libSTMUSB.a" is the STM32 USB CDC-ACM example pre-compiled for this chip.

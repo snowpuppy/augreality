@@ -1,9 +1,14 @@
 #!/usr/bin/python
 
-SPLASHSCRE = 1
-SELECTHEAD = 2
-SELECTSIMU = 3
-RUNSIMULAT = 4
+SELECTMODE = 1
+ADDHEADSETS = 2
+SELECTSIM = 3
+STARTSIMHOST = 4
+RUNSIMHOST = 5
+WAITACCEPT = 6
+WAITRECEIVE = 7
+WAITSTART = 8
+RUNSIMJOIN = 9
 
 WRAPLENGTH = 480
 
@@ -32,93 +37,220 @@ class AugRealObj:
     self.root.after(1000, self.refreshList)
 
     # Create All objects for each state.
-    # SPLASHSCRE
-    self.WelcomeText = Label(root, wraplength=WRAPLENGTH,text="Welcome to Augmented Reality.\n\n\nPlease Press Enter.")
-    # SELECTHEAD
+    # New set of states for each menu.
+    #
+    # SELECTMODE
+    # ADDHEADSETS
+    # SELECTSIM
+    # STARTSIMHOST
+    # RUNSIMHOST
+    # WAITACCEPT
+    # WAITRECEIVE
+    # WAITSTART
+    # RUNSIMJOIN
+
+    # SELECTMODE
+    self.WifiText = Label(root, wraplength=WRAPLENGTH, text="WiFi: -----")
+    self.BattText = Label(root, wraplength=WRAPLENGTH, text="Battery: -----")
+    self.GPSText = Label(root, wraplength=WRAPLENGTH, text="GPS: Down") 
+    self.SelectModeText = Label(root, wraplength=WRAPLENGTH,text=SelectModeStr)
+    # ADDHEADSETS
     self.HeadsetInfoStr = HeadsetInfoStr
     self.HeadsetInfo = Label(root, wraplength=WRAPLENGTH, text=self.HeadsetInfoStr)
     self.HeadsetStrList = []
     # Initialize Headset status.
     for i in range(10):
-      self.HeadsetStrList.append(HeadsetStr % (i, "-1","-1", "Disconnected"))
+      self.HeadsetStrList.append(HeadsetStr % (i, -1, "Disconnected"))
     self.Headsets = Label(root,bg="white", wraplength=WRAPLENGTH,text=" ".join(self.HeadsetStrList))
-    # SELECTSIMU
+    # Create Forwards and backwards info labels.
+    self.NextText = Label(root, wraplength=WRAPLENGTH,text=NextStr)
+    self.GoBackText = Label(root, wraplength=WRAPLENGTH,text=GoBackStr)
+    # SELECTSIM
     self.SimulationInfoStr = SimulationInfoStr
     self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
     # (Hard coded for now...)
     self.SimulationList = [ "1 Pac-Man" ]
-    self.SimulationList.append("2 Demo")
+    self.SimulationList.append("2 Trees")
     self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH, text=" ".join(self.SimulationList))
-    # RUNSIMULAT
+    # STARTSIMHOST
+    self.StartSimText = Label(root,wraplength=WRAPLENGTH,text=StartSimStr)
+    # RUNSIMHOST
     self.RunInfoStr = RunInfoStr
     self.RunInfo = Label(root, wraplength=WRAPLENGTH,text=self.RunInfoStr)
+    # WAITACCEPT
+    self.MyIdText = Label(root, wraplength=WRAPLENGTH,text=MyIdStr)
+    self.WaitAcceptText = Label(root, wraplength=WRAPLENGTH,text=WaitAcceptStr)
+    self.GoMainText =  Label(root, wraplength=WRAPLENGTH,text=GoMainStr)
+    # WAITRECEIVE
+    self.WaitReceiveText = Label(root, wraplength=WRAPLENGTH,text=WaitReceiveStr)
+    # WAITSTART
+    self.WaitStartText =  Label(root, wraplength=WRAPLENGTH,text=WaitStartStr)
+    # RUNSIMJOIN
+
     #self.HeadSimulationList =
     # Initialize state.
-    self.state = SPLASHSCRE
-    self.setupSplashScre()
+    self.state = SELECTMODE
+    self.setupSelectMode()
 
   # Allow the user to select
   # Their own headset.
-  def setupSplashScre(self):
-    self.WelcomeText.grid()
-  def teardownSplashScre(self):
-    self.WelcomeText.grid_forget()
+  def setupSelectMode(self):
+    self.WifiText.grid()
+    self.BattText.grid()
+    self.GPSText.grid()
+    self.SelectModeText.grid()
+  def teardownSelectMode(self):
+    self.WifiText.grid_forget()
+    self.BattText.grid_forget()
+    self.GPSText.grid_forget()
+    self.SelectModeText.grid_forget()
   # Allow the user to select
   # a simulation to run.
-  def setupSelectHead(self):
+  def setupAddHead(self):
     self.HeadsetInfo.grid()
     self.Headsets.grid()
-  def teardownSelectHead(self):
+    self.NextText.grid()
+    self.GoBackText.grid()
+  def teardownAddHead(self):
     self.HeadsetInfo.grid_forget()
     self.Headsets.grid_forget()
+    self.NextText.grid_forget()
+    self.GoBackText.grid_forget()
   # Select Simulation
-  def setupSelectSimu(self):
+  def setupSelectSim(self):
     self.SimulationInfo.grid()
     self.Simulations.grid()
-  def teardownSelectSimu(self):
+    self.NextText.grid()
+    self.GoBackText.grid()
+  def teardownSelectSim(self):
     self.SimulationInfo.grid_forget()
     self.Simulations.grid_forget()
+    self.Headsets.grid_forget()
+    self.NextText.grid_forget()
+    self.GoBackText.grid_forget()
+  # Notify User of sending start condition
+  def setupStartSimHost(self):
+    self.StartSimText.grid()
+    self.NextText.grid()
+    self.GoBackText.grid()
+  def teardownStartSimHost(self):
+    self.StartSimText.grid_forget()
+    self.NextText.grid_forget()
+    self.GoBackText.grid_forget()
   # Run a simulation.
-  def setupRunSimulation(self):
+  def setupRunSimHost(self):
     self.RunInfo.grid()
-  def teardownRunSimulat(self):
+  def teardownRunSimHost(self):
     self.RunInfo.grid_forget()
+  # Wait for headset to be accepted (poll)
+  def setupWaitAccept(self):
+    self.WaitAcceptText.grid()
+    self.GoMainText.grid()
+  def teardownWaitAccept(self):
+    self.WaitAcceptText.grid_forget()
+    self.GoMainText.grid_forget()
+  # Wait for files to be received (poll)
+  def setupWaitReceive(self):
+    self.WaitReceiveText.grid()
+    self.GoMainText.grid()
+  def teardownWaitReceive(self):
+    self.WaitReceiveText.grid_forget()
+    self.GoMainText.grid_forget()
+  # Wait for start condition (poll)
+  def setupWaitStart(self):
+    self.WaitStartText.grid()
+    self.GoMainText.grid()
+  def teardownWaitStart(self):
+    self.WaitStartText.grid_forget()
+    self.GoMainText.grid_forget()
+  # Run a join simulation
+  def setupRunSimJoin(self):
+    self.RunInfo.grid()
+  def teardownRunSimJoin(self):
+    self.RunInfo.grid_forget()
+    # SELECTMODE
+    # ADDHEADSETS
+    # SELECTSIM
+    # STARTSIMHOST
+    # RUNSIMHOST
+    # WAITACCEPT
+    # WAITRECEIVE
+    # WAITSTART
+    # RUNSIMJOIN
   def handleEnter(self,event):
-    if (self.state == SPLASHSCRE):
-      self.state = SELECTHEAD
-      self.teardownSplashScre()
-      self.setupSelectHead()
-    elif (self.state == SELECTHEAD):
-      self.state = SELECTSIMU
-      self.teardownSelectHead()
-      self.setupSelectSimu()
-			# will need to properly get location
-			# of first headset accepted and use as
-			# origin.
-      sendAccept('40A66DAE\r3A200\r',0.0,0.0)
-    elif (self.state == SELECTSIMU):
-      self.state = RUNSIMULAT
-      self.teardownSelectSimu()
-      self.setupRunSimulation()
-      sendStart()
-    elif (self.state == RUNSIMULAT):
+    print "Pressed Enter."
+    if (self.state == SELECTMODE):
+      # Enter does nothing in this state.
+      # 0 or 1 should be selected instead.
+      #self.state = ADDHEADSETS
+      #self.teardownSelectMode()
+      #self.setupAddHead()
+      pass
+    elif (self.state == ADDHEADSETS):
+      self.state = SELECTSIM
+      self.teardownAddHead()
+      self.setupSelectSim()
+    elif (self.state == SELECTSIM):
+      self.state = RUNSIMHOST
+      self.teardownSelectSim()
+      self.setupStartSimHost()
+    elif (self.state == STARTSIMHOST):
+      self.state = RUNSIMHOST
+      self.teardownStartSimHost()
+      self.setupRunSimHost()
+      #sendStart()
+    elif (self.state == RUNSIMHOST):
+      pass
+    elif (self.state == WAITACCEPT):
+      self.state = WAITRECEIVE
+      self.teardownWaitAccept()
+      self.setupWaitReceive()
+    elif (self.state == WAITRECEIVE):
+      self.state = WAITSTART
+      self.teardownWaitReceive()
+      self.setupWaitStart()
+    elif (self.state == WAITSTART):
+      self.state = RUNSIMJOIN
+      self.teardownWaitStart()
+      self.setupRunSimJoin()
+    elif (self.state == RUNSIMJOIN):
       pass
   def handleBackspace(self,event):
-    if (self.state == SPLASHSCRE):
+    if (self.state == SELECTMODE):
       pass
-    elif (self.state == SELECTHEAD):
-      #self.state = SPLASHSCRE
+    elif (self.state == ADDHEADSETS):
+      self.teardownAddHead()
+      self.setupSelectMode()
+      self.state = SELECTMODE
       pass
-    elif (self.state == SELECTSIMU):
-      self.teardownSelectSimu()
-      self.setupSelectHead()
-      self.state = SELECTHEAD
-      sendGoBack('40A66DAE\r3A200\r')
-    elif (self.state == RUNSIMULAT):
-      self.teardownRunSimulat()
-      self.setupSelectHead()
-      self.state = SELECTHEAD
-      sendGoBack('40A66DAE\r3A200\r')
+    elif (self.state == SELECTSIM):
+      self.teardownSelectSim()
+      self.setupAddHead()
+      self.state = ADDHEADSETS
+    elif (self.state == STARTSIMHOST):
+      self.teardownStartSimHost()
+      self.setupSelectSim()
+      self.state = SELECTSIM
+    elif (self.state == RUNSIMHOST):
+      self.teardownRunSimHost()
+      self.setupStartSimHost()
+      self.state = STARTSIMHOST
+    elif (self.state == WAITACCEPT):
+      self.teardownWaitAccept()
+      self.setupSelectMode()
+      self.state = SELECTMODE
+    elif (self.state == WAITRECEIVE):
+      self.teardownWaitReceive()
+      self.setupSelectMode()
+      self.state = SELECTMODE
+    elif (self.state == WAITSTART):
+      self.teardownWaitStart()
+      self.setupSelectMode()
+      self.state = SELECTMODE
+    elif (self.state == RUNSIMJOIN):
+      self.teardownRunSimJoin()
+      self.setupSelectMode()
+      self.state = SELECTMODE
   def handle1(self,event):
     self.handleNumEvent(1)
   def handle2(self,event):
@@ -141,21 +273,30 @@ class AugRealObj:
     self.handleNumEvent(0)
   def handleNumEvent(self,num):
     print "Key %d was pressed." % (num, )
-    if (self.state == SPLASHSCRE):
+    if (self.state == SELECTMODE):
+      if (num == 1):
+        self.state = ADDHEADSETS
+        self.teardownSelectMode() 
+        self.setupAddHead()
+      elif (num == 0):
+        self.state = WAITACCEPT
+        self.teardownSelectMode()
+        self.setupWaitAccept()
       pass
-    elif (self.state == SELECTHEAD):
+    elif (self.state == ADDHEADSETS):
       pass
-    elif (self.state == SELECTSIMU):
+    elif (self.state == SELECTSIM):
       # Hardcoded simulations.
       if (num == 1):
         sendFile("../sim/pacman.tar")
       if (num == 2):
         sendFile("../sim/demo.tar")
       pass
-    elif (self.state == RUNSIMULAT):
+    elif (self.state == RUNSIMHOST):
       pass
+
   def refreshList(self):
-    myList = getBroadCastIDs()
+    myList = [] #getBroadCastIDs()
     for i in range(len(myList)):
       listItems = myList[i].split()
       self.HeadsetStrList[i] = HeadsetStr % (i, listItems[0], listItems[1], "Available")
@@ -164,7 +305,7 @@ class AugRealObj:
 
 root = Tk()
 
-root.title("Augmented Reality Simulator - Central Control Unit.")
+root.title("Augmented Reality Simulator - User Interface.")
 augReal = AugRealObj(root)
 
 # force the focus on me!

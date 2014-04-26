@@ -87,7 +87,8 @@ def collideWithPellet(objs):
 	for i in pellets:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
-			return pellets
+			if i.typeShow == 0:
+				return i
 	# Return nothing if no collision.
 	return None
 
@@ -128,6 +129,7 @@ while (1):
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
 	if pellet:
+		print "Hiding Pellet."
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
