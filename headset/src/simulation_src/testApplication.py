@@ -102,6 +102,14 @@ def collideWithPellet(objs):
 	# Return nothing if no collision.
 	return None
 
+def checkGameEnd(objs):
+	pellets = objs['pellet']
+	gameEnd = True
+	for pellet in pellets:
+		if pellet.typeShow != 0:
+			gameEnd = False
+	return gameEnd
+
 # hardcoded id of headset.
 subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simulations/pacman/models/"])
 time.sleep(1.0)
@@ -136,7 +144,8 @@ yaw = 0
 # 74 and 75 are ghosts
 #	def __init__(self, instId, typeShow, x2, y2, x3, y3, z3, roll, pitch, yaw, scale, name):
 initGhosts(myObjs)
-while (1):
+gameEnd = False
+while (!gameEnd):
 	moveGhosts(myObjs);
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
@@ -145,6 +154,8 @@ while (1):
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
 	time.sleep(.1)
+	gameEnd = checkGameEnd(myObjs)
+		
 time.sleep(3.0)
 gpuQuit()
 
