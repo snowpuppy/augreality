@@ -30,8 +30,8 @@ helpStr = """Enter a number to test a function:
 10 SENDSTART       _sendStart(int fd);
 11 SENDACCEPT      _sendAccept(int fd);
 12 RESETORIGIN     _resetGPSOrigin(int fd);
-13 SETGPSORIGIN    _setGPSOrigin(int fd);
-14 GETGPSORIGIN    _getGPSOrigin(int fd);
+14 SETGPSORIGIN    _getGPSOrigin(int fd);
+15 GETGPSORIGIN    _getGPSOrigin(int fd);
 16 GETACCEPTEDIDS  _getAcceptIds(int fd);
 17 GETRECEIVEDFILE _getReceivedFile(int fd);
 18 GETEND          _getEnd(int fd);
@@ -56,7 +56,9 @@ while True:
 		print output
 	elif (num == 1):
 		output = getBroadCastIDs()
+		nid = output[0]
 		print output
+		print nid
 	elif (num == 2):
 		output = getNumBroadCast()
 		print output

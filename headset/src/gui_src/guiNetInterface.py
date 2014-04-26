@@ -84,7 +84,7 @@ def getBroadCastIDs():
 	s.close()
 	output = []
 	# Format the data, then return it.
-  # Returns a list of integers.
+	# Returns a list of integers.
 	return data
 
 ##
@@ -122,7 +122,7 @@ def getPosition(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  # send id
+	# send id
 	data = pack(NIDFORMAT, nid)
 	s.send(data)
 	# receive info
@@ -198,7 +198,7 @@ def getAlive(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  # send id
+	# send id
 	data = pack(NIDFORMAT, nid)
 	s.send(data)
 	# receive info
@@ -254,7 +254,7 @@ def sendEnd(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  # send id
+	# send id
 	data = pack(NIDFORMAT, nid)
 	s.send(data)
 	s.close()
@@ -277,13 +277,13 @@ def sendAccept(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  # send id
+	# send id
 	data = pack(NIDFORMAT, nid)
 	s.send(data)
-  reply = s.recv(1)
+	reply = s.recv(1)
 	s.close()
-  data = ord(reply)
-  return data
+	data = ord(reply)
+	return data
 
 def resetGPSOrigin():
 	# Set command
@@ -304,8 +304,8 @@ def setGPSOrigin(lat,lon):
 	# send info
 	s.send(command)
 	# pack and send gps coordinates
-  data = PACK(SETGPSORIGINFORMAT, lat, lon)
-  s.send(data)
+	data = pack(SETGPSORIGINFORMAT, lat, lon)
+	s.send(data)
 	s.close()
 
 def getGPSOrigin():
@@ -316,11 +316,11 @@ def getGPSOrigin():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  numToRead = calcsize(GETGPSORIGINFORMAT)
-  reply = s.recv(numToRead)
+	numToRead = calcsize(GETGPSORIGINFORMAT)
+	reply = s.recv(numToRead)
 	s.close()
-  data = unpack(GETGPSORIGINFORMAT, reply)
-  return data
+	data = unpack(GETGPSORIGINFORMAT, reply)
+	return data
 
 def getAcceptIds():
 	# Set command
@@ -342,7 +342,7 @@ def getAcceptIds():
 	s.close()
 	output = []
 	# Format the data, then return it.
-  # Returns a list of integers.
+	# Returns a list of integers.
 	return data
 
 def getReceivedFile():
@@ -363,10 +363,10 @@ def getEnd():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  reply = s.recv(1)
+	reply = s.recv(1)
 	s.close()
-  data = ord(reply)
-  return data
+	data = ord(reply)
+	return data
 
 def getStart():
 	# Set command
@@ -376,10 +376,10 @@ def getStart():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  reply = s.recv(1)
+	reply = s.recv(1)
 	s.close()
-  data = ord(reply)
-  return data
+	data = ord(reply)
+	return data
 
 def getDrop():
 	# Set command
@@ -389,10 +389,10 @@ def getDrop():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  reply = s.recv(1)
+	reply = s.recv(1)
 	s.close()
-  data = ord(reply)
-  return data
+	data = ord(reply)
+	return data
 
 def sendDrop(nid):
 	# Set command
@@ -402,7 +402,7 @@ def sendDrop(nid):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  # send id
+	# send id
 	data = pack(NIDFORMAT, nid)
 	s.send(data)
 	s.close()
@@ -415,10 +415,10 @@ def getAccept():
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  reply = s.recv(1)
+	reply = s.recv(1)
 	s.close()
-  data = ord(repl)
-  return data
+	data = ord(reply)
+	return data
 
 def setHostHeadset(host):
 	command = SETHOSTHEADSET
@@ -426,5 +426,5 @@ def setHostHeadset(host):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
-  s.send(chr(host))
+	s.send(chr(host))
 	s.close()

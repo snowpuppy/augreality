@@ -489,6 +489,7 @@ void _sendAccept(int fd)
   uint8_t status = 0;
   // Get the id needed.
   rc = read(fd, (void *)&id, sizeof(id));
+	printf("Sending accept to id: %u\n", id);
   if (rc >= 0)
   {
     rc = acceptID(id);
