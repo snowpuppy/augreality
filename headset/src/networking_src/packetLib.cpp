@@ -758,6 +758,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
         printf("Transitioning to Accept state.\n");
 				g_state = ACCEPTED;
 			}
+      printf("rc = %d, g_state = %d\n", rc, g_state);
 			break;
     case DROPHEADSET:
       rc = getDropId(connFd);
