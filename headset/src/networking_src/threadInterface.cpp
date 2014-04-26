@@ -421,7 +421,7 @@ void _getReceivedFile(int fd)
   {
     getReceivedFile(filename, 256);
     received = strlen(filename);
-    rc = write(fd, (void *)received, sizeof(received));
+    rc = write(fd, (void *)&received, sizeof(received));
     rc = write(fd, (void *)filename, strlen(filename));
   }
   return;
