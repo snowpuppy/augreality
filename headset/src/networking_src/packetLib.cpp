@@ -295,6 +295,7 @@ int16_t receiveFile(int32_t connfd)
   FILE *fp = NULL;
   int fd = 0;
 
+	printf("Receiving file...\n");
   rc = read(connfd, &p, sizeof(p));
   if (rc < 0)
   {
@@ -840,6 +841,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
       // Transition to next state
       if (rc > 0 && g_state != INIT)
       {
+				printf("Transitioning to INIT state.\n");
         g_state = INIT;
       }
     case UPDATEOBJINSTANCE:
@@ -853,6 +855,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			getStartSimulation(connFd);
 			if (g_state == ACCEPTED)
 			{
+				printf("Starting simulation.\n");
 				g_state = SIMULATION;
 			}
 			break;
@@ -860,6 +863,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			getEndSimulation(connFd);
 			if (g_state == SIMULATION)
 			{
+				printf("Ending Simulation.\n");
 				g_state = INIT;
 			}
 			break;
