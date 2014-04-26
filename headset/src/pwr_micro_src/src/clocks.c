@@ -28,11 +28,13 @@ void switchToHSE(void) {
 	if (startUpCounter > 0) {
 		// Switch FLASH interface to 1 WS
 		FLASH->ACR |= FLASH_ACR_LATENCY;
+#ifdef REDUCE_VOLTAGE
 		// Select Voltage Range 1 (1.8 V) required for USB
 		PWR->CR = (PWR->CR & ~PWR_CR_VOS) | PWR_CR_VOS_0;
 		__DSB();
 		// Wait until the voltage regulator is ready
 		while (PWR->CSR & PWR_CSR_VOSF);
+#endif
 		// PLL configuration: *12, /3 (overall X4)
 		RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMUL | RCC_CFGR_PLLDIV)) |
 			RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMUL12 | RCC_CFGR_PLLDIV3;
@@ -64,11 +66,13 @@ void switchToMSI(void) {
 	// The MSI will be selected as system clock (this allows us to come up, but w/o USB)
 	RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW) | RCC_CFGR_SW_MSI;
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI);
+#ifdef REDUCE_VOLTAGE
 	// Reduce operating voltage to VR3
 	PWR->CR |= PWR_CR_VOS_0 | PWR_CR_VOS_1;
 	__DSB();
 	// Wait until the voltage regulator is ready
 	while (PWR->CSR & PWR_CSR_VOSF);
+#endif
 	// Shut off the power hogs
 	RCC->CR &= ~(RCC_CR_HSEON | RCC_CR_PLLON);
 	// Switch FLASH interface to 0 WS
