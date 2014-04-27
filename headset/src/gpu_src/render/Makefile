@@ -1,8 +1,8 @@
 
 Target := render
 Sources := GameObject.cpp SensorReader.cpp gpuPyThreadInterface.cpp main.cpp
-IrrlichtInclude := /usr/local/include/
-IrrlichtLib := /usr/local/lib/
+IrrlichtInclude := /usr/include/irrlicht
+IrrlichtLib := /usr/lib/irrlicht
 BinPath = ./
 
 USERCPPFLAGS =

@@ -88,7 +88,7 @@ def collideWithPellet(objs):
 	y = pos[4]
 	# coordinate adjustments
 	x = -pos[4]
-	y = pos[3]
+	y = -pos[3]
 	
 	print pos
 	pellets = objs['pellet']
@@ -152,10 +152,6 @@ while (not gameEnd):
 	pellet = collideWithPellet(myObjs)
 	if pellet and pellet.typeShow == 1:
 		pellet.typeShow = 0
-	pos = getUserPosition()
-	pellet = myObjs['pellet'][0]
-	pellet.x3 = pos[3]
-	pellet.y3 = pos[4]
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
 	time.sleep(.1)
