@@ -443,30 +443,33 @@ int16_t receiveUpdateObjs()
 
   // read in the entire packet.
   readUdpByteStream(buf, sizeof(buf), &addr);
+	if (addr != g_myIp)
+	{
 
-  // Copy information about update.
-  memcpy(&p, buf, sizeof(updateObjInstance_t));
-  // clear the list if we're receiving a new
-  // update.
-  if (p.updateNumber != updateNum)
-  { 
-    updateNum = p.updateNumber;
+		// Copy information about update.
+		memcpy(&p, buf, sizeof(updateObjInstance_t));
+		// clear the list if we're receiving a new
+		// update.
+		if (p.updateNumber != updateNum)
+		{ 
+			updateNum = p.updateNumber;
+			pthread_mutex_lock(&g_objMutex);
+			objectInfoList.clear();
+			pthread_mutex_unlock(&g_objMutex);
+		}
+
+		// Parse out the important details.
+		offset = sizeof(updateObjInstance_t);
+		// read in the five updates.
 		pthread_mutex_lock(&g_objMutex);
-    objectInfoList.clear();
+		for (i = 0; i < 5; i++)
+		{
+			memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
+			offset += sizeof(objInfo_t);
+			objectInfoList.push_back(objInfo);
+		}
 		pthread_mutex_unlock(&g_objMutex);
-  }
-  
-  // Parse out the important details.
-  offset = sizeof(updateObjInstance_t);
-  // read in the five updates.
-	pthread_mutex_lock(&g_objMutex);
-  for (i = 0; i < 5; i++)
-  {
-    memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
-    offset += sizeof(objInfo_t);
-    objectInfoList.push_back(objInfo);
-  }
-	pthread_mutex_unlock(&g_objMutex);
+	}
 
   return 0;
 }

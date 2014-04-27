@@ -356,6 +356,7 @@ class AugRealObj:
       self.teardownWaitStart()
       self.setupRunSimJoin()
       # TODO: Launch client simulation as a separate process.
+      subprocess.call(["augreality/headset/src/simulation_src/clientApplication.py"])
       # Pass in the name of the simulation run.
     if (self.state == WAITSTART):
       self.root.after(1000, self.WaitStart)

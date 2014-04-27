@@ -34,7 +34,6 @@ ALIVEFORMATS = '=B16B'
 ALIVEFORMATR = '=B'
 SENDUPDATEOBJS = '\x0a'
 SENDUPDATEOBJSFORMAT = '=BB'
-OBJSFORMAT = 'BBHH5f'			# objInfo struct
 SENDFILE = '\x0b'
 SENDFILEFORMAT = '=B'		# also need to send filename
 SENDEND = '\x0c'
@@ -238,21 +237,6 @@ def sendFile(filename,nid):
 	s.send(filename)
 	s.close()
 
-def sendUpdateObjs(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
-	# Set command
-	# format SENDUPDATEOBJSFORMAT'=BB' 
-	# format OBJSFORMAT 'BBHH5f'
-	# Pack info
-	command = SENDUPDATEOBJS
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.send(chr(num))
-	data = pack(OBJSFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
-	s.send(data)
-	s.close()
-	
 def sendEnd(nid):
 	# Set command
 	# Pack info
@@ -481,13 +465,3 @@ def getWiFiStatus():
 	data = ord(reply)
 	return data
 
-def getUpdateObjs():
-	# Set command
-	# Pack info
-	command = GETBATTERYSTATUS
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.close()
-	return

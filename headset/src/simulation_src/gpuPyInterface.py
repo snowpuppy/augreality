@@ -6,6 +6,7 @@
 
 HOST = ''   # Symbolic name meaning the local host
 PORT = 7778 # Arbitrary non-privileged port
+NETPORT = 7777
 
 from struct import *
 import socket
@@ -19,6 +20,11 @@ GPUQUITFORMATR = '=I7f'
 SENDUPDATEOJBSGPU = '\x03'
 SENDUPDATEOJBSGPUFORMAT = '=BB'
 OBJSGPUFORMAT = 'IIII7f'			# objInfo struct
+
+# Net commands
+SENDUPDATEOBJS = '\x0a'
+SENDUPDATEOBJSFORMAT = '=BB'
+GETUPDATEOBJS = '\x21'
 
 ##
 # @brief ObjInfo_t mirros a c structure. This structure is used to bridge the gap between
@@ -129,3 +135,44 @@ def sendUpdateObjsGpu(num,objs):
 		s.send(data)
 	s.close()
 	return
+
+
+def sendUpdateObjs(num,objs):
+	# Set command
+	# format SENDUPDATEOJBSGPUFORMAT'=BB' 
+	# format OBJSGPUFORMAT 'IIII7f'
+	# Pack info
+	command = SENDUPDATEOBJS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,NETPORT))
+	# send info
+	s.send(command)
+	data = pack('I',num)
+	s.send(data)
+	for i in objs:
+		data = pack(OBJSGPUFORMAT, i.instId, i.typeShow, i.x2, i.y2, i.x3, i.y3, i.z3, i.roll, i.pitch, i.yaw, i.scale)
+		s.send(data)
+	s.close()
+	return
+	
+def getUpdateObjs():
+	# Set command
+	# Pack info
+	command = GETUPDATEOBJS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,NETPORT))
+	# send info
+	s.send(command)
+	numToRead = calcsize('I')
+	reply = s.recv(numToRead)
+	numObjs = unpack('I',reply)
+	objs = []
+	numToRead = calcsize(OBJSGPUFORMAT)
+	for i in range(numObjs)
+		reply = s.recv(numToRead)
+		data = unpack(OBJSGPUFORMAT, reply)
+		obj = ObjInfo_t(data[0], data[1], data[2], data[3], data[4],data[5], data[6], data[7], data[8], data[9], data[10], 'unknown')
+		objs.append(obj)
+
+	s.close()
+	return objs
