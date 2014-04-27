@@ -202,7 +202,7 @@ class AugRealObj:
       self.teardownStartSimHost()
       self.setupRunSimHost()
       sendStart()
-      subprocess.call(["../simulation_src/testApplication.py"])
+      subprocess.call(["augreality/headset/src/simulation_src/testApplication.py"])
     elif (self.state == RUNSIMHOST):
       pass
     elif (self.state == WAITACCEPT):
