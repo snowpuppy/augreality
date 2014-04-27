@@ -1,1 +1,1 @@
-xrandr --output VGA1 --reflect normal
+xrandr --output DVI1 --reflect normal
