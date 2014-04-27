@@ -893,10 +893,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
     case UPDATEOBJINSTANCE:
       // only update objects if
       // running a simulation.
-      if (g_state == SIMULATION)
-      {
         rc = receiveUpdateObjs();
-      }
 		case STARTSIMULATION:
 			getStartSimulation(connFd);
 			if (g_state == ACCEPTED)
