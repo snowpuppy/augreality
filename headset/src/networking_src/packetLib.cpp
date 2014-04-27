@@ -437,22 +437,22 @@ int16_t receiveUpdateObjs()
   if (p.updateNumber != updateNum)
   { 
     updateNum = p.updateNumber;
-		pthread_mutex_lock(&g_objMutex)
+		pthread_mutex_lock(&g_objMutex);
     objectInfoList.clear();
-		pthread_mutex_unlock(&g_objMutex)
+		pthread_mutex_unlock(&g_objMutex);
   }
   
   // Parse out the important details.
   offset = sizeof(updateObjInstance_t);
   // read in the five updates.
-	pthread_mutex_lock(&g_objMutex)
+	pthread_mutex_lock(&g_objMutex);
   for (i = 0; i < 5; i++)
   {
     memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
     offset += sizeof(objInfo_t);
     objectInfoList.push_back(objInfo);
   }
-	pthread_mutex_unlock(&g_objMutex)
+	pthread_mutex_unlock(&g_objMutex);
 
   return 0;
 }
@@ -460,13 +460,13 @@ int16_t receiveUpdateObjs()
 int16_t getUpdateObjs(std::vector<objInfo_t> &objs)
 {
 	// Copy the entire list over.
-	pthread_mutex_lock(&g_objMutex)
+	pthread_mutex_lock(&g_objMutex);
 	while (!objectInfoList.empty())
 	{
 		objs.push_back(objectInfoList.back());
-		objInfoList.pop_back();
+		objectInfoList.pop_back();
 	}
-	pthread_mutex_unlock(&g_objMutex)
+	pthread_mutex_unlock(&g_objMutex);
 }
 
 // getAlive(id)
@@ -897,7 +897,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			}
 			break;
 		case LOADSTATICDATA:
-			receiveFile(connfd);
+			receiveFile(connFd);
 			break;
 		default:
 			break;

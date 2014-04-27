@@ -408,6 +408,8 @@ void _sendUpdateObjs(int fd)
 {
 	objInfo_t updateObjsList[2048];
 	uint32_t numObjs;
+	int32_t rc = 0;
+	int32_t i = 0;
 
 	// Read in the number of objects to retrieve
 	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
@@ -423,20 +425,21 @@ void _sendUpdateObjs(int fd)
 	return;
 }
 
-void _getUpdateObjs(int connfd)
+void _getUpdateObjs(int fd)
 {
 	std::vector<objInfo_t> myObjs;
 	uint32_t numObjects = 0;
 	getUpdateObjs(myObjs);
 	numObjects = myObjs.size();
 	uint32_t i = 0;
+	int32_t rc = 0;
 
 	// write number of objects.
 	rc = write(fd, (void *)&numObjects, sizeof(numObjects));
 	// write each object.
 	for (i = 0; i < numObjects; i++)
 	{
-		rc = write(fd, (void *)myObjs[i], sizeof(objInfo_t));
+		rc = write(fd, (void *)&myObjs[i], sizeof(objInfo_t));
 	}
 	
   return;
