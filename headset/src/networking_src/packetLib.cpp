@@ -239,7 +239,8 @@ int16_t sendFile(char *filename, uint32_t id)
 	loadStaticData_t p = {0};
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
-  uint32_t filenameLen = strlen(filename);
+  uint8_t filenameLen = strlen(filename);
+	int32_t rc = 0;
   FILE *fp = NULL;
   int fd = 0;
 
@@ -256,6 +257,7 @@ int16_t sendFile(char *filename, uint32_t id)
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
   printf("Sending file of size: %d\n", p.numBytes);
+	printf("Sending file %s length %d\n", filename, (int)filenameLen);
 	// Pack the packet to a byte stream.
   loadStaticDataHton(&p);
 	// Add header info and crc.
@@ -268,10 +270,22 @@ int16_t sendFile(char *filename, uint32_t id)
 		return -1;
 	}
   // Send the file header.
-  write(fd, (void *)&p, sizeof(loadStaticData_t));
+  rc = write(fd, (void *)&p, sizeof(loadStaticData_t));
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending loadStaticData.\n");
+	}
   // Send the Filename
-  write(fd, (void *)&filenameLen, sizeof(filenameLen));
-  write(fd, (void *)filename, filenameLen);
+  rc = write(fd, (void *)&filenameLen, sizeof(filenameLen));
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending filnameLen.\n");
+	}
+  rc = write(fd, (void *)filename, filenameLen);
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending filename.\n");
+	}
   // Write the file to the serial port
   /*
   while ( !feof(fp))
@@ -301,7 +315,7 @@ int16_t receiveFile(int32_t connfd)
 {
   loadStaticData_t p = {0};
   uint8_t fileBuf[256];
-  uint32_t filenameLen = 0;
+  uint8_t filenameLen = 0;
   char filename[256];
   int32_t rc = 0;
   uint16_t bytesRead = 0, totalBytesRead = 0, bytesRemaining = 0;
@@ -351,7 +365,7 @@ int16_t receiveFile(int32_t connfd)
   }
   */
   g_fileReceived = 1;
-  strcpy(filename,g_filename);
+  strcpy(g_filename, filename);
   return 1;
 }
 

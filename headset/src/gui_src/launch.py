@@ -313,10 +313,10 @@ class AugRealObj:
       # Hardcoded simulations.
       if (num == 1):
         for i in self.acceptList:
-          sendFile("../simulation_src/simulations/pacman.tar",i)
+          sendFile("augreality/headset/src/simulation_src/simulations/pacman.tar",i)
       if (num == 2):
         for i in self.acceptList:
-          sendFile("../simulation_src/simulations/demo.tar",i)
+          sendFile("augreality/headset/src/simulation_src/simulations/demo.tar",i)
     elif (self.state == RUNSIMHOST):
       pass
 
