@@ -27,8 +27,8 @@
 #define DECIMALSPERDEGLON 78710
 
 // if no gps/imu, then fake the data.
-#define NOGPSIMU 1
-#define NOFUELGAUGE
+//#define NOGPSIMU 1
+//#define NOFUELGAUGE
 
 // Local Function prototypes.
 int readBytes(int32_t fd, char *data, int numBytes);
