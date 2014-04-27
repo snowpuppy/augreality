@@ -406,11 +406,39 @@ void _getAlive(int fd)
 // only to file transfers.
 void _sendUpdateObjs(int fd)
 {
+	objInfo_t updateObjsList[2048];
+	uint32_t numObjs;
+
+	// Read in the number of objects to retrieve
+	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
+	// Read in each object.
+	for (i = 0; i < numObjs && i < 2048; i++)
+	{
+		rc = read(fd, (void *)&updateObjsList[i], sizeof(objInfo_t));
+	}
+
+	// Send the objects to be updated.
+	updateObjs(updateObjsList, numObjs);
+	
 	return;
 }
 
 void _getUpdateObjs(int connfd)
 {
+	std::vector<objInfo_t> myObjs;
+	uint32_t numObjects = 0;
+	getUpdateObjs(myObjs);
+	numObjects = myObjs.size();
+	uint32_t i = 0;
+
+	// write number of objects.
+	rc = write(fd, (void *)&numObjects, sizeof(numObjects));
+	// write each object.
+	for (i = 0; i < numObjects; i++)
+	{
+		rc = write(fd, (void *)myObjs[i], sizeof(objInfo_t));
+	}
+	
   return;
 }
 

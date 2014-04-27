@@ -6,6 +6,7 @@
 #define PACKETLIB_H
 #include "packets.h"
 #include <time.h>
+#include <vector>
 
 // Constants
 #define DEFAULT_TCP_PORT 7788
@@ -46,6 +47,7 @@ typedef struct headsetPos
 } headsetPos_t;
 
 // Functions
+int packetLibInit();
 int16_t getPos(headsetPos_t *pos, uint32_t id);
 uint16_t getNumAlive();
 uint16_t getAlive(uint32_t id);
@@ -85,5 +87,6 @@ uint32_t getState();
 uint32_t setHostHeadset(int32_t host);
 uint32_t getFileReceived();
 void getReceivedFile(char *filename, int size);
+int16_t getUpdateObjs(std::vector<objInfo_t> &objs);
 
 #endif

@@ -18,6 +18,7 @@
 #include "gpsIMUDataThread.h"
 #include <time.h> // time()
 #include <string.h> // memcpy()
+#include <pthread.h>
 
 // Constants
 #define BAUDRATE B57600
@@ -37,6 +38,7 @@ std::map<uint32_t, broadCastPacket_t> broadCastList;
 std::map<uint32_t, heartBeatInfo_t> heartBeatList;
 std::map<uint32_t, time_t> aliveList;
 std::vector<objInfo_t> objectInfoList;
+pthread_mutex_t g_objMutex;
 // 
 int32_t g_packetLibPort;
 int32_t g_udpPort = DEFAULT_UDP_PORT;
@@ -51,6 +53,17 @@ int32_t g_state = INIT;
 int32_t g_host = 0;
 char g_filename[256];
 int32_t g_fileReceived = 0;
+
+int packetLibInit()
+{
+	int ret = 0;
+	ret = pthread_mutex_init(&g_objMutex, NULL);
+	if (ret < 0)
+	{
+		perror("Error: Could not create mutex!\n");
+	}
+	return ret;
+}
 
 // API FUNCTIONS
 
@@ -404,7 +417,7 @@ int16_t updateObjs(objInfo_t *objList, uint32_t numObjects)
   return 0;
 }
 
-int16_t getUpdateObjs()
+int16_t receiveUpdateObjs()
 {
   updateObjInstance_t p;
   objInfo_t objInfo = {0};
@@ -424,20 +437,36 @@ int16_t getUpdateObjs()
   if (p.updateNumber != updateNum)
   { 
     updateNum = p.updateNumber;
+		pthread_mutex_lock(&g_objMutex)
     objectInfoList.clear();
+		pthread_mutex_unlock(&g_objMutex)
   }
   
   // Parse out the important details.
   offset = sizeof(updateObjInstance_t);
   // read in the five updates.
+	pthread_mutex_lock(&g_objMutex)
   for (i = 0; i < 5; i++)
   {
     memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
     offset += sizeof(objInfo_t);
     objectInfoList.push_back(objInfo);
   }
+	pthread_mutex_unlock(&g_objMutex)
 
   return 0;
+}
+
+int16_t getUpdateObjs(std::vector<objInfo_t> &objs)
+{
+	// Copy the entire list over.
+	pthread_mutex_lock(&g_objMutex)
+	while (!objectInfoList.empty())
+	{
+		objs.push_back(objectInfoList.back());
+		objInfoList.pop_back();
+	}
+	pthread_mutex_unlock(&g_objMutex)
 }
 
 // getAlive(id)
@@ -849,7 +878,7 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
       // running a simulation.
       if (g_state == SIMULATION)
       {
-        rc = getUpdateObjs();
+        rc = receiveUpdateObjs();
       }
 		case STARTSIMULATION:
 			getStartSimulation(connFd);
@@ -866,6 +895,9 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 				printf("Ending Simulation.\n");
 				g_state = INIT;
 			}
+			break;
+		case LOADSTATICDATA:
+			receiveFile(connfd);
 			break;
 		default:
 			break;
