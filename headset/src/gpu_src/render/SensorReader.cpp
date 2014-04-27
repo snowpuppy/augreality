@@ -165,7 +165,7 @@ irr::core::vector3df SensorReader::getLocation()
 	x = pos.x;
 	y = pos.y;
 	pthread_mutex_unlock(&mutex);
-	return irr::core::vector3df(x, y, 0.0f);
+	return irr::core::vector3df(-y, x, 0.0f);
 }
 
 irr::core::vector3df SensorReader::getOrientation()

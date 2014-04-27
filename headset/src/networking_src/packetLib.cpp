@@ -18,6 +18,7 @@
 #include "gpsIMUDataThread.h"
 #include <time.h> // time()
 #include <string.h> // memcpy()
+#include <pthread.h>
 
 // Constants
 #define BAUDRATE B57600
@@ -37,6 +38,7 @@ std::map<uint32_t, broadCastPacket_t> broadCastList;
 std::map<uint32_t, heartBeatInfo_t> heartBeatList;
 std::map<uint32_t, time_t> aliveList;
 std::vector<objInfo_t> objectInfoList;
+pthread_mutex_t g_objMutex;
 // 
 int32_t g_packetLibPort;
 int32_t g_udpPort = DEFAULT_UDP_PORT;
@@ -46,11 +48,22 @@ int32_t g_myMask = 0;
 int32_t g_myBroadCast = 0;
 int32_t g_udpFd = 0;
 int32_t g_tcpFd = 0;
-//int32_t g_state = INIT;
-int32_t g_state = BROADCAST;
+int32_t g_state = INIT;
+//int32_t g_state = BROADCAST;
 int32_t g_host = 0;
 char g_filename[256];
 int32_t g_fileReceived = 0;
+
+int packetLibInit()
+{
+	int ret = 0;
+	ret = pthread_mutex_init(&g_objMutex, NULL);
+	if (ret < 0)
+	{
+		perror("Error: Could not create mutex!\n");
+	}
+	return ret;
+}
 
 // API FUNCTIONS
 
@@ -221,12 +234,13 @@ int16_t getEndSimulation(int32_t connfd)
 }
 
 // sendFile(filename)
-int16_t sendFile(char *filename)
+int16_t sendFile(char *filename, uint32_t id)
 {
 	loadStaticData_t p = {0};
   uint8_t fileBuf[256];
   uint16_t bytesRead = 0, bytesSent = 0, totalBytesSent = 0, bytesRemaining = 0;
-  uint32_t filenameLen = strlen(filename);
+  uint8_t filenameLen = strlen(filename);
+	int32_t rc = 0;
   FILE *fp = NULL;
   int fd = 0;
 
@@ -243,22 +257,35 @@ int16_t sendFile(char *filename)
 	p.packetType = LOADSTATICDATA;
 	// Get size of file.
   printf("Sending file of size: %d\n", p.numBytes);
+	printf("Sending file %s length %d\n", filename, (int)filenameLen);
 	// Pack the packet to a byte stream.
   loadStaticDataHton(&p);
 	// Add header info and crc.
   //addHeader(buf);
 	// Write the packet to the serial port.
-	fd = connectToServer(g_tcpPort, g_myIp); // TODO: change from myIp!
+	fd = connectToServer(g_tcpPort, id); // TODO: change from myIp!
 	if (fd < 0)
 	{
 		perror("sendFile:Error connecting to server.\n");
 		return -1;
 	}
   // Send the file header.
-  write(fd, (void *)&p, sizeof(loadStaticData_t));
+  rc = write(fd, (void *)&p, sizeof(loadStaticData_t));
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending loadStaticData.\n");
+	}
   // Send the Filename
-  write(fd, (void *)&filenameLen, sizeof(filenameLen));
-  write(fd, (void *)filename, filenameLen);
+  rc = write(fd, (void *)&filenameLen, sizeof(filenameLen));
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending filnameLen.\n");
+	}
+  rc = write(fd, (void *)filename, filenameLen);
+	if (rc < 0)
+	{
+		perror("sendFile: Error sending filename.\n");
+	}
   // Write the file to the serial port
   /*
   while ( !feof(fp))
@@ -288,13 +315,14 @@ int16_t receiveFile(int32_t connfd)
 {
   loadStaticData_t p = {0};
   uint8_t fileBuf[256];
-  uint32_t filenameLen = 0;
+  uint8_t filenameLen = 0;
   char filename[256];
   int32_t rc = 0;
   uint16_t bytesRead = 0, totalBytesRead = 0, bytesRemaining = 0;
   FILE *fp = NULL;
   int fd = 0;
 
+	printf("Receiving file...\n");
   rc = read(connfd, &p, sizeof(p));
   if (rc < 0)
   {
@@ -337,7 +365,7 @@ int16_t receiveFile(int32_t connfd)
   }
   */
   g_fileReceived = 1;
-  strcpy(filename,g_filename);
+  strcpy(g_filename, filename);
   return 1;
 }
 
@@ -403,7 +431,7 @@ int16_t updateObjs(objInfo_t *objList, uint32_t numObjects)
   return 0;
 }
 
-int16_t getUpdateObjs()
+int16_t receiveUpdateObjs()
 {
   updateObjInstance_t p;
   objInfo_t objInfo = {0};
@@ -415,28 +443,47 @@ int16_t getUpdateObjs()
 
   // read in the entire packet.
   readUdpByteStream(buf, sizeof(buf), &addr);
+	if (addr != g_myIp)
+	{
 
-  // Copy information about update.
-  memcpy(&p, buf, sizeof(updateObjInstance_t));
-  // clear the list if we're receiving a new
-  // update.
-  if (p.updateNumber != updateNum)
-  { 
-    updateNum = p.updateNumber;
-    objectInfoList.clear();
-  }
-  
-  // Parse out the important details.
-  offset = sizeof(updateObjInstance_t);
-  // read in the five updates.
-  for (i = 0; i < 5; i++)
-  {
-    memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
-    offset += sizeof(objInfo_t);
-    objectInfoList.push_back(objInfo);
-  }
+		// Copy information about update.
+		memcpy(&p, buf, sizeof(updateObjInstance_t));
+		// clear the list if we're receiving a new
+		// update.
+		if (p.updateNumber != updateNum)
+		{ 
+			updateNum = p.updateNumber;
+			pthread_mutex_lock(&g_objMutex);
+			objectInfoList.clear();
+			pthread_mutex_unlock(&g_objMutex);
+		}
+
+		// Parse out the important details.
+		offset = sizeof(updateObjInstance_t);
+		// read in the five updates.
+		pthread_mutex_lock(&g_objMutex);
+		for (i = 0; i < 5; i++)
+		{
+			memcpy(&objInfo, buf+offset, sizeof(objInfo_t));
+			offset += sizeof(objInfo_t);
+			objectInfoList.push_back(objInfo);
+		}
+		pthread_mutex_unlock(&g_objMutex);
+	}
 
   return 0;
+}
+
+int16_t getUpdateObjs(std::vector<objInfo_t> &objs)
+{
+	// Copy the entire list over.
+	pthread_mutex_lock(&g_objMutex);
+	while (!objectInfoList.empty())
+	{
+		objs.push_back(objectInfoList.back());
+		objectInfoList.pop_back();
+	}
+	pthread_mutex_unlock(&g_objMutex);
 }
 
 // getAlive(id)
@@ -840,19 +887,18 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
       // Transition to next state
       if (rc > 0 && g_state != INIT)
       {
+				printf("Transitioning to INIT state.\n");
         g_state = INIT;
       }
     case UPDATEOBJINSTANCE:
       // only update objects if
       // running a simulation.
-      if (g_state == SIMULATION)
-      {
-        rc = getUpdateObjs();
-      }
+        rc = receiveUpdateObjs();
 		case STARTSIMULATION:
 			getStartSimulation(connFd);
 			if (g_state == ACCEPTED)
 			{
+				printf("Starting simulation.\n");
 				g_state = SIMULATION;
 			}
 			break;
@@ -860,8 +906,12 @@ void processPacket(int udpFd, int tcpFd, int connFd, uint32_t addr, int ret, int
 			getEndSimulation(connFd);
 			if (g_state == SIMULATION)
 			{
+				printf("Ending Simulation.\n");
 				g_state = INIT;
 			}
+			break;
+		case LOADSTATICDATA:
+			receiveFile(connFd);
 			break;
 		default:
 			break;

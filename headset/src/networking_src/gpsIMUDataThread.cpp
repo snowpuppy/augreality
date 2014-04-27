@@ -20,7 +20,7 @@
 
 // Constants
 #define BAUDRATE B115200
-#define GPSIMUPORT "/dev/ttyACM0"
+#define GPSIMUPORT "/dev/ttyACM4"
 #define FUELGAUGEPORT "/dev/ttyACM1"
 #define REARTH 6378100
 #define DECIMALSPERDEGLAT 111320
@@ -28,6 +28,7 @@
 
 // if no gps/imu, then fake the data.
 //#define NOGPSIMU 1
+//#define NOFUELGAUGE
 
 // Local Function prototypes.
 int readBytes(int32_t fd, char *data, int numBytes);
