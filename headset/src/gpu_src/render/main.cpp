@@ -21,7 +21,7 @@ using namespace gui;
 #define MOVEMENT_SPEED 5.0f
 #define CAMERA_SPEED 40.0f
 #define PROCESS 1
-// #define HEADSET_VERSION
+#define HEADSET_VERSION
 
 GameObject *objects;
 
