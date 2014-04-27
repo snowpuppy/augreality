@@ -434,6 +434,7 @@ void _getUpdateObjs(int fd)
 	uint32_t i = 0;
 	int32_t rc = 0;
 
+	printf("Returning %d objs.\n", numObjects);
 	// write number of objects.
 	rc = write(fd, (void *)&numObjects, sizeof(numObjects));
 	// write each object.

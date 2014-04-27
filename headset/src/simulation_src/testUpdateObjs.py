@@ -34,7 +34,5 @@ while (not gameEnd):
 	for i in objs:
 		print i
 	time.sleep(.1)
-	gameEnd = getEnd()
 		
 time.sleep(3.0)
-gpuQuit()

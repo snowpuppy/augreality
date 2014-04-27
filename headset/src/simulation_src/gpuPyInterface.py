@@ -24,7 +24,7 @@ OBJSGPUFORMAT = 'IIII7f'			# objInfo struct
 # Net commands
 SENDUPDATEOBJS = '\x0a'
 SENDUPDATEOBJSFORMAT = '=BB'
-GETUPDATEOBJS = '\x21'
+GETUPDATEOBJS = '\x1b'
 
 ##
 # @brief ObjInfo_t mirros a c structure. This structure is used to bridge the gap between
@@ -165,14 +165,15 @@ def getUpdateObjs():
 	s.send(command)
 	numToRead = calcsize('I')
 	reply = s.recv(numToRead)
-	numObjs = unpack('I',reply)
+	numObjs = unpack('I',reply)[0]
 	objs = []
 	numToRead = calcsize(OBJSGPUFORMAT)
-	for i in range(numObjs)
-		reply = s.recv(numToRead)
-		data = unpack(OBJSGPUFORMAT, reply)
-		obj = ObjInfo_t(data[0], data[1], data[2], data[3], data[4],data[5], data[6], data[7], data[8], data[9], data[10], 'unknown')
-		objs.append(obj)
+	if numObjs > 0:
+		for i in range(numObjs):
+			reply = s.recv(numToRead)
+			data = unpack(OBJSGPUFORMAT, reply)
+			obj = ObjInfo_t(data[0], data[1], data[2], data[3], data[4],data[5], data[6], data[7], data[8], data[9], data[10], 'unknown')
+			objs.append(obj)
 
 	s.close()
 	return objs
