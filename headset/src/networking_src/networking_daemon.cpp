@@ -25,6 +25,12 @@ int main(void)
 	uint8_t packetType = 0;
 
 	// Initialize networking stuff.
+	ret = packetLibInit();
+	if (ret < 0)
+	{
+		perror("Error initializing packetLib!\n");
+		return 1;
+	}
 	ret = wirelessConnection();
 	if (ret < 0)
 	{
@@ -33,12 +39,12 @@ int main(void)
 	udpFd = bindToUdpPort(DEFAULT_UDP_PORT);
 	if (udpFd < 0)
 	{
-		perror("Problem binding to udp port!\n");
+		perror("Problem binding to udp port!\n"); return 1;
 	}
 	tcpFd = bindToTcpServer(DEFAULT_TCP_PORT);
 	if (tcpFd < 0)
 	{
-		perror("Problem binding to tcp port!\n");
+		perror("Problem binding to tcp port!\n"); return 1;
 	}
 
 	// broadCastPacket_t packet;

@@ -34,7 +34,6 @@ ALIVEFORMATS = '=B16B'
 ALIVEFORMATR = '=B'
 SENDUPDATEOBJS = '\x0a'
 SENDUPDATEOBJSFORMAT = '=BB'
-OBJSFORMAT = 'BBHH5f'			# objInfo struct
 SENDFILE = '\x0b'
 SENDFILEFORMAT = '=B'		# also need to send filename
 SENDEND = '\x0c'
@@ -55,8 +54,8 @@ GETDROP = '\x16'
 SENDDROP = '\x17'
 GETACCEPT = '\x18'
 SETHOSTHEADSET = '\x19'
-GETMYID = '\x20'
-GETUPDATEOBJS = '\x21'
+GETMYID = '\x1a'
+GETUPDATEOBJS = '\x1b'
 NIDFORMAT = '=I'
 IDLISTFORMAT = '=%sI'
 
@@ -221,7 +220,7 @@ def getAlive(nid):
 # @param filename - string indicating the file to be sent.
 #
 # @return - none
-def sendFile(filename):
+def sendFile(filename,nid):
 	# Set command
 	# Pack info
 	command = SENDFILE
@@ -229,27 +228,15 @@ def sendFile(filename):
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# send the id that it goes to.
+	data = pack(NIDFORMAT, nid)
+	s.send(data)
 	# send filename length
 	s.send(chr(len(filename)))
 	# send filename
 	s.send(filename)
 	s.close()
 
-def sendUpdateObjs(num,instId,typeShow,x2,y2,x3,y3,roll,pitch,yaw):
-	# Set command
-	# format SENDUPDATEOBJSFORMAT'=BB' 
-	# format OBJSFORMAT 'BBHH5f'
-	# Pack info
-	command = SENDUPDATEOBJS
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.send(chr(num))
-	data = pack(OBJSFORMAT, instId, typeShow, x2, y2, x3, y3, roll, pitch, yaw)
-	s.send(data)
-	s.close()
-	
 def sendEnd(nid):
 	# Set command
 	# Pack info
@@ -352,11 +339,19 @@ def getAcceptIds():
 def getReceivedFile():
 	# Set command
 	# Pack info
+	filename = ""
 	command = GETRECEIVEDFILE
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((HOST,PORT))
 	# send info
 	s.send(command)
+	# receive status
+	reply = s.recv(1)
+	received = ord(reply)
+	if (received):
+		reply = s.recv(1)
+		filename = s.recv(ord(reply))
+	return str(filename)
 	s.close()
 
 def getEnd():
@@ -470,13 +465,3 @@ def getWiFiStatus():
 	data = ord(reply)
 	return data
 
-def getUpdateObjs():
-	# Set command
-	# Pack info
-	command = GETBATTERYSTATUS
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((HOST,PORT))
-	# send info
-	s.send(command)
-	s.close()
-	return

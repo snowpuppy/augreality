@@ -1,1 +1,1 @@
-xrandr --output VGA1 --reflect x
+xrandr --output DVI1 --reflect x

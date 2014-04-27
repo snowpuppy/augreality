@@ -406,11 +406,43 @@ void _getAlive(int fd)
 // only to file transfers.
 void _sendUpdateObjs(int fd)
 {
+	objInfo_t updateObjsList[2048];
+	uint32_t numObjs;
+	int32_t rc = 0;
+	int32_t i = 0;
+
+	// Read in the number of objects to retrieve
+	rc = read(fd, (void *)&numObjs, sizeof(numObjs));
+	// Read in each object.
+	for (i = 0; i < numObjs && i < 2048; i++)
+	{
+		rc = read(fd, (void *)&updateObjsList[i], sizeof(objInfo_t));
+	}
+
+	// Send the objects to be updated.
+	updateObjs(updateObjsList, numObjs);
+	
 	return;
 }
 
-void _getUpdateObjs(int connfd)
+void _getUpdateObjs(int fd)
 {
+	std::vector<objInfo_t> myObjs;
+	uint32_t numObjects = 0;
+	getUpdateObjs(myObjs);
+	numObjects = myObjs.size();
+	uint32_t i = 0;
+	int32_t rc = 0;
+
+	printf("Returning %d objs.\n", numObjects);
+	// write number of objects.
+	rc = write(fd, (void *)&numObjects, sizeof(numObjects));
+	// write each object.
+	for (i = 0; i < numObjects; i++)
+	{
+		rc = write(fd, (void *)&myObjs[i], sizeof(objInfo_t));
+	}
+	
   return;
 }
 
@@ -436,7 +468,15 @@ void _sendFile(int fd)
 	// Limit the filename to 256 characters (more than reasonable).
 	uint8_t filename[256];
 	uint8_t filenameSize = 0;
+	uint32_t id = 0;
 
+	// Read in the id to send it to.
+	rc = read(fd, (void *)&id, sizeof(id));
+	if (rc < 0)
+	{
+		perror("Error: sendFile could not read id.\n");
+		return;
+	}
 	// Read size of the filename
 	rc = read(fd, (void *)&filenameSize, sizeof(filenameSize));
 	if (rc < sizeof(filenameSize)) { perror("Error:_sendFile: read less than size of filenameSize!\n"); }
@@ -451,7 +491,7 @@ void _sendFile(int fd)
 	if (rc < filenameSize) { perror("Error:_sendFile: read less than filenameSize!\n"); return;}
 	filename[filenameSize] = '\0';
 	// Send the file on its way!
-	sendFile((char *)filename);
+	sendFile((char *)filename, id);
 }
 
 void _sendStart(int fd)
