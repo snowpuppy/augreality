@@ -100,7 +100,7 @@ def collideWithPellet(objs):
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:
 			if i.typeShow != 0:
-				return pellet
+				return i
 	# Return nothing if no collision.
 	return None
 
@@ -118,20 +118,8 @@ time.sleep(1.0)
 output = getRunning();
 print "Running", output
 
+# reset origin on game start.
 resetGPSOrigin()
-
-#while (1):
-#	output = getUserPosition()
-#	numSat = output[0]
-#	lat = output[1]
-#	lon = output[2]
-#	x = output[3]
-#	y = output[4]
-#	roll = output[5]
-#	pitch = output[6]
-#	yaw = output[7]
-#	sys.stdout.write("\rNumSat: %d Lat: %2.2f Lon: %2.2f X: %2.2f Y: %2.2f Roll: %2.2f Pitch: %2.2f Yaw: %2.2f" % (numSat, lat, lon, x,y,roll,pitch,yaw) )
-#	time.sleep(0.02)
 
 # Read in the information for each
 # object from the config file.
@@ -152,6 +140,7 @@ while (not gameEnd):
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
 	if pellet and pellet.typeShow == 1:
+		print "hiding pellet."
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
