@@ -20,7 +20,7 @@
 
 // Constants
 #define BAUDRATE B115200
-#define GPSIMUPORT "/dev/ttyACM4"
+#define GPSIMUPORT "/dev/ttyACM0"
 #define FUELGAUGEPORT "/dev/ttyACM1"
 #define REARTH 6378100
 #define DECIMALSPERDEGLAT 111320
