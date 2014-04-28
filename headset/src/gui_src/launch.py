@@ -315,10 +315,10 @@ class AugRealObj:
       # Hardcoded simulations.
       if (num == 1):
         for i in self.acceptList:
-          sendFile("augreality/headset/src/simulation_src/simulations/pacman.tar",i)
+          sendFile("/home/cornell/augreality/headset/src/simulation_src/simulations/pacman.tar",i)
       if (num == 2):
         for i in self.acceptList:
-          sendFile("augreality/headset/src/simulation_src/simulations/demo.tar",i)
+          sendFile("/home/cornell/augreality/headset/src/simulation_src/simulations/demo.tar",i)
     elif (self.state == RUNSIMHOST):
       pass
 
@@ -358,7 +358,7 @@ class AugRealObj:
       self.teardownWaitStart()
       self.setupRunSimJoin()
       # TODO: Launch client simulation as a separate process.
-      subprocess.call(["augreality/headset/src/simulation_src/clientApplication.py"])
+      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
       # Pass in the name of the simulation run.
     if (self.state == WAITSTART):
       self.root.after(1000, self.WaitStart)
