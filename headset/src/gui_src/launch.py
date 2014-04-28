@@ -292,7 +292,7 @@ class AugRealObj:
         setHostHeadset(0)
         # Set up automatic transitioning
         self.root.after(1000, self.WaitAccept)
-      elif (num == 9)
+      elif (num == 9):
         exit()
     elif (self.state == ADDHEADSETS):
       myList = getBroadCastIDs()
