@@ -232,7 +232,7 @@ void updatePosition(char *data)
 	// Set x and y based on origin
 	g_pos.x = (g_pos.lat - originlat)*decimalsperdegreelat;
 	g_pos.y = (g_pos.lon - originlon)*decimalsperdegreelon;
-	printf("\rg_lat: %f, g_lon: %f, originlat: %f, originlon: %f, x: %f, y: %f", g_pos.lat, g_pos.lon, originlat, originlon, g_pos.x, g_pos.y);
+	//printf("\rg_lat: %f, g_lon: %f, originlat: %f, originlon: %f, x: %f, y: %f", g_pos.lat, g_pos.lon, originlat, originlon, g_pos.x, g_pos.y);
 	// Automatic sanitization of gps coordinates.
 	// If no one initializes us, at least we have an "ok" value.
 	if (originlat == 0 && originlon == 0 && g_pos.numSat > 2)
