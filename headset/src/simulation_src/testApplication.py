@@ -138,12 +138,14 @@ gameEnd = False
 while (not gameEnd):
 	moveGhosts(myObjs);
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
+	sendUpdateObjs(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
 	if pellet and pellet.typeShow == 1:
 		print "hiding pellet."
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
+	sendUpdateObjs(len(myObjs['pellet']), myObjs['pellet'])
 	time.sleep(.1)
 	gameEnd = checkGameEnd(myObjs)
 		
