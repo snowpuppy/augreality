@@ -110,7 +110,8 @@ static bool _i2cRead(uint8_t addr, uint8_t *data, uint32_t count) {
 		if (state->status & I2C_STATUS_ERR)
 			return false;
 	} while (i2cState.count > 0);
-	while (I2C2->SR2 & I2C_SR2_BUSY) __WFI();
+	// Work around for I2C locks
+	for (uint32_t i = 3000; i; i--) asm volatile("nop\n\t");
 	return true;
 }
 
@@ -140,7 +141,6 @@ static bool _i2cWrite(uint8_t addr, uint8_t *data, uint32_t count) {
 		if (status & I2C_STATUS_ERR)
 			return false;
 	} while (i2cState.count > 0);
-	while (I2C2->SR2 & I2C_SR2_BUSY) __WFI();
 	return true;
 }
 
