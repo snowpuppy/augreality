@@ -102,7 +102,6 @@ int main(void) {
 	while (1) {
 		processGPSData();
 		processIMUData();
-		ledToggle();
 		transmitData();
 		__WFI();
 	}
@@ -114,15 +113,16 @@ int main(void) {
 */
 static void transmitData(void) {
 	static uint32_t count = 0;
-	uint32_t bytesWritten = 0;
+	uint32_t bytesWritten = 0, i = 100;
 	if (millis() > count + FIFTY_MSECOND) {
+		ledToggle();
 		count = millis();
 		if (usbVCPConnected())
 			// Write all bytes, even if buffer needs to evicted by the host
 			do {
 				bytesWritten += usbVCPWrite(headsetData + bytesWritten, HEADSETDATABYTES -
 					bytesWritten);
-			} while (bytesWritten < HEADSETDATABYTES);
+			} while (bytesWritten < HEADSETDATABYTES && i-- > 0);
 	}
 }
 
