@@ -162,9 +162,10 @@ int render(int argc, char *argv[]) {
 	font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
         font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
         font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
-        font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255-(signal),signal,0));
+        font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255,255,255));
 	font->draw(fpsString, rect<s32>(20,50,300,50), SColor(255,255,255,255));
 	font->draw(posString, rect<s32>(80,60,300,50), SColor(255,255,255,255));
+		printf("\rX: %2.2f, Y: %2.2f, Orientation: %2.2f", camerapos.X, camerapos.Y, camerarot.Z);
         driver->endScene();
     }
     std::cout << "Rendering exit\n";
@@ -177,8 +178,8 @@ void updateObjects(objInfo_t *objInfo, int size) {
     objInfo_t objinfo;
     for(int i=0; i<size; i++) {
         objinfo = objInfo[i];
-				printf("Object: instId %d: x3: %f y3: %f\n", objinfo.instId, objinfo.x3, objinfo.y3);
-				printf("Object: roll %f: pitch: %f yaw: %f\n", objinfo.roll, objinfo.pitch, objinfo.yaw);
+				//printf("Object: instId %d: x3: %f y3: %f\n", objinfo.instId, objinfo.x3, objinfo.y3);
+				//printf("Object: roll %f: pitch: %f yaw: %f\n", objinfo.roll, objinfo.pitch, objinfo.yaw);
         instId = objinfo.instId;
         objects[instId].setPosition(objinfo.x3, objinfo.y3, 0.0);
         objects[instId].setRotation(objinfo.roll, objinfo.pitch, objinfo.yaw);
