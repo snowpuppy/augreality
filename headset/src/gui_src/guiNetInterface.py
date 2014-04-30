@@ -56,6 +56,7 @@ GETACCEPT = '\x18'
 SETHOSTHEADSET = '\x19'
 GETMYID = '\x1a'
 GETUPDATEOBJS = '\x1b'
+RESETTOINIT = '\x1c'
 NIDFORMAT = '=I'
 IDLISTFORMAT = '=%sI'
 
@@ -286,6 +287,17 @@ def resetGPSOrigin():
 	s.send(command)
 	s.close()
 
+def resetToInit():
+	# Set command RESETTOINIT
+	# this function will reset
+	# networking state to initial settings.
+	command = RESETTOINIT
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	s.close()
+
 def setGPSOrigin(lat,lon):
 	# Set command
 	# Pack info
@@ -452,7 +464,7 @@ def getWiFiStatus():
 	data = ord(reply)
 	return data
 
-def getWiFiStatus():
+def getBatteryStatus():
 	# Set command
 	# Pack info
 	command = GETBATTERYSTATUS

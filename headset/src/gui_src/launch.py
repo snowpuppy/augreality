@@ -203,6 +203,12 @@ class AugRealObj:
       self.setupRunSimHost()
       sendStart()
       subprocess.call(["augreality/headset/src/simulation_src/testApplication.py"])
+      # transition back to select mode.
+      self.teardownRunSimHost()
+      self.setupSelectMode()
+      self.state = SELECTMODE
+      # synchronize networking code to INIT state
+      resetToInit()
     elif (self.state == RUNSIMHOST):
       pass
     elif (self.state == WAITACCEPT):
@@ -226,7 +232,8 @@ class AugRealObj:
       self.teardownAddHead()
       self.setupSelectMode()
       self.state = SELECTMODE
-      pass
+      # synchronize networking code to INIT state
+      resetToInit()
     elif (self.state == SELECTSIM):
       self.teardownSelectSim()
       self.setupAddHead()
@@ -324,13 +331,31 @@ class AugRealObj:
 
   def refreshList(self):
     myList = getBroadCastIDs()
+    # update each headset's status.
     for i in range(len(myList)):
       if (myList[i] in self.acceptList):
         status = "Accepted"
       else:
         status = "Available"
       self.HeadsetStrList[i] = HeadsetStr % (i, myList[i], status)
+
+    # handle wireless ang gps.
+    connected = "Disconnected"
+    if (getWiFiStatus() == 1):
+      connected = "Connected"
+    numSat = getUserPosition()[0]
+    GPSStr = "unlocked"
+    if (numSat >= 1):
+      GPSStr = "locked"
+    battery = getBatteryStatus()
+    batteryStr = "+"*battery + (10-battery)*"-"
+
+    # Update status of headsets connected.
+    # As well as wireless connection, battery, and GPS
     self.Headsets.configure(text=" ".join(self.HeadsetStrList))
+    self.WifiText.configure(text="WiFi: %s" % (connected))
+    self.BattText.configure(text="Battery: %s" % (batteryStr))
+    self.GPSText.configure(text="GPS: %s" % (GPSStr))
     self.root.after(1000, self.refreshList)
   
   def WaitAccept(self):
@@ -359,6 +384,8 @@ class AugRealObj:
       self.setupRunSimJoin()
       # TODO: Launch client simulation as a separate process.
       subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
+      # synchronize networking code to INIT state
+      resetToInit()
       # Pass in the name of the simulation run.
     if (self.state == WAITSTART):
       self.root.after(1000, self.WaitStart)

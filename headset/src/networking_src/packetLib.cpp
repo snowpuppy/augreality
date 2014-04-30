@@ -1146,6 +1146,11 @@ uint32_t getState()
   return g_state;
 }
 
+void setState(uint32_t state)
+{
+	g_state = state;
+}
+
 uint32_t setHostHeadset(int32_t host)
 {
   g_host = host;
