@@ -39,6 +39,12 @@
  */
 bool usbVCPConnected(void);
 /**
+ * Gets the DTR line status.
+ *
+ * @return true if DTR is asserted, false otherwise
+ */
+bool usbVCPGetDTR(void);
+/**
  * Initializes and configures the USB VCOM port. If this is not used, calls to standard I/O
  * functions on the stdin/stdout streams will produce undefined behavior.
  */

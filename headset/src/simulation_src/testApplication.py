@@ -6,6 +6,7 @@
 #          and send commands
 #
 
+from __future__ import division
 import sys
 import os
 import socket
@@ -55,7 +56,7 @@ def moveGhost(ghost, xmin, xmax, ymin, ymax):
 			ghost.x3 -= .4;
 		else:
 			ghost.state = 1
-	print "GhostState:", ghost.state, "x3:",x3,"y3:",y3
+	#print "GhostState:", ghost.state, "x3:",x3,"y3:",y3
 
 def moveGhost1(ghost):
 	moveGhost(ghost, -2, 22, -21, -7)
@@ -84,12 +85,12 @@ def collideWithPellet(objs):
 	# it can be made hidden. Don't
 	# collide with hidden pellets.
 	pos = getUserPosition()
-	print pos
+	#print pos
 	x = pos[3]
 	y = pos[4]
 	# coordinate adjustments
-	x = -pos[4]
-	y = -pos[3]
+	x = pos[4]
+	y = pos[3]
 	
 	print pos
 	pellets = objs['pellet']
@@ -98,7 +99,8 @@ def collideWithPellet(objs):
 	# with.
 	for i in pellets:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
-		if d < 2:
+		if d < 5:
+			print "Distance to closest pellet: %f." % (d, )
 			if i.typeShow != 0:
 				return i
 	# Return nothing if no collision.
@@ -116,7 +118,7 @@ def checkGameEnd(objs):
 subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simulations/pacman/models/"])
 time.sleep(1.0)
 output = getRunning();
-print "Running", output
+#print "Running", output
 
 # reset origin on game start.
 resetGPSOrigin()
@@ -140,8 +142,8 @@ while (not gameEnd):
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	sendUpdateObjs(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
-	if pellet and pellet.typeShow == 1:
-		print "hiding pellet."
+	if pellet:
+		print "hiding pellet x: %f y: %f" % (pellet.x3, pellet.y3)
 		pellet.typeShow = 0
 	time.sleep(.1)
 	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
