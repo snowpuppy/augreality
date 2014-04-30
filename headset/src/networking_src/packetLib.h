@@ -84,6 +84,7 @@ uint8_t detectTcpType(int fd, int *connfd, uint32_t *clientAddr);
 void getBroadCastPacket(void);
 uint32_t getMyId();
 uint32_t getState();
+void setState(uint32_t state);
 uint32_t setHostHeadset(int32_t host);
 uint32_t getFileReceived();
 void getReceivedFile(char *filename, int size);

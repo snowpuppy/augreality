@@ -106,6 +106,20 @@ def collideWithPellet(objs):
 	# Return nothing if no collision.
 	return None
 
+def collideWithGhost(objs):
+	ghosts = objs['ghost']
+
+	pos = getUserPosition()
+	x = pos[4]
+	y = pos[3]
+	for i in ghosts:
+		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
+		if d < 2:
+			# return true if collision occurred
+			return True
+	# Return false if no collision.
+	return False
+
 def checkGameEnd(objs):
 	pellets = objs['pellet']
 	gameEnd = True
@@ -142,6 +156,9 @@ while (not gameEnd):
 	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
 	sendUpdateObjs(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
+	gameEnd = collideWithGhost(myObjs)
+	if gameEnd:
+		break
 	if pellet:
 		print "hiding pellet x: %f y: %f" % (pellet.x3, pellet.y3)
 		pellet.typeShow = 0

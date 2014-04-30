@@ -106,6 +106,12 @@ int main(void)
 		// Processing a packet may change
 		// state.
 		processPacket(udpFd, tcpFd, connFd, clientAddr, ret, packetType);
+		// Refresh the ip of the network.
+		ret = wirelessConnection();
+		if (ret < 0)
+		{
+			perror("Problem aquiring wireless network ip!\n");
+		}
 	}
 	return 0;
 }

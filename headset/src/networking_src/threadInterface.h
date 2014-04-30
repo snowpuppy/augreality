@@ -35,7 +35,8 @@ enum apiRequest
   GETACCEPT,
   SETHOSTHEADSET,
   GETMYID,
-  GETUPDATEOBJS
+  GETUPDATEOBJS,
+	RESETTOINIT
 };
 
 // Function: initServer()

@@ -54,6 +54,7 @@ void _getGPSOrigin(int fd); // NEW
 void _setGPSOrigin(int fd); // NEW
 void _setHostHeadset(int fd); // NEW
 void _getMyId(int fd);        // NEW
+void _resetToInit(int fd); // NEW
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -239,9 +240,13 @@ void serviceConnections(int fd)
         break;
       case GETMYID:
         _getMyId(connfd);
+				break;
       case GETUPDATEOBJS:
         _getUpdateObjs(connfd);
         break;
+			case RESETTOINIT:
+				_resetToInit(fd);
+				break;
       default:
         break;
     }
@@ -306,15 +311,26 @@ void _getUserPos(int fd)
 /**
 * @brief getWifiStatus - requests the status of
 *				wifi and returns a value that can be used
-*				to represent the rssi of the wifi for the
-*				currently connected network.
+*				to represent whether the wireless is connected
+*				or disconnected.
 *
 * @param fd
 */
 void _getWifiStatus(int fd)
 {
 	int32_t rc = 0;
-	uint8_t data = 255;
+	uint32_t id = getMyId();
+	uint8_t data = 0;
+	// if disconnected, a 0 IP
+	if (id == 0)
+	{
+		data = 0;
+	}
+	// If connected, then a nonzero IP
+	else
+	{
+		data = 1;
+	}
 	rc = write(fd, (void *)&data, sizeof(data));
 }
 
@@ -330,7 +346,10 @@ void _getWifiStatus(int fd)
 void _getBatteryStatus(int fd)
 {
 	int32_t rc = 0;
-	uint8_t data = 255;
+	uint32_t bVoltage = getHeadsetVoltage();
+	// merge the data down to a range from 0 to 10
+	uint8_t data = (bVoltage - BATTERY_EMPTY) / ((BATTERY_FULL-BATTERY_EMPTY)/68);
+	// send the battery state.
 	rc = write(fd, (void *)&data, sizeof(data));
 }
 
@@ -628,4 +647,10 @@ void _getMyId(int fd)
   uint32_t id = 0;
   id = getMyId();
   rc = write(fd, (void *)&id, sizeof(id));
+}
+
+void _resetToInit(int fd)
+{
+	int32_t rc = 0;
+	setState(INIT);
 }
