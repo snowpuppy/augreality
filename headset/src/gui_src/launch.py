@@ -203,6 +203,7 @@ class AugRealObj:
       self.setupRunSimHost()
       sendStart()
       subprocess.call(["augreality/headset/src/simulation_src/testApplication.py"])
+      self.root.focus_force()
       # transition back to select mode.
       self.teardownRunSimHost()
       self.setupSelectMode()
@@ -385,6 +386,7 @@ class AugRealObj:
       # TODO: Launch client simulation as a separate process.
       subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
       # synchronize networking code to INIT state
+      self.root.focus_force()
       resetToInit()
       # Pass in the name of the simulation run.
     if (self.state == WAITSTART):

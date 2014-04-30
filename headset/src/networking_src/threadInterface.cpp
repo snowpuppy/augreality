@@ -240,6 +240,7 @@ void serviceConnections(int fd)
         break;
       case GETMYID:
         _getMyId(connfd);
+				break;
       case GETUPDATEOBJS:
         _getUpdateObjs(connfd);
         break;

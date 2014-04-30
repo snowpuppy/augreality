@@ -40,7 +40,7 @@ int render(int argc, char *argv[]) {
 	volatile bool quit = false;
 	GpuPyThreadInterface pyInterface;
 	pyInterface.initServer(&quit);
-	int battery = 100;
+	int battery = 10;
 	int signal = 0;
 	int sats = 0;
 	stringw orientString = "y: 0.0 p: 0.0 r 0.0";
@@ -159,13 +159,13 @@ int render(int argc, char *argv[]) {
         posString = stringw("x:") + stringw(camerapos.X)
                     + stringw(" y:") + stringw(camerapos.Y);
         fpsString = stringw("FPS: ") + stringw(driver->getFPS());
-	font->draw((sats > 4) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
-        font->draw(L"battery", rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
-        font->draw(L"wifi signal", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
+	font->draw((sats > 1) ? L"gps locked" : L"gps unlocked", rect<s32>(20,10,300,50), SColor(255,255,255,255));
+        font->draw(stringw("battery: ") + stringw(battery) + stringw("/10"), rect<s32>(20,20,300,50), SColor(255,255-(battery),battery,0));
+        font->draw( signal ? L"wifi connected" : L"wifi disconnected.", rect<s32>(20,30,300,50), SColor(255,255-(signal),signal,0));
         font->draw(orientString, rect<s32>(20,40,300,50), SColor(255,255,255,255));
 	font->draw(fpsString, rect<s32>(20,50,300,50), SColor(255,255,255,255));
 	font->draw(posString, rect<s32>(80,60,300,50), SColor(255,255,255,255));
-		printf("\rX: %2.2f, Y: %2.2f, Orientation: %2.2f", camerapos.X, camerapos.Y, camerarot.Z);
+		//printf("\rX: %2.2f, Y: %2.2f, Orientation: %2.2f", camerapos.X, camerapos.Y, camerarot.Z);
         driver->endScene();
     }
     std::cout << "Rendering exit\n";
