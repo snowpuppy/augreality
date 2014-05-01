@@ -9,7 +9,7 @@ HeadsetInfoStr = "Use the numpad to add/remove headsets from the simulation. " \
                  "will remove it from the simulation. Press Enter when done."
 
 NextStr = "\n<Enter>Next\n"
-GoBackStr = "<BKSP> GoBack"
+GoBackStr = "<Subtract> GoBack"
 
 SimulationInfoStr = "Use the numbers 0-9 to select the corresponding simulation. " \
                     "Press Enter to proceed."
@@ -17,13 +17,13 @@ SimulationInfoStr = "Use the numbers 0-9 to select the corresponding simulation.
 StartSimStr = "Simulation Sent.\n" \
               "Next to start simulation.\n"
 
-RunInfoStr = "Running Simulation. Press Backspace to quit."
+RunInfoStr = "Running Simulation. Press Subtract to quit."
 HeadsetStr = "%d Headset ID = %u Status = %s\n"
 
 # Join Simulation Info
 MyIdStr = "\nMyID: %d\n"
 WaitAcceptStr = "\nWaiting to be accepted.\n"
-GoMainStr = "<BKSP> Main Menu"
+GoMainStr = "<Subtract> Main Menu"
 
 WaitReceiveStr = "Accepted...\n" \
                  "Waiting to receive simulation.\n"

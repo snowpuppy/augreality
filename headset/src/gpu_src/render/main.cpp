@@ -89,6 +89,9 @@ int render(int argc, char *argv[]) {
         if(receiver.IsKeyDown(irr::KEY_BACK)) {
 			quit = true;
 		}
+        if(receiver.IsKeyDown(irr::KEY_SUBTRACT)) {
+			quit = true;
+		}
         
         stringw str = L"FPS: ";
         str += driver->getFPS();

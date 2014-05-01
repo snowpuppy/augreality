@@ -23,6 +23,7 @@ class AugRealObj:
     #self.root.minsize(800,600)
     self.root.bind("<KP_Enter>",self.handleEnter)
     self.root.bind("<BackSpace>",self.handleBackspace)
+    self.root.bind("<KP_Subtract>",self.handleBackspace)
     self.root.bind("<KP_1>",self.handle1)
     self.root.bind("<KP_2>",self.handle2)
     self.root.bind("<KP_3>",self.handle3)
