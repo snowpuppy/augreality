@@ -95,6 +95,7 @@ class AugRealObj:
     # Initialize state.
     self.state = SELECTMODE
     self.setupSelectMode()
+    resetToInit()
 
   # Allow the user to select
   # Their own headset.
@@ -252,6 +253,7 @@ class AugRealObj:
       self.teardownWaitAccept()
       self.setupSelectMode()
       self.state = SELECTMODE
+      resetToInit()
     elif (self.state == WAITRECEIVE):
       self.teardownWaitReceive()
       self.setupSelectMode()
@@ -296,12 +298,14 @@ class AugRealObj:
         self.setupAddHead()
         # Set as host
         setHostHeadset(1)
+        resetGPSOrigin()
       elif (num == 0):
         self.state = WAITACCEPT
         self.teardownSelectMode()
         self.setupWaitAccept()
         # Set as joining
         setHostHeadset(0)
+        resetGPSOrigin()
         # Set up automatic transitioning
         self.root.after(1000, self.WaitAccept)
       elif (num == 9):
