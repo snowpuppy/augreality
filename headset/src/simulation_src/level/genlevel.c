@@ -12,9 +12,11 @@ Each line is printed in this format:
 #define WIDTH 10
 #define HEIGHT 25
 #define SCALE 2
+#define ORIGINX  0
+#define ORIGINY -10
 
 void writeLine(int id, int x, int y, char *filename, FILE *ofp, float scale) {
-	fprintf(ofp, "%d\n 1 %d %d 0 0 0 0 %s 1 %f\n", id, x*SCALE-(WIDTH*SCALE/2), y*SCALE-(HEIGHT*SCALE/2), filename, scale);
+	fprintf(ofp, "%d\n 1 %d %d 0 0 0 0 %s 1 %f\n", id, x*SCALE-(WIDTH*SCALE/2) - ORIGINX, y*SCALE-(HEIGHT*SCALE/2) - ORIGINY, filename, scale);
 }
 
 int main(int argc, char *argv[]) {

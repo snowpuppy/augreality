@@ -2,6 +2,9 @@
 This program generates a configuration file for the application to read 
 from a simplified format
 consisting of * for walls, o for pellets and g for ghosts.
+Each line is printed in this format:
+<id> <3d?> <x3> <y3> <z3> <roll> <pitch> <yaw> <objName> <visible> <scale>
+ 0		1			2		3			4			5			6				7			8						9				10
 */
 
 #include <stdio.h>
@@ -9,9 +12,11 @@ consisting of * for walls, o for pellets and g for ghosts.
 #define WIDTH 10
 #define HEIGHT 25
 #define SCALE 2
+#define ORIGINX  0
+#define ORIGINY -10
 
 void writeLine(int id, int x, int y, char *path, const char *filename, FILE *ofp, float scale) {
-	fprintf(ofp, "%d\n 1 %d %d 0 0 0 0 %s%s 1 %f\n", id, x*SCALE-(WIDTH*SCALE/2), y*SCALE-(HEIGHT*SCALE/2), path, filename, scale);
+	fprintf(ofp, "%d\n 1 %d %d 0 0 0 0 %s%s 1 %f\n", id, x*SCALE-(WIDTH*SCALE/2) -ORIGINX, y*SCALE-(HEIGHT*SCALE/2) -ORIGINY, path, filename, scale);
 	fflush(ofp);
 }
 

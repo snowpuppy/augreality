@@ -59,16 +59,16 @@ def moveGhost(ghost, xmin, xmax, ymin, ymax):
 	#print "GhostState:", ghost.state, "x3:",x3,"y3:",y3
 
 def moveGhost1(ghost):
-	moveGhost(ghost, -2, 22, -21, -7)
+	moveGhost(ghost, -2, 22, -21+10, -7+10)
 	
 def moveGhost2(ghost):
-	moveGhost(ghost, 24, 28, -21, -7)
+	moveGhost(ghost, 24, 28, -21+10, -7+10)
 	
 def moveGhost3(ghost):
-	moveGhost(ghost, 28, 36, -21, -7)
+	moveGhost(ghost, 28, 36, -21+10, -7+10)
 	
 def moveGhost4(ghost):
-	moveGhost(ghost, -8, 36, -21, -7)
+	moveGhost(ghost, -8, 36, -21+10, -7+10)
 
 def moveGhosts(objs):
 	# move ghost by .2 meters (2 decimeters)
