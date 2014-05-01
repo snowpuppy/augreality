@@ -59,7 +59,7 @@ while True:
 		print output
 	elif (num == 1):
 		output = getBroadCastIDs()
-		nid = output[1]
+		nid = output[0]
 		print output
 		print nid
 	elif (num == 2):

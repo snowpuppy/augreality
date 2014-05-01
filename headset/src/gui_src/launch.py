@@ -255,14 +255,17 @@ class AugRealObj:
       self.teardownWaitReceive()
       self.setupSelectMode()
       self.state = SELECTMODE
+      resetToInit()
     elif (self.state == WAITSTART):
       self.teardownWaitStart()
       self.setupSelectMode()
       self.state = SELECTMODE
+      resetToInit()
     elif (self.state == RUNSIMJOIN):
       self.teardownRunSimJoin()
       self.setupSelectMode()
       self.state = SELECTMODE
+      resetToInit()
   def handle1(self,event):
     self.handleNumEvent(1)
   def handle2(self,event):
