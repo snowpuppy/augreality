@@ -226,6 +226,10 @@ class AugRealObj:
       self.state = RUNSIMJOIN
       self.teardownWaitStart()
       self.setupRunSimJoin()
+			# If all else fails, run the client
+			# application manually!
+			resetGPSOrigin()
+      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
     elif (self.state == RUNSIMJOIN):
       pass
   def handleBackspace(self,event):
