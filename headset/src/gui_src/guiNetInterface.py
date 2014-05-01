@@ -450,6 +450,7 @@ def getMyId():
 	reply = s.recv(numToRead)
 	data = unpack(NIDFORMAT, reply)
 	s.close()
+	return data[0]
 
 def getWiFiStatus():
 	# Set command

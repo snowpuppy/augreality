@@ -102,7 +102,7 @@ int16_t acceptID(uint32_t destId)
 	getGPSOrigin(&p.x, &p.y);
 	// convert the accept packet to network
 	// byte format.
-	acceptHeadsetHton(&p);
+	//acceptHeadsetHton(&p);
 	// Connect to the specified host.
 	fd = connectToServer(g_tcpPort, destId);
 	if (fd < 0)
@@ -162,7 +162,7 @@ int16_t getAcceptID(int32_t connfd)
 		perror("getAcceptID: Could not read from file descriptor.");
 		return -1;
 	}
-	acceptHeadsetNtoh(&p);
+	//acceptHeadsetNtoh(&p);
 	setGPSOrigin(p.x,p.y);
 	// respond with an ok.
 	rc = write(connfd, buf, sizeof("ok"));
