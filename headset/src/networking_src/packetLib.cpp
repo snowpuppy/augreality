@@ -628,7 +628,9 @@ int wirelessConnection()
 		perror("Could not get interfaces for this device!");
 		return -1;
 	}
-
+	// clear my ip so if it isn't properly found then I
+	// can note the network as disconnected.
+	g_myIp = 0;
 	// Loop through all interfaces.
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
 	{
