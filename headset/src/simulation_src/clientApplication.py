@@ -43,6 +43,10 @@ while (not gameEnd):
 		sendUpdateObjsGpu(len(objs), objs)
 	time.sleep(.01)
 	#gameEnd = getEnd()
+	try:
+		run = getRunning();
+	except:
+		exit()
 		
 time.sleep(3.0)
 gpuQuit()
