@@ -1079,7 +1079,7 @@ void getBroadCastPacket(void)
 	// Read in the broadcast packet.
 	ret = readUdpByteStream(&p, sizeof(broadCastPacket_t), &addr, 0);
 	broadCastPacketNtoh(&p);
-	if (ret > 0)
+	if (ret > 0 && addr != g_myIp)
 	{
 		// update our entry for this address.
 		broadCastList[addr] = p;
