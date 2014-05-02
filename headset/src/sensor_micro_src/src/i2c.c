@@ -9,9 +9,7 @@
  * i2c.c - I2C implementation
  */
 
-#include <i2c.h>
-#include <stm32f4xx.h>
-#include <stm32f4xx_rcc.h>
+#include "main.h"
 #include <stm32f4xx_i2c.h>
 
 // I2C statuses
@@ -103,11 +101,15 @@ static bool _i2cRead(uint8_t addr, uint8_t *data, uint32_t count) {
 	_i2cEnableInt();
 	__enable_irq();
 	// Wait until START is reset (transmission begins)
+	const unsigned long timeout = millis() + 5UL;
 	do {
 		// Wait until BUSY flag is reset (until a STOP is generated)
 		__WFI();
 		// Error occurred?
 		if (state->status & I2C_STATUS_ERR)
+			return false;
+		// I2C should never take this long
+		if (millis() >= timeout)
 			return false;
 	} while (i2cState.count > 0);
 	// Work around for I2C locks
@@ -133,12 +135,16 @@ static bool _i2cWrite(uint8_t addr, uint8_t *data, uint32_t count) {
 	_i2cEnableInt();
 	__enable_irq();
 	// Wait until START is reset (transmission begins)
+	const unsigned long timeout = millis() + 5UL;
 	do {
 		// Wait until BUSY flag is reset (until a STOP is generated) or repeated-start bit set
 		__WFI();
 		status = state->status;
 		// Error occurred?
 		if (status & I2C_STATUS_ERR)
+			return false;
+		// I2C should never take this long
+		if (millis() >= timeout)
 			return false;
 	} while (i2cState.count > 0);
 	// Work around for I2C locks
