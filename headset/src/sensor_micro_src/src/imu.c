@@ -14,6 +14,28 @@
 #include "imu.h"
 #include "main.h"
 
+#define YELLOW_SUBMARINE
+
+// ----- CALIBRATION -----
+
+#ifdef YELLOW_SUBMARINE
+#define M_X_MIN -380.f
+#define M_Y_MIN -467.f
+#define M_Z_MIN -410.f
+#define M_X_MAX 403.f
+#define M_Y_MAX 320.f
+#define M_Z_MAX 411.f
+#else
+#define M_X_MIN -404.f
+#define M_Y_MIN -404.f
+#define M_Z_MIN -463.f
+#define M_X_MAX 408.f
+#define M_Y_MAX 363.f
+#define M_Z_MAX 335.f
+#endif
+
+// ----- END CALIBRATION -----
+
 // Addresses for the parts on the I2C bus
 #define MAG_ADDRESS (0x3C >> 1)
 #define ACC_ADDRESS (0x32 >> 1)
@@ -199,9 +221,9 @@ bool imu9Read(vector *gyro, vector *accel, vector *mag) {
 		gyro->x = (float)((int)g.ix - (int)calib.ix);
 		gyro->y = (float)((int)g.iy - (int)calib.iy);
 		gyro->z = (float)((int)g.iz - (int)calib.iz);
-		mag->x = (float)(int)m.ix;
-		mag->y = (float)(int)m.iy;
-		mag->z = (float)(int)m.iz;
+		mag->x = (float)(int)m.ix - (0.5f * (M_X_MIN + M_X_MAX));
+		mag->y = (float)(int)m.iy - (0.5f * (M_Y_MIN + M_Y_MAX));
+		mag->z = (float)(int)m.iz - (0.5f * (M_Z_MIN + M_Z_MAX));
 		accel->x = (float)(int)a.ix;
 		accel->y = (float)(int)a.iy;
 		accel->z = (float)(int)a.iz;
@@ -234,21 +256,15 @@ float a_roll(vector *a) {
 // Function: m_pr_yaw
 // Purpose: Calculate yaw given IMU data.
 float m_pr_yaw(vector *m, float pitch, float roll, float yaw) {
-	float sinRoll, cosRoll, sinPitch, cosPitch, sinYaw, cosYaw;
+	float sinRoll, cosRoll, sinPitch, cosPitch;
 
 	// Calculate sin, cos of pitch and roll
 	arm_sin_cos_f32(roll, &sinRoll, &cosRoll);
-	arm_sin_cos_f32(pitch, &sinPitch, &cosPitch);
-	//arm_sin_cos_f32(-yaw, &sinYaw, &cosYaw);
-	const float x = m->x * (1000.f / 855.f);
-	const float y = m->y * (1000.f / 855.f);
-	const float z = m->z * (1000.f / 760.f);
+	arm_sin_cos_f32(-pitch, &sinPitch, &cosPitch);
+	const float x = m->x * (M_X_MAX - M_X_MIN);
+	const float y = m->y * (M_Y_MAX - M_Y_MIN);
+	const float z = m->z * (M_Z_MAX - M_Z_MIN);
 	// Calculate yaw from magnetometer
 	return atan2f(z * sinRoll - y * cosRoll, x * cosPitch + y * sinPitch * sinRoll +
 		z * sinPitch * cosRoll);
-	/*const float num = cosYaw * cosPitch * x + (cosYaw * sinRoll * sinPitch - cosRoll *
-		sinYaw) * y + (sinRoll * sinYaw + cosRoll * cosYaw * sinPitch) * z;
-	const float denom = sinYaw * cosPitch * x + (cosRoll * cosYaw + sinRoll * sinYaw *
-		sinPitch) * y + (cosRoll * sinYaw * sinPitch - cosYaw * sinRoll) * z;
-	return atan2f(num, denom);*/
 }

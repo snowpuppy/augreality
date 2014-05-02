@@ -16,8 +16,7 @@
 #include "core_cmInstr.h"
 #include "nmea.h"
 
-// Define number of bytes for
-// headset updates to gpu.
+// Define number of bytes for headset updates to gpu.
 #define HEADSETDATABYTES 24
 
 // Time constants
@@ -46,7 +45,9 @@ static uint8_t __attribute__ ((aligned(4))) headsetData[HEADSETDATABYTES];
 #define IMU_HISTORY 5
 #define filterCoeffIncr (2.f / (float)(IMU_HISTORY * IMU_HISTORY + IMU_HISTORY))
 static uint32_t histIndex = 0;
+#ifdef USE_COMPLEMENTARY_FILTER
 static float gyroAccum = 0.0f;
+#endif
 static float pitchHist[IMU_HISTORY];
 static float rollHist[IMU_HISTORY];
 static float yawHist[IMU_HISTORY];
@@ -171,6 +172,7 @@ static void processGPSData(void) {
 	}
 }
 
+#ifdef USE_COMPLEMENTARY_FILTER
 // Function: imuYawUpdate
 // Purpose: Perform long-term moving average filtering on the
 static float imuYawUpdate(float yaw) {
@@ -200,6 +202,7 @@ static float imuYawUpdate(float yaw) {
 		total -= (float)(2.0 * PI);
 	return total;
 }
+#endif
 
 // Function: processIMUData
 // Purpose: Stuffs current IMU values in buffer
@@ -223,7 +226,7 @@ static void processIMUData(void) {
 		// Calculate variables
 		pitch = a_pitch(&a);
 		roll = a_roll(&a);
-		yaw = m_pr_yaw(&m, roll, pitch, yawHist[hist]);
+		yaw = m_pr_yaw(&m, pitch, roll, 0.0f);
 #ifdef USE_COMPLEMENTARY_FILTER
 		float gyroYaw, yawRate;
 		// Get gyro rate angle in rad/s by multiplying by DT
@@ -293,8 +296,14 @@ static void processIMUData(void) {
 		yaw = -yaw;
 		pitch = -oldRoll;
 		// Convert to degrees
+#ifndef HARD_IRON_CAL
 		*((float *) &headsetData[PITOFFSET]) = pitch * (180.f / (float)PI); // pitch
 		*((float *) &headsetData[ROLOFFSET]) = roll * (180.f / (float)PI); // roll
 		*((float *) &headsetData[YAWOFFSET]) = yaw * (180.f / (float)PI); // yaw
+#else
+		*((float *) &headsetData[PITOFFSET]) = m.x;
+		*((float *) &headsetData[ROLOFFSET]) = m.y;
+		*((float *) &headsetData[YAWOFFSET]) = m.z;
+#endif
 	}
 }
