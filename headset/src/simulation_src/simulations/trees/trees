@@ -1,3 +1,15 @@
+[GlobalSettings]
+WIDTH 37
+HEIGHT 31
+SCALE 1
+ORIGINX 11
+ORIGINY 14
+
+[LetterMapping]
+t tree scale=1 is3d=1
+p pikachu scale=1 is3d=1
+
+[AsciiMap]
 t   t   t   t   t   t   t   t   t   t
   t   t   t   t   t   t   t   t   t
 t   t   t   t   t   t   t   t   t   t
