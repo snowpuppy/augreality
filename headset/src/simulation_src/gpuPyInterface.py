@@ -61,9 +61,10 @@ def readObjsFromConfig(fp):
 	for i in range(0,len(myLines),2):
 		instId = int(myLines[i].strip())
 		data = myLines[i+1].strip().split()
-		if data[7] not in myObjsDict:
-			myObjsDict[data[7]] = []
-		myObjsDict[data[7]].append(ObjInfo_t(instId,data[8],0,0,data[1],data[2],data[3],data[4],data[5],data[6],data[9],data[7]))
+		name = data[7].split("/")[-1]
+		if name not in myObjsDict:
+			myObjsDict[name] = []
+		myObjsDict[name].append(ObjInfo_t(instId,data[8],0,0,data[1],data[2],data[3],data[4],data[5],data[6],data[9],name))
 	return myObjsDict
 
 ##

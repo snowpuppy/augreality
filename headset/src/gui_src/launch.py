@@ -204,7 +204,7 @@ class AugRealObj:
       self.teardownStartSimHost()
       self.setupRunSimHost()
       sendStart()
-      subprocess.call(["augreality/headset/src/simulation_src/testApplication.py"])
+      subprocess.call(["augreality/headset/src/simulation_src/pacmanSim.py"])
       self.root.focus_force()
       # transition back to select mode.
       self.teardownRunSimHost()
@@ -229,7 +229,7 @@ class AugRealObj:
       # If all else fails, run the client
       # application manually!
       resetGPSOrigin()
-      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
+      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientSim.py"])
     elif (self.state == RUNSIMJOIN):
       pass
   def handleBackspace(self,event):
@@ -396,7 +396,7 @@ class AugRealObj:
       self.teardownWaitStart()
       self.setupRunSimJoin()
       # TODO: Launch client simulation as a separate process.
-      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientApplication.py"])
+      subprocess.call(["/home/cornell/augreality/headset/src/simulation_src/clientSim.py"])
       # synchronize networking code to INIT state
       self.root.focus_force()
       resetToInit()

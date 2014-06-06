@@ -2,8 +2,8 @@
 WIDTH 10
 HEIGHT 25
 SCALE 2
-ORIGINX 6
-ORIGINY 6
+ORIGINX 11
+ORIGINY 14
 
 [LetterMapping]
 o pellet scale=0.5 is3d=1

@@ -58,17 +58,19 @@ def moveGhost(ghost, xmin, xmax, ymin, ymax):
 			ghost.state = 1
 	#print "GhostState:", ghost.state, "x3:",x3,"y3:",y3
 
+originX = 11
+originY = 14
 def moveGhost1(ghost):
-	moveGhost(ghost, -2, 22, -21+10, -7+10)
+	moveGhost(ghost, 8-originX, 32-originX, 2-originY, 16-originY)
 	
 def moveGhost2(ghost):
-	moveGhost(ghost, 24, 28, -21+10, -7+10)
+	moveGhost(ghost, 34-originX, 38-originX, 2-originY, 16-originY)
 	
 def moveGhost3(ghost):
-	moveGhost(ghost, 28, 36, -21+10, -7+10)
+	moveGhost(ghost, 38-originX, 46-originX, 2-originY, 16-originY)
 	
 def moveGhost4(ghost):
-	moveGhost(ghost, -8, 36, -21+10, -7+10)
+	moveGhost(ghost, 2-originX, 46-originX, 2-originY, 16-originY)
 
 def moveGhosts(objs):
 	# move ghost by .2 meters (2 decimeters)
@@ -139,7 +141,7 @@ resetGPSOrigin()
 
 # Read in the information for each
 # object from the config file.
-configFile = open("simulations/pacman/config.txt");
+configFile = open("tmp.cfg");
 myObjs = readObjsFromConfig(configFile)
 time.sleep(3.0)
 x3 = 0

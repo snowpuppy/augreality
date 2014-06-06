@@ -85,7 +85,7 @@ int readLetterMapping(FILE *ifp, std::map<char,objConfigSettings_t> &letterMappi
 
 int writeMap(FILE *ifp, FILE *ofp, char *path, simConfigSettings_t &config, std::map<char,objConfigSettings_t> &letterMapping)
 {
-	int y = 0, x = 0;
+	int y = 0, x = -1;
 	int idx = 0;
 	char obj;
 	char buf[256];
@@ -95,12 +95,12 @@ int writeMap(FILE *ifp, FILE *ofp, char *path, simConfigSettings_t &config, std:
 	// Note the leading bracket was lost from the last scan operation!
 	if (strcmp(buf,"AsciiMap]") != 0)
 	{
-		printf("Error: got %s, expected [LetterMapping]!\n", buf);
+		printf("Error: got %s, expected AsciiMap]!\n", buf);
 		return -1;
 	}
 
 	// Read in the entire map!
-	for(obj = fgetc(ifp); !feof(ifp); obj = fgetc(ifp), y++)
+	for(obj = fgetc(ifp); !feof(ifp); obj = fgetc(ifp))
 	{
 		switch(obj)
 		{
@@ -123,6 +123,9 @@ int writeMap(FILE *ifp, FILE *ofp, char *path, simConfigSettings_t &config, std:
 				break;
 		}
 		if(obj!='\n')
+		{
+			y++;
 			idx++;
+		}
 	}
 }
