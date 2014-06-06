@@ -1,9 +1,9 @@
 #!/usr/bin/python2
 #
-# Filename: testApplication.py
+# Filename: testUpdateObjs.py
 # Author: Thor Smith
-# Purpose: Create a sample python application to retrieve content
-#          and send commands
+# Purpose: Create a sample python simulation to test updating the position
+#          of objects in a simulation.
 #
 
 import sys
