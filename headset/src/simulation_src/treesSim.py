@@ -39,6 +39,11 @@ gameEnd = False
 while (not gameEnd):
 	if gameEnd:
 		break
+	try:
+		output = getRunning();
+	except:
+		print "Rendering exited... Quitting simulation."
+		exit()
 	time.sleep(.1)
 		
 time.sleep(3.0)

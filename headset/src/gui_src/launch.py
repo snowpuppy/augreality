@@ -74,11 +74,11 @@ class AugRealObj:
     self.SimulationInfoStr = SimulationInfoStr
     self.SimulationInfo = Label(root, wraplength=WRAPLENGTH,text=self.SimulationInfoStr)
     # Dynamically update the list of available simulations
-		self.selectedSim = 0
-		self.SimList = [""]
-		self.SimDispList = ["",""]
+    self.selectedSim = 0
+    self.SimList = [""]
+    self.SimDispList = ["",""]
     self.Simulations = Label(root,bg="white", wraplength=WRAPLENGTH,justify=LEFT, text=" ".join(self.SimDispList))
-		updateSimList()
+    self.UpdateSimList()
     # STARTSIMHOST
     self.StartSimText = Label(root,wraplength=WRAPLENGTH,text=StartSimStr)
     # RUNSIMHOST
@@ -126,7 +126,7 @@ class AugRealObj:
     self.GoBackText.grid_forget()
   # Select Simulation
   def setupSelectSim(self):
-		updateSimList()
+    self.UpdateSimList()
     self.SimulationInfo.grid()
     self.Simulations.grid()
     self.NextText.grid()
@@ -208,7 +208,7 @@ class AugRealObj:
       self.teardownStartSimHost()
       self.setupRunSimHost()
       sendStart()
-      subprocess.call(["augreality/headset/src/simulation_src/pacmanSim.py"])
+      subprocess.call(["augreality/headset/src/simulation_src/" + self.SimList[self.selectedSim]])
       self.root.focus_force()
       # transition back to select mode.
       self.teardownRunSimHost()
@@ -233,6 +233,7 @@ class AugRealObj:
       # If all else fails, run the client
       # application manually!
       resetGPSOrigin()
+			# TODO: needs to be changed to reflect the file that it needs to open.
       subprocess.call(["augreality/headset/src/simulation_src/" + self.SimList[self.selectedSim]])
     elif (self.state == RUNSIMJOIN):
       pass
@@ -337,11 +338,12 @@ class AugRealObj:
               self.acceptList.append(myList[i])
     elif (self.state == SELECTSIM):
       # Dynamically select simulation based on the users choice.
-			if (num < len(self.SimList)):
-				self.selectedSim = num
-			if (len(self.SimList) > 0):
-					for i in self.acceptList:
-						sendFile("augreality/headset/src/simulation_src/simulations/" + self.SimList[self.selectedSim][:-3] + ".tar",i)
+      if (num < len(self.SimList)):
+        self.selectedSim = num
+      print "selectedSim:",self.selectedSim
+      if (len(self.SimList) > 0):
+        for i in self.acceptList:
+          sendFile("augreality/headset/src/simulation_src/simulations/" + self.SimList[self.selectedSim][:-3] + ".tar",i)
     elif (self.state == RUNSIMHOST):
       pass
 
@@ -406,17 +408,17 @@ class AugRealObj:
       # Pass in the name of the simulation run.
     if (self.state == WAITSTART):
       self.root.after(1000, self.WaitStart)
-	def updateSimList(self):
+  def UpdateSimList(self):
     files = os.listdir("augreality/headset/src/simulation_src/")
-		# Collect all available simulations from the directory indicated by "Sim" in the name of
-		# the file and by ".py" in the name to indicate that it is a python file.
-    self.SimList = [x for x in files if x.find("Sim") != -1 and x.find(".py") != -1]
-		# format the simulation entries for presentation to the user.
+    # Collect all available simulations from the directory indicated by "Sim" in the name of
+    # the file and by ".py" in the name to indicate that it is a python file.
+    self.SimList = [x for x in files if x.find("Sim") != -1 and x.find(".py") != -1 and x != "clientSim.py"]
+    # format the simulation entries for presentation to the user.
     self.SimDispList = [str(x) + " " + self.SimList[x] + "\n" for x in range(len(self.SimList)) if x < 10]
-		# Update text in the label.
+    # Update text in the label.
     self.Simulations.configure(text=" ".join(self.SimDispList))
-		# reset default simulation selection to zero
-		self.selectedSim = 0
+    # reset default simulation selection to zero
+    self.selectedSim = 0
 
 root = Tk()
 
