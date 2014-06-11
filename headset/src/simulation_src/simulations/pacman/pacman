@@ -1,3 +1,16 @@
+[GlobalSettings]
+WIDTH 10
+HEIGHT 25
+SCALE 2
+ORIGINX 11
+ORIGINY 14
+
+[LetterMapping]
+o pellet scale=0.5 is3d=1
+* cube scale=1 is3d=1
+g ghost scale=0.5 is3d=1
+
+[AsciiMap]
 **********
 *        *
 * **  ** *

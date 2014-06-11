@@ -4,7 +4,7 @@
 #include "InputReceiver.cpp"
 #include "GameObject.h"
 #include "SensorReader.h"
-#include "genlevel.c"
+#include "genLevel.h"
 #include "gpuPyThreadInterface.h"
 #include "../../networking_src/packets.h"
 
@@ -67,7 +67,7 @@ int render(int argc, char *argv[]) {
 
     //load level file
     objects = new GameObject[2096];
-    writeLevel(configFileName, modelsPath);
+    writeConfigFile(configFileName, modelsPath);
     GameObject::loadConfigFile("tmp.cfg", objects);
 
     //add camera

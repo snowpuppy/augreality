@@ -36,7 +36,8 @@ enum apiRequest
   SETHOSTHEADSET,
   GETMYID,
   GETUPDATEOBJS,
-	RESETTOINIT
+	RESETTOINIT,
+	GETPOSFROMGPS
 };
 
 // Function: initServer()

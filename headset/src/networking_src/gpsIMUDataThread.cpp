@@ -379,6 +379,12 @@ int readBytes(int fd, char *data, int numBytes)
 	return bytesRead;
 }
 
+void getPosFromGPS(float lat, float lon, float *x, float *y)
+{
+	*x = (lat - originlat)*decimalsperdegreelat;
+	*y = (lon - originlon)*decimalsperdegreelon;
+}
+
 /*
 // Function: printFloatBytes
 // Purpose: Used to print the hex

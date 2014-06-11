@@ -55,6 +55,7 @@ void _setGPSOrigin(int fd); // NEW
 void _setHostHeadset(int fd); // NEW
 void _getMyId(int fd);        // NEW
 void _resetToInit(int fd); // NEW
+void _getPosFromGPS(int fd); // NEW
 
 // Function: initServer()
 // Purpose: starts the server that will
@@ -246,6 +247,9 @@ void serviceConnections(int fd)
         break;
 			case RESETTOINIT:
 				_resetToInit(fd);
+				break;
+			case GETPOSFROMGPS:
+				_getPosFromGPS(fd);
 				break;
       default:
         break;
@@ -653,4 +657,19 @@ void _resetToInit(int fd)
 {
 	int32_t rc = 0;
 	setState(INIT);
+}
+
+void _getPosFromGPS(int fd)
+{
+	float lat = 0.0f, lon = 0.0f;
+	float x = 0.0f, y = 0.0f;
+	int32_t rc = 0;
+	// Read in GPS coordinates.
+  rc = read(fd, (void *)&lat, sizeof(lat));
+  rc = read(fd, (void *)&lon, sizeof(lon));
+	// Translate to x and y coordinates.
+	getPosFromGPS(lat,lon,&x,&y);
+	// Send back the results.
+  rc = write(fd, (void *)&x, sizeof(x));
+  rc = write(fd, (void *)&y, sizeof(y));
 }

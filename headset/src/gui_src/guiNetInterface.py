@@ -57,6 +57,8 @@ SETHOSTHEADSET = '\x19'
 GETMYID = '\x1a'
 GETUPDATEOBJS = '\x1b'
 RESETTOINIT = '\x1c'
+GETPOSFROMGPS = '\x1d'
+GETPOSFROMGPSFORMAT = '=2f'
 NIDFORMAT = '=I'
 IDLISTFORMAT = '=%sI'
 
@@ -478,3 +480,20 @@ def getBatteryStatus():
 	data = ord(reply)
 	return data
 
+def getPosFromGPS(lat, lon):
+	# Get command
+	# Pack info
+	command = GETPOSFROMGPS
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((HOST,PORT))
+	# send info
+	s.send(command)
+	numToRead = calcsize(GETPOSFROMGPSFORMAT)
+	# pack and send gps coordinates
+	data = pack(GETPOSFROMGPSFORMAT, lat, lon)
+	s.send(data)
+	# read back x and y coordinates
+	reply = s.recv(numToRead)
+	s.close()
+	data = unpack(GETGPSORIGINFORMAT, reply)
+	return data
