@@ -130,6 +130,17 @@ def checkGameEnd(objs):
 			gameEnd = False
 	return gameEnd
 
+# Checks to see if the rendering
+# software is still running. If not,
+# then exit because there isn't anything
+# useful to do.
+def exitOnRenderExit():
+	try:
+		output = getRunning();
+	except:
+		print "Rendering exited... Quitting simulation."
+		exit()
+
 # hardcoded id of headset.
 subprocess.Popen(["../gpu_src/render/render", "simulations/pacman/pacman", "simulations/pacman/models/"])
 time.sleep(1.0)
@@ -154,8 +165,12 @@ yaw = 0
 initGhosts(myObjs)
 gameEnd = False
 while (not gameEnd):
+	exitOnRenderExit()
 	moveGhosts(myObjs);
-	sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
+	try:
+		sendUpdateObjsGpu(len(myObjs['ghost']), myObjs['ghost'])
+	except:
+		print "Failed to update objects to Gpu!"
 	sendUpdateObjs(len(myObjs['ghost']), myObjs['ghost'])
 	pellet = collideWithPellet(myObjs)
 	gameEnd = collideWithGhost(myObjs)
@@ -165,7 +180,10 @@ while (not gameEnd):
 		print "hiding pellet x: %f y: %f" % (pellet.x3, pellet.y3)
 		pellet.typeShow = 0
 	time.sleep(.1)
-	sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
+	try:
+		sendUpdateObjsGpu(len(myObjs['pellet']), myObjs['pellet'])
+	except:
+		print "Failed to update objects to Gpu!"
 	sendUpdateObjs(len(myObjs['pellet']), myObjs['pellet'])
 	time.sleep(.1)
 	gameEnd = checkGameEnd(myObjs)

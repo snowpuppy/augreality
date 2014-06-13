@@ -491,9 +491,10 @@ def getPosFromGPS(lat, lon):
 	numToRead = calcsize(GETPOSFROMGPSFORMAT)
 	# pack and send gps coordinates
 	data = pack(GETPOSFROMGPSFORMAT, lat, lon)
+	print len(data)
 	s.send(data)
 	# read back x and y coordinates
 	reply = s.recv(numToRead)
 	s.close()
-	data = unpack(GETGPSORIGINFORMAT, reply)
+	data = unpack(GETPOSFROMGPSFORMAT, reply)
 	return data

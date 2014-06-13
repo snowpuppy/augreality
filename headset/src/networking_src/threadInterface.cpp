@@ -275,6 +275,7 @@ void _resetGPSOrigin(int fd)
 	getHeadsetPosData(&pos);
   printf("GetPosition returned: %f, %f\n", pos.lat, pos.lon);
 	setGPSOrigin(pos.lat,pos.lon);
+	return;
 }
 
 void _getGPSOrigin(int fd)
@@ -285,6 +286,7 @@ void _getGPSOrigin(int fd)
   // send the lat then the lon
   rc = write(fd, (void *)&olat, sizeof(olat));
   rc = write(fd, (void *)&olon, sizeof(olon));
+	return;
 }
 
 void _setGPSOrigin(int fd)
@@ -310,6 +312,7 @@ void _getUserPos(int fd)
 	localHeadsetPos_t pos = {0};
 	getHeadsetPosData(&pos);
 	rc = write(fd,(void *)&pos, sizeof(pos));
+	return;
 }
 
 /**
@@ -336,6 +339,7 @@ void _getWifiStatus(int fd)
 		data = 1;
 	}
 	rc = write(fd, (void *)&data, sizeof(data));
+	return;
 }
 
 /**
@@ -355,6 +359,7 @@ void _getBatteryStatus(int fd)
 	uint8_t data = (bVoltage - BATTERY_EMPTY) / ((BATTERY_FULL-BATTERY_EMPTY)/68);
 	// send the battery state.
 	rc = write(fd, (void *)&data, sizeof(data));
+	return;
 }
 
 void _getBroadCastIDs(int fd)
@@ -651,25 +656,41 @@ void _getMyId(int fd)
   uint32_t id = 0;
   id = getMyId();
   rc = write(fd, (void *)&id, sizeof(id));
+	return;
 }
 
 void _resetToInit(int fd)
 {
 	int32_t rc = 0;
 	setState(INIT);
+	return;
 }
 
 void _getPosFromGPS(int fd)
 {
 	float lat = 0.0f, lon = 0.0f;
-	float x = 0.0f, y = 0.0f;
+	float x3 = 0.0f, y3 = 0.0f;
 	int32_t rc = 0;
+	printf("Getting position for coordinates.\n");
 	// Read in GPS coordinates.
   rc = read(fd, (void *)&lat, sizeof(lat));
   rc = read(fd, (void *)&lon, sizeof(lon));
+	printf("lat = %2.2f, lon = %2.2f\n", lat, lon);
 	// Translate to x and y coordinates.
-	getPosFromGPS(lat,lon,&x,&y);
+	getPosFromGPS(lat,lon,&x3,&y3);
+	printf("x3 = %2.2f, y3 = %2.2f\n", x3, y3);
+	printf("Sending data back.\n");
+	printf("Sending data back %d %d.\n", sizeof(x3), sizeof(y3));
 	// Send back the results.
-  rc = write(fd, (void *)&x, sizeof(x));
-  rc = write(fd, (void *)&y, sizeof(y));
+  rc = write(fd, (void *)&x3, sizeof(x3));
+	if (rc < sizeof(x3))
+		perror("_getPosFromGPS: Couldn't send all of x3!\n");
+	else
+		printf("Sent back %d bytes.\n", sizeof(x3));
+  rc = write(fd, (void *)&y3, sizeof(y3));
+	if (rc < sizeof(y3))
+		perror("_getPosFromGPS: Couldn't send all of y!\n");
+	else
+		printf("Sent back %d bytes.\n", sizeof(y3));
+	return;
 }

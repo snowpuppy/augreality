@@ -44,7 +44,8 @@ helpStr = """Enter a number to test a function:
 25 GETWIFISTATUS   _getWiFiStatus(int fd);
 26 GETBATTERYSTATUS_getBatteryStatus(int fd);
 27 GETUPDATEOBJS   _getUpdateObjs(int fd);
-28 exit
+28 GETPOSFROMGPS	 _getPosFromGPS(int fd);
+29 exit
 """
 while True:
 	inpu = raw_input(helpStr)
@@ -132,4 +133,7 @@ while True:
 		output = getUpdateObjs()
 		print output
 	elif (num == 28):
+		output = getPosFromGPS(40.0,-86.0)
+		print output
+	elif (num == 29):
 		exit()

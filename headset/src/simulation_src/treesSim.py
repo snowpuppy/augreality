@@ -25,6 +25,17 @@ time.sleep(1.0)
 output = getRunning();
 #print "Running", output
 
+# Checks to see if the rendering
+# software is still running. If not,
+# then exit because there isn't anything
+# useful to do.
+def exitOnRenderExit():
+	try:
+		output = getRunning();
+	except:
+		print "Rendering exited... Quitting simulation."
+		exit()
+
 # reset origin on game start.
 resetGPSOrigin()
 
@@ -39,11 +50,7 @@ gameEnd = False
 while (not gameEnd):
 	if gameEnd:
 		break
-	try:
-		output = getRunning();
-	except:
-		print "Rendering exited... Quitting simulation."
-		exit()
+	exitOnRenderExit()
 	time.sleep(.1)
 		
 time.sleep(3.0)
