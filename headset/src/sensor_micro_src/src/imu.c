@@ -14,6 +14,28 @@
 #include "imu.h"
 #include "main.h"
 
+#define YELLOW_SUBMARINE
+
+// ----- CALIBRATION -----
+
+#ifdef YELLOW_SUBMARINE
+#define M_X_MIN -380.f
+#define M_Y_MIN -467.f
+#define M_Z_MIN -410.f
+#define M_X_MAX 403.f
+#define M_Y_MAX 320.f
+#define M_Z_MAX 411.f
+#else
+#define M_X_MIN -404.f
+#define M_Y_MIN -404.f
+#define M_Z_MIN -463.f
+#define M_X_MAX 408.f
+#define M_Y_MAX 363.f
+#define M_Z_MAX 335.f
+#endif
+
+// ----- END CALIBRATION -----
+
 // Addresses for the parts on the I2C bus
 #define MAG_ADDRESS (0x3C >> 1)
 #define ACC_ADDRESS (0x32 >> 1)
@@ -136,7 +158,7 @@ void imu9Init() {
  * @param mag the vector to return magnetometer values
  * @return whether the operation completed successfully
  */
-bool imu9Read(ivector *gyro, ivector *accel, ivector *mag) {
+bool imu9Raw(ivector *gyro, ivector *accel, ivector *mag) {
 	uint8_t values[6];
 	bool ok = true;
 	if (i2cReadRegister(MAG_ADDRESS, LSM303_OUT_X_H_M, &values[0], 6)) {
@@ -173,7 +195,7 @@ void imu9Calibrate(void) {
 	ivector g, a, m;
 	for (uint32_t i = 0; i < 64; i++) {
 		// Average 256 readings
-		imu9Read(&g, &a, &m);
+		imu9Raw(&g, &a, &m);
 		totalX += g.ix;
 		totalY += g.iy;
 		totalZ += g.iz;
@@ -185,36 +207,64 @@ void imu9Calibrate(void) {
 	calib.iz = (totalZ + 32) >> 6;
 }
 
-// Function: a_pitch
-// Purpose: This function returns accelerometer pitch value
-float a_pitch(ivector a) {
-	float ss;
-	float y = (float)(int)a.iy, z = (float)(int)a.iz;
-	arm_sqrt_f32(y * y + z * z, &ss);
-	return atan2f((float)(-(int)a.ix), ss);
+/**
+ * Reads calibrated data from the 9-DOF IMU.
+ *
+ * @param gyro the vector to return gyro values
+ * @param accel the vector to return accelerometer values
+ * @param mag the vector to return magnetometer values
+ * @return whether the operation completed successfully
+ */
+bool imu9Read(vector *gyro, vector *accel, vector *mag) {
+	ivector g, a, m;
+	if (imu9Raw(&g, &a, &m)) {
+		gyro->x = (float)((int)g.ix - (int)calib.ix);
+		gyro->y = (float)((int)g.iy - (int)calib.iy);
+		gyro->z = (float)((int)g.iz - (int)calib.iz);
+		mag->x = (float)(int)m.ix - (0.5f * (M_X_MIN + M_X_MAX));
+		mag->y = (float)(int)m.iy - (0.5f * (M_Y_MIN + M_Y_MAX));
+		mag->z = (float)(int)m.iz - (0.5f * (M_Z_MIN + M_Z_MAX));
+		accel->x = (float)(int)a.ix;
+		accel->y = (float)(int)a.iy;
+		accel->z = (float)(int)a.iz;
+		return true;
+	}
+	return false;
 }
 
-// Function: m_pr_yaw
-// Purpose: Calculate yaw given IMU data.
-float m_pr_yaw(ivector m, float pitch, float roll) {
-	float sinRoll, cosRoll, sinPitch, cosPitch, x, y, z;
+// Function: a_pitch
+// Purpose: This function returns accelerometer pitch value
+float a_pitch(vector *a) {
+	float ss;
+	arm_sqrt_f32(a->y * a->y + a->z * a->z, &ss);
+	return atan2f(-a->x, ss);
+}
 
-	// Calculate sin, cos of pitch and roll
-	arm_sin_cos_f32(roll, &sinRoll, &cosRoll);
-	arm_sin_cos_f32(pitch, &sinPitch, &cosPitch);
-	x = (float)(int)m.ix;
-	y = (float)(int)m.iy;
-	z = (float)(int)m.iz;
-	// Calculate yaw from magnetometer
-	return atan2f(z * sinRoll - y * cosRoll, x * cosPitch + y * sinPitch * sinRoll +
-		z * sinPitch * cosRoll);
+// Function: g_pr_yaw
+// Purpose: Calculate gyro yaw rate given IMU data.
+float g_pr_yaw(vector *g, float pitch, float roll) {
+	// ... Apply formula from pdf to actually get inertial Z
+	return g->z;
 }
 
 // Function: a_roll
 // Purpose: Calculate roll information.
-float a_roll(ivector a) {
-	float y, z;
-	y = (float)(int)a.iy;
-	z = (float)(int)a.iz;
-	return atan2f(y, z);
+float a_roll(vector *a) {
+	return atan2f(a->y, a->z);
+}
+
+// Function: m_pr_yaw
+// Purpose: Calculate yaw given IMU data.
+float m_pr_yaw(vector *m, float pitch, float roll, float yaw) {
+	float sinRoll, cosRoll, sinPitch, cosPitch;
+
+	// Calculate sin, cos of pitch and roll
+	arm_sin_cos_f32(roll, &sinRoll, &cosRoll);
+	arm_sin_cos_f32(-pitch, &sinPitch, &cosPitch);
+	const float x = m->x * (M_X_MAX - M_X_MIN);
+	const float y = m->y * (M_Y_MAX - M_Y_MIN);
+	const float z = m->z * (M_Z_MAX - M_Z_MIN);
+	// Calculate yaw from magnetometer
+	return atan2f(z * sinRoll - y * cosRoll, x * cosPitch + y * sinPitch * sinRoll +
+		z * sinPitch * cosRoll);
 }
