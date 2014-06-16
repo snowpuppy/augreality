@@ -246,10 +246,10 @@ void serviceConnections(int fd)
         _getUpdateObjs(connfd);
         break;
 			case RESETTOINIT:
-				_resetToInit(fd);
+				_resetToInit(connfd);
 				break;
 			case GETPOSFROMGPS:
-				_getPosFromGPS(fd);
+				_getPosFromGPS(connfd);
 				break;
       default:
         break;
@@ -671,26 +671,27 @@ void _getPosFromGPS(int fd)
 	float lat = 0.0f, lon = 0.0f;
 	float x3 = 0.0f, y3 = 0.0f;
 	int32_t rc = 0;
-	printf("Getting position for coordinates.\n");
+	//printf("Getting position for coordinates.\n");
 	// Read in GPS coordinates.
   rc = read(fd, (void *)&lat, sizeof(lat));
   rc = read(fd, (void *)&lon, sizeof(lon));
-	printf("lat = %2.2f, lon = %2.2f\n", lat, lon);
+	//printf("lat = %2.2f, lon = %2.2f\n", lat, lon);
 	// Translate to x and y coordinates.
 	getPosFromGPS(lat,lon,&x3,&y3);
-	printf("x3 = %2.2f, y3 = %2.2f\n", x3, y3);
-	printf("Sending data back.\n");
-	printf("Sending data back %d %d.\n", sizeof(x3), sizeof(y3));
+	//printf("x3 = %2.2f, y3 = %2.2f\n", x3, y3);
+	//printf("Sending data back.\n");
+	//printf("Sending data back %d %d.\n", sizeof(x3), sizeof(y3));
 	// Send back the results.
   rc = write(fd, (void *)&x3, sizeof(x3));
 	if (rc < sizeof(x3))
+	{
 		perror("_getPosFromGPS: Couldn't send all of x3!\n");
-	else
-		printf("Sent back %d bytes.\n", sizeof(x3));
+		return;
+	}
   rc = write(fd, (void *)&y3, sizeof(y3));
 	if (rc < sizeof(y3))
+	{
 		perror("_getPosFromGPS: Couldn't send all of y!\n");
-	else
-		printf("Sent back %d bytes.\n", sizeof(y3));
+	}
 	return;
 }
