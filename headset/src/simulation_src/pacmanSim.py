@@ -90,9 +90,6 @@ def collideWithPellet(objs):
 	#print pos
 	x = pos[3]
 	y = pos[4]
-	# coordinate adjustments
-	x = pos[4]
-	y = pos[3]
 	
 	print pos
 	pellets = objs['pellet']
@@ -112,8 +109,8 @@ def collideWithGhost(objs):
 	ghosts = objs['ghost']
 
 	pos = getUserPosition()
-	x = pos[4]
-	y = pos[3]
+	x = pos[3]
+	y = pos[4]
 	for i in ghosts:
 		d = sqrt((i.x3 -x)**2 + (i.y3 - y)**2)
 		if d < 2:

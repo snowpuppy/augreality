@@ -17,7 +17,7 @@ using namespace gui;
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
-#define SCREEN_FOV 3.14f/2.5f
+#define SCREEN_FOV 3.14f/2.8f
 #define MOVEMENT_SPEED 5.0f
 #define CAMERA_SPEED 40.0f
 #define PROCESS 1
@@ -43,6 +43,7 @@ int render(int argc, char *argv[]) {
 	int battery = 10;
 	int signal = 0;
 	int sats = 0;
+	float fov = SCREEN_FOV;
 	stringw orientString = "y: 0.0 p: 0.0 r 0.0";
 	stringw fpsString = "FPS: ???";
 	stringw posString = "x: 0.0 y: 0.0";
@@ -92,6 +93,16 @@ int render(int argc, char *argv[]) {
         if(receiver.IsKeyDown(irr::KEY_SUBTRACT)) {
 			quit = true;
 		}
+        if(receiver.IsKeyDown(irr::KEY_ADD)) {
+					fov += 0.1;
+					std::cout << "Field of view: " << fov << std::endl;
+		}
+				if(receiver.IsKeyDown(irr::KEY_MULTIPLY)) {
+					fov -= 0.1;
+					std::cout << "Field of view: " << fov << std::endl;
+				}
+
+    camera->setFOV(fov);
         
         stringw str = L"FPS: ";
         str += driver->getFPS();
@@ -184,7 +195,7 @@ void updateObjects(objInfo_t *objInfo, int size) {
 				//printf("Object: instId %d: x3: %f y3: %f\n", objinfo.instId, objinfo.x3, objinfo.y3);
 				//printf("Object: roll %f: pitch: %f yaw: %f\n", objinfo.roll, objinfo.pitch, objinfo.yaw);
         instId = objinfo.instId;
-        objects[instId].setPosition(objinfo.x3, objinfo.y3, 0.0);
+        objects[instId].setPosition(objinfo.x3, objinfo.y3, objinfo.z3);
         objects[instId].setRotation(objinfo.roll, objinfo.pitch, objinfo.yaw);
         objects[instId].setVisible(objinfo.typeShow);
     }

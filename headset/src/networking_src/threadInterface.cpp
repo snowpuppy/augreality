@@ -683,15 +683,19 @@ void _getPosFromGPS(int fd)
 	//printf("Sending data back %d %d.\n", sizeof(x3), sizeof(y3));
 	// Send back the results.
   rc = write(fd, (void *)&x3, sizeof(x3));
+	/*
 	if (rc < sizeof(x3))
 	{
 		perror("_getPosFromGPS: Couldn't send all of x3!\n");
 		return;
 	}
+	*/
   rc = write(fd, (void *)&y3, sizeof(y3));
+	/*
 	if (rc < sizeof(y3))
 	{
 		perror("_getPosFromGPS: Couldn't send all of y!\n");
 	}
+	*/
 	return;
 }

@@ -230,8 +230,12 @@ void updatePosition(char *data)
 #endif
 
 	// Set x and y based on origin
-	g_pos.x = (g_pos.lat - originlat)*decimalsperdegreelat;
-	g_pos.y = (g_pos.lon - originlon)*decimalsperdegreelon;
+	// Note that x should be longitude and y should be latitude!
+	// This is because 0 degrees of yaw is defined pointing North.
+	// Yaw increases as the user looks West.
+	// Therefore +x is North, -x is South, +y is West, and -y is East
+	g_pos.x = (g_pos.lon - originlon)*decimalsperdegreelon;
+	g_pos.y = (g_pos.lat - originlat)*decimalsperdegreelat;
 	//printf("\rg_lat: %f, g_lon: %f, originlat: %f, originlon: %f, x: %f, y: %f", g_pos.lat, g_pos.lon, originlat, originlon, g_pos.x, g_pos.y);
 	// Automatic sanitization of gps coordinates.
 	// If no one initializes us, at least we have an "ok" value.
@@ -381,8 +385,8 @@ int readBytes(int fd, char *data, int numBytes)
 
 void getPosFromGPS(float lat, float lon, float *x, float *y)
 {
-	*x = (lat - originlat)*decimalsperdegreelat;
-	*y = (lon - originlon)*decimalsperdegreelon;
+	*x = (lon - originlon)*decimalsperdegreelon;
+	*y = (lat - originlat)*decimalsperdegreelat;
 }
 
 /*
